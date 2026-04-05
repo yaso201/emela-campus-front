@@ -12,7 +12,6 @@
   },
   "dependencies": {
     "@fontsource/plus-jakarta-sans": "^5.0.20",
-    "frappe-ui": "^0.1.271",
     "pinia": "^2.3.1",
     "vue": "^3.4.21",
     "vue-router": "^4.6.4"
