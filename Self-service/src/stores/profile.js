@@ -1,5 +1,5 @@
 // frontend/src/stores/profile.js
-// Store Pinia — détecte le profil utilisateur via get_cockpit_block("notifications").
+// Store Pinia — détecte le profil utilisateur via get_my_profile (endpoint dédié).
 // État : 'idle' | 'loading' | 'loaded' | 'guest' | 'error'
 import { defineStore } from 'pinia';
 
@@ -31,18 +31,14 @@ export const useProfileStore = defineStore('profile', {
       this.error = null;
 
       try {
-        const formData = new URLSearchParams();
-        formData.append('block_name', 'notifications');
         const response = await fetch(
-          '/api/method/portal_app.api.cockpit.get_cockpit_block',
+          '/api/method/portal_app.api.portal_access.get_my_profile',
           {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
               'X-Frappe-CSRF-Token': window.csrf_token || '',
               'Accept': 'application/json',
             },
-            body: formData.toString(),
             credentials: 'same-origin',
           },
         );
@@ -58,7 +54,8 @@ export const useProfileStore = defineStore('profile', {
 
         const json = await response.json();
         const data = json.message || json;
-        if (data.status === 'ok' && data.profile) {
+        // get_my_profile retourne { profile: 'student'|'instructor'|... } ou null
+        if (data && data.profile) {
           this.profile = data.profile;
           this.status = 'loaded';
         } else {
