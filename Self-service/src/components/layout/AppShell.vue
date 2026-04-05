@@ -1,14 +1,19 @@
 <script setup>
-// AppShell — layout principal responsive avec détection profil
+// AppShell — layout principal responsive avec détection profil + banners PWA (Phase 6)
 // Desktop (≥ 768px) : SideNav 220px + main (TopBar + router-view)
 // Mobile (< 768px)  : TopBar + router-view + BottomNav fixed
-// Guest             : GuestWelcome en pleine page (aucune nav)
+// Guest             : GuestWelcome en pleine page
+// PWA               : OfflineBanner, UpdateBanner (top), InstallBanner (bottom), IOSInstallModal
 import { onMounted } from 'vue';
 import { useProfileStore } from '@/stores/profile';
 import TopBar from './TopBar.vue';
 import SideNav from './SideNav.vue';
 import BottomNav from './BottomNav.vue';
 import GuestWelcome from './GuestWelcome.vue';
+import OfflineBanner from './OfflineBanner.vue';
+import UpdateBanner from './UpdateBanner.vue';
+import InstallBanner from './InstallBanner.vue';
+import IOSInstallModal from './IOSInstallModal.vue';
 
 const profile = useProfileStore();
 
@@ -18,10 +23,16 @@ onMounted(() => {
 </script>
 
 <template>
+  <!-- Banners globaux (tous états, y compris Guest) -->
+  <OfflineBanner />
+  <UpdateBanner />
+
+  <!-- Guest landing -->
   <div v-if="profile.isGuest" class="min-h-screen bg-neutral-50 flex items-center justify-center">
     <GuestWelcome />
   </div>
 
+  <!-- Desktop layout -->
   <div v-else class="hidden md:flex min-h-screen bg-neutral-50">
     <SideNav />
     <main class="flex-1 min-w-0">
@@ -34,6 +45,7 @@ onMounted(() => {
     </main>
   </div>
 
+  <!-- Mobile layout -->
   <div v-if="!profile.isGuest" class="md:hidden flex flex-col min-h-screen bg-neutral-50">
     <TopBar mobile />
     <main class="flex-1 px-4 py-5 pb-24">
@@ -43,4 +55,10 @@ onMounted(() => {
     </main>
     <BottomNav />
   </div>
+
+  <!-- PWA install prompts (hors Guest uniquement) -->
+  <template v-if="!profile.isGuest">
+    <InstallBanner />
+    <IOSInstallModal />
+  </template>
 </template>
