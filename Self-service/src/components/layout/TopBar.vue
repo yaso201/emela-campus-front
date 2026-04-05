@@ -2,12 +2,14 @@
 // TopBar — barre supérieure responsive (wordmark mobile / greeting desktop)
 import { computed } from 'vue';
 import { useAuthStore } from '@/stores/auth';
+import { useProfileStore } from '@/stores/profile';
 
 defineProps({
   mobile: { type: Boolean, default: false },
 });
 
 const auth = useAuthStore();
+const profile = useProfileStore();
 
 const today = computed(() => {
   const d = new Date();
@@ -20,6 +22,12 @@ const today = computed(() => {
 });
 
 const greeting = computed(() => `Bonjour, ${auth.displayName}`);
+
+const subtitle = computed(() => {
+  if (profile.isLoading) return '…';
+  const label = profile.profileLabel;
+  return auth.isGuest ? label : `${label} · ${auth.user}`;
+});
 </script>
 
 <template>
@@ -44,7 +52,7 @@ const greeting = computed(() => `Bonjour, ${auth.displayName}`);
   >
     <div>
       <h1 class="text-3xl font-bold tracking-tight text-neutral-950">{{ greeting }}</h1>
-      <p class="text-sm text-neutral-600 mt-1">{{ auth.isGuest ? 'Non connecté' : auth.user }}</p>
+      <p class="text-sm text-neutral-600 mt-1">{{ subtitle }}</p>
     </div>
     <div class="text-xs text-neutral-500 first-letter:uppercase">{{ today }}</div>
   </header>
