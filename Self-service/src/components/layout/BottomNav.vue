@@ -12,6 +12,7 @@ const allNavItems = [
   { to: '/results', label: 'Résultats', icon: 'chart', profiles: ['student'] },
   { to: '/evals', label: 'Évals', icon: 'star', profiles: ['student'] },
   { to: '/insights', label: 'Pilotage', icon: 'bar-chart', profiles: ['director'] },
+  { to: '/support', label: 'Aide', icon: 'help', profiles: ['student', 'instructor', 'director', 'candidate', 'generic'] },
   { to: '/notifications', label: 'Notifs', icon: 'bell', profiles: ['student', 'instructor', 'director', 'candidate', 'generic'] },
 ];
 
@@ -49,6 +50,10 @@ const visibleItems = computed(() => {
           <rect x="17" y="5" width="3" height="13" stroke="currentColor" stroke-width="1.5" />
         </g>
         <path v-else-if="item.icon === 'bell'" d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+        <g v-else-if="item.icon === 'help'">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" />
+          <path d="M9.5 9a2.5 2.5 0 115 0c0 1-.5 1.5-1.5 2s-1 1-1 2M12 17h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+        </g>
       </svg>
       <span class="font-medium">{{ item.label }}</span>
     </router-link>
