@@ -1,13 +1,23 @@
 <script setup>
-// BottomNav — navigation inférieure mobile (< 768px) fixed
+// BottomNav — navigation inférieure mobile (< 768px) filtrée par profil
 // Réf visuelle : specs-interfaces/mela_student_cockpit_mobile.html §BottomNav
-const navItems = [
-  { to: '/', label: 'Accueil', icon: 'home' },
-  { to: '/planning', label: 'Planning', icon: 'calendar' },
-  { to: '/results', label: 'Résultats', icon: 'chart' },
-  { to: '/evals', label: 'Évals', icon: 'star' },
-  { to: '/notifications', label: 'Notifs', icon: 'bell' },
+import { computed } from 'vue';
+import { useProfileStore } from '@/stores/profile';
+
+const profile = useProfileStore();
+
+const allNavItems = [
+  { to: '/', label: 'Accueil', icon: 'home', profiles: ['student', 'instructor', 'director', 'candidate', 'generic'] },
+  { to: '/planning', label: 'Planning', icon: 'calendar', profiles: ['student', 'instructor'] },
+  { to: '/results', label: 'Résultats', icon: 'chart', profiles: ['student'] },
+  { to: '/evals', label: 'Évals', icon: 'star', profiles: ['student'] },
+  { to: '/notifications', label: 'Notifs', icon: 'bell', profiles: ['student', 'instructor', 'director', 'candidate', 'generic'] },
 ];
+
+const visibleItems = computed(() => {
+  const current = profile.profile || 'generic';
+  return allNavItems.filter((item) => item.profiles.includes(current));
+});
 </script>
 
 <template>
@@ -16,7 +26,7 @@ const navItems = [
     aria-label="Navigation mobile"
   >
     <router-link
-      v-for="item in navItems"
+      v-for="item in visibleItems"
       :key="item.to"
       :to="item.to"
       class="flex flex-col items-center gap-1 px-2 py-1 min-w-[44px] min-h-[44px] text-[10px] text-neutral-400 focus:outline-none focus:ring-2 focus:ring-brand-500/25 rounded-sm"
