@@ -1,0 +1,7 @@
+{
+  "name": "mela-design-system",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Design tokens partagés mela (Vue + SCSS + Tailwind)",
+  "type": "module"
+}
