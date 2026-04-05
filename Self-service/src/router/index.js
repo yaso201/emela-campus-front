@@ -34,6 +34,18 @@ const routes = [
     component: () => import('@/pages/NotificationsPage.vue'),
     meta: { label: 'Notifications', icon: 'bell' },
   },
+  {
+    path: '/support',
+    name: 'support',
+    component: () => import('@/pages/SupportRequestPage.vue'),
+    meta: { label: 'Contacter un service', icon: 'help' },
+  },
+  {
+    path: '/insights',
+    name: 'insights',
+    component: () => import('@/pages/InsightsPage.vue'),
+    meta: { label: 'Pilotage', icon: 'bar-chart', requiresProfile: ['director'] },
+  },
 ];
 
 const router = createRouter({
