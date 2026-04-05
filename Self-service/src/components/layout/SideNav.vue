@@ -13,6 +13,7 @@ const allNavItems = [
   { to: '/planning', label: 'Planning', icon: 'calendar', profiles: ['student', 'instructor'] },
   { to: '/results', label: 'Résultats', icon: 'chart', profiles: ['student'] },
   { to: '/evals', label: 'Évaluations', icon: 'star', profiles: ['student'] },
+  { to: '/insights', label: 'Pilotage', icon: 'bar-chart', profiles: ['director'] },
   { to: '/notifications', label: 'Notifications', icon: 'bell', profiles: ['student', 'instructor', 'director', 'candidate', 'generic'] },
 ];
 
@@ -47,6 +48,12 @@ const visibleItems = computed(() => {
           </g>
           <path v-else-if="item.icon === 'chart'" d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
           <path v-else-if="item.icon === 'star'" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
+          <g v-else-if="item.icon === 'bar-chart'">
+            <path d="M3 3v18h18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            <rect x="7" y="12" width="3" height="6" stroke="currentColor" stroke-width="1.5" />
+            <rect x="12" y="8" width="3" height="10" stroke="currentColor" stroke-width="1.5" />
+            <rect x="17" y="5" width="3" height="13" stroke="currentColor" stroke-width="1.5" />
+          </g>
           <path v-else-if="item.icon === 'bell'" d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
         <span>{{ item.label }}</span>
