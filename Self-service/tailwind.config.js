@@ -18,6 +18,9 @@ export default {
       spacing: tokens.spacing,
       borderRadius: tokens.borderRadius,
       boxShadow: tokens.boxShadow,
+      borderColor: {
+        ...tokens.borderColor,
+      },
     },
   },
   plugins: [],

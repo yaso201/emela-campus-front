@@ -116,4 +116,9 @@ export default {
     lg:    '0 8px 16px rgba(15, 23, 42, 0.06), 0 4px 8px rgba(15, 23, 42, 0.04)',
     focus: '0 0 0 3px rgba(46, 134, 168, 0.25)',
   },
+  borderColor: {
+    subtle:  'rgba(15, 23, 42, 0.06)',
+    default: 'rgba(15, 23, 42, 0.12)',
+    strong:  'rgba(15, 23, 42, 0.20)',
+  },
 };
