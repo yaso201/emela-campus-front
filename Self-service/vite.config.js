@@ -8,6 +8,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   plugins: [vue()],
+  base: '/assets/portal_app/mela/',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
