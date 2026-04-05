@@ -1,17 +1,25 @@
 <script setup>
-// SideNav — navigation latérale desktop (≥ 768px)
+// SideNav — navigation latérale desktop (≥ 768px) filtrée par profil
 // Réf visuelle : specs-interfaces/mela_student_cockpit_desktop_1280.html §SideNav
+import { computed } from 'vue';
 import { useAuthStore } from '@/stores/auth';
+import { useProfileStore } from '@/stores/profile';
 
 const auth = useAuthStore();
+const profile = useProfileStore();
 
-const navItems = [
-  { to: '/', label: 'Accueil', icon: 'home' },
-  { to: '/planning', label: 'Planning', icon: 'calendar' },
-  { to: '/results', label: 'Résultats', icon: 'chart' },
-  { to: '/evals', label: 'Évaluations', icon: 'star' },
-  { to: '/notifications', label: 'Notifications', icon: 'bell' },
+const allNavItems = [
+  { to: '/', label: 'Accueil', icon: 'home', profiles: ['student', 'instructor', 'director', 'candidate', 'generic'] },
+  { to: '/planning', label: 'Planning', icon: 'calendar', profiles: ['student', 'instructor'] },
+  { to: '/results', label: 'Résultats', icon: 'chart', profiles: ['student'] },
+  { to: '/evals', label: 'Évaluations', icon: 'star', profiles: ['student'] },
+  { to: '/notifications', label: 'Notifications', icon: 'bell', profiles: ['student', 'instructor', 'director', 'candidate', 'generic'] },
 ];
+
+const visibleItems = computed(() => {
+  const current = profile.profile || 'generic';
+  return allNavItems.filter((item) => item.profiles.includes(current));
+});
 </script>
 
 <template>
@@ -24,7 +32,7 @@ const navItems = [
 
     <nav class="px-3 flex-1" aria-label="Navigation principale">
       <router-link
-        v-for="item in navItems"
+        v-for="item in visibleItems"
         :key="item.to"
         :to="item.to"
         class="flex items-center gap-2.5 px-3 py-2.5 rounded-md mb-1 text-sm text-neutral-600 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500/25 min-h-[44px]"
@@ -54,7 +62,7 @@ const navItems = [
       </div>
       <div class="min-w-0">
         <div class="text-xs font-medium text-neutral-950 truncate">{{ auth.displayName }}</div>
-        <div class="text-[11px] text-neutral-400 truncate">{{ auth.isGuest ? 'Non connecté' : auth.user }}</div>
+        <div class="text-[11px] text-neutral-400 truncate">{{ profile.profileLabel }}</div>
       </div>
     </div>
   </aside>
