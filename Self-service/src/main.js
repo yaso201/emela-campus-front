@@ -1,9 +1,10 @@
-// frontend/src/main.js — Bootstrap Vue 3 + PWA (Phase 6)
+// frontend/src/main.js — Bootstrap Vue 3 (PWA désactivée)
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import App from './App.vue';
 import router from './router';
-import { registerSW } from 'virtual:pwa-register';
+// PWA désactivée — scope SW incompatible avec /mela/ (audit 2026-04-06)
+// import { registerSW } from 'virtual:pwa-register';
 
 // Polices auto-hébergées via @fontsource
 import '@fontsource/plus-jakarta-sans/400.css';
@@ -17,26 +18,26 @@ import '@design/tokens/tokens.css';
 // Tailwind (utilitaires)
 import './assets/tailwind.css';
 
-import { usePwaStore } from '@/stores/pwa';
+// PWA désactivée — scope SW incompatible avec /mela/
+// import { usePwaStore } from '@/stores/pwa';
 
 const app = createApp(App);
 const pinia = createPinia();
 app.use(pinia);
 app.use(router);
 
-// Init PWA store AVANT le mount pour capturer beforeinstallprompt précoce
-const pwa = usePwaStore(pinia);
-pwa.init();
-
-// Register service worker with manual update prompt
-const updateSW = registerSW({
-  onNeedRefresh() {
-    pwa.setUpdateAvailable(updateSW);
-  },
-  onOfflineReady() {
-    // eslint-disable-next-line no-console
-    console.log('[PWA] mela est disponible hors ligne');
-  },
-});
+// PWA désactivée — scope SW incompatible avec /mela/ (audit 2026-04-06)
+// Réactiver quand sw.js sera servi depuis /mela/sw.js via website_route_rule
+// ou quand le serveur enverra Service-Worker-Allowed: /mela/
+// const pwa = usePwaStore(pinia);
+// pwa.init();
+// const updateSW = registerSW({
+//   onNeedRefresh() {
+//     pwa.setUpdateAvailable(updateSW);
+//   },
+//   onOfflineReady() {
+//     console.log('[PWA] mela est disponible hors ligne');
+//   },
+// });
 
 app.mount('#mela-app');

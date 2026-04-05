@@ -1,19 +1,20 @@
 <script setup>
-// AppShell — layout principal responsive avec détection profil + banners PWA (Phase 6)
+// AppShell — layout principal responsive avec détection profil
 // Desktop (≥ 768px) : SideNav 220px + main (TopBar + router-view)
 // Mobile (< 768px)  : TopBar + router-view + BottomNav fixed
 // Guest             : GuestWelcome en pleine page
-// PWA               : OfflineBanner, UpdateBanner (top), InstallBanner (bottom), IOSInstallModal
+// PWA désactivée (Phase 6) — scope SW incompatible avec /mela/ (audit 2026-04-06)
 import { onMounted } from 'vue';
 import { useProfileStore } from '@/stores/profile';
 import TopBar from './TopBar.vue';
 import SideNav from './SideNav.vue';
 import BottomNav from './BottomNav.vue';
 import GuestWelcome from './GuestWelcome.vue';
-import OfflineBanner from './OfflineBanner.vue';
-import UpdateBanner from './UpdateBanner.vue';
-import InstallBanner from './InstallBanner.vue';
-import IOSInstallModal from './IOSInstallModal.vue';
+// PWA désactivée — scope SW incompatible avec /mela/
+// import OfflineBanner from './OfflineBanner.vue';
+// import UpdateBanner from './UpdateBanner.vue';
+// import InstallBanner from './InstallBanner.vue';
+// import IOSInstallModal from './IOSInstallModal.vue';
 
 const profile = useProfileStore();
 
@@ -23,9 +24,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <!-- Banners globaux (tous états, y compris Guest) -->
-  <OfflineBanner />
-  <UpdateBanner />
+  <!-- Banners PWA désactivés — scope SW incompatible avec /mela/ -->
+  <!-- <OfflineBanner /> -->
+  <!-- <UpdateBanner /> -->
 
   <!-- Guest landing -->
   <div v-if="profile.isGuest" class="min-h-screen bg-neutral-50 flex items-center justify-center">
@@ -56,9 +57,9 @@ onMounted(() => {
     <BottomNav />
   </div>
 
-  <!-- PWA install prompts (hors Guest uniquement) -->
-  <template v-if="!profile.isGuest">
+  <!-- PWA install prompts désactivés — scope SW incompatible avec /mela/ -->
+  <!-- <template v-if="!profile.isGuest">
     <InstallBanner />
     <IOSInstallModal />
-  </template>
+  </template> -->
 </template>
