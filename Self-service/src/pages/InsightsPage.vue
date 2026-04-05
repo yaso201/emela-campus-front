@@ -34,38 +34,18 @@ async function fetchKpis() {
   loading.value = true;
   error.value = null;
   try {
-    const formData = new URLSearchParams();
-    formData.append('doctype', 'KPI Definition');
-    formData.append(
-      'fields',
-      JSON.stringify([
-        'name',
-        'kpi_id',
-        'kpi_name',
-        'category',
-        'is_official',
-        'formula',
-        'frequency',
-        'last_value',
-        'last_value_json',
-        'last_computed_at',
-        'source_site',
-      ]),
-    );
-    formData.append('filters', JSON.stringify([['is_official', '=', 1]]));
-    formData.append('order_by', 'kpi_id asc');
-    formData.append('limit_page_length', '100');
-
-    const response = await fetch('/api/method/frappe.client.get_list', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'X-Frappe-CSRF-Token': window.csrf_token || '',
-        'Accept': 'application/json',
+    const response = await fetch(
+      '/api/method/portal_app.api.insights.get_director_kpis',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-Frappe-CSRF-Token': window.csrf_token || '',
+          'Accept': 'application/json',
+        },
+        credentials: 'same-origin',
       },
-      body: formData.toString(),
-      credentials: 'same-origin',
-    });
+    );
 
     if (!response.ok) {
       const err = new Error(`HTTP ${response.status}`);
@@ -74,7 +54,11 @@ async function fetchKpis() {
     }
 
     const json = await response.json();
-    kpis.value = json.message || [];
+    const data = json.message || json;
+    if (data.status === 'error') {
+      throw new Error(data.message || 'Indicateurs indisponibles');
+    }
+    kpis.value = data.kpis || [];
   } catch (err) {
     error.value = err;
   } finally {
