@@ -49,6 +49,26 @@ const profileName = computed(() => profile.profile || 'generic');
 
   <div v-else-if="profileName === 'director'" class="flex flex-col gap-8">
     <MetricsBlock />
+    <router-link
+      to="/insights"
+      class="flex items-center justify-between bg-brand-900 text-white rounded-lg p-5 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500/25 transition-colors min-h-[44px]"
+    >
+      <div>
+        <div class="text-sm font-semibold">Pilotage détaillé</div>
+        <div class="text-xs opacity-80 mt-0.5">
+          Consulter les 56 indicateurs clés par domaine
+        </div>
+      </div>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+          d="M5 12h14M13 6l6 6-6 6"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </router-link>
     <AlertsBlock />
     <NotificationsBlock />
   </div>
