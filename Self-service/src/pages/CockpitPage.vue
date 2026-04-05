@@ -12,6 +12,8 @@ import MetricsBlock from '@/components/blocks/MetricsBlock.vue';
 import ModulesBlock from '@/components/blocks/ModulesBlock.vue';
 import StatusBlock from '@/components/blocks/StatusBlock.vue';
 import ServicesBlock from '@/components/blocks/ServicesBlock.vue';
+import FinancesBlock from '@/components/blocks/FinancesBlock.vue';
+import AttendanceBlock from '@/components/blocks/AttendanceBlock.vue';
 import BlockSkeleton from '@/components/ui/BlockSkeleton.vue';
 
 const profile = useProfileStore();
@@ -29,6 +31,8 @@ const profileName = computed(() => profile.profile || 'generic');
     <AlertsBlock />
     <StatusBlock block-name="student_status" title="Mon statut" />
     <PlanningBlock />
+    <FinancesBlock />
+    <AttendanceBlock />
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <TasksBlock />
       <NotificationsBlock />
