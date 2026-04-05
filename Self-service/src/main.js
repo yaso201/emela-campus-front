@@ -1,9 +1,10 @@
-// frontend/src/main.js — Bootstrap Vue 3 minimal (Phase 0)
-// Pinia et Vue Router seront ajoutés en Phase 3 quand ils sont effectivement utilisés.
+// frontend/src/main.js — Bootstrap Vue 3 avec Pinia + Router (Phase 3)
 import { createApp } from 'vue';
+import { createPinia } from 'pinia';
 import App from './App.vue';
+import router from './router';
 
-// Polices auto-hébergées via @fontsource (4 graisses Plus Jakarta Sans)
+// Polices auto-hébergées via @fontsource
 import '@fontsource/plus-jakarta-sans/400.css';
 import '@fontsource/plus-jakarta-sans/500.css';
 import '@fontsource/plus-jakarta-sans/600.css';
@@ -16,4 +17,6 @@ import '@design/tokens/tokens.css';
 import './assets/tailwind.css';
 
 const app = createApp(App);
+app.use(createPinia());
+app.use(router);
 app.mount('#mela-app');
