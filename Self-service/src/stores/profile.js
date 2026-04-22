@@ -8,6 +8,8 @@ export const useProfileStore = defineStore('profile', {
     status: 'idle',
     profile: null,
     error: null,
+    sessionUser: typeof window !== 'undefined' ? window.user || 'Guest' : 'Guest',
+    canAccessDesk: false,
   }),
   getters: {
     isLoaded: (state) => state.status === 'loaded',
@@ -15,6 +17,7 @@ export const useProfileStore = defineStore('profile', {
     isLoading: (state) => state.status === 'loading' || state.status === 'idle',
     profileLabel: (state) => {
       const labels = {
+        guest:      'Invité',
         student:    'Étudiant',
         instructor: 'Enseignant',
         director:   'Direction',
@@ -25,10 +28,25 @@ export const useProfileStore = defineStore('profile', {
     },
   },
   actions: {
+    setGuestState() {
+      this.sessionUser = 'Guest';
+      this.profile = 'guest';
+      this.status = 'guest';
+      this.canAccessDesk = false;
+    },
+
+    setResolvedProfile(profile, user, canAccessDesk) {
+      this.sessionUser = user || window.user || 'Guest';
+      this.profile = profile || 'generic';
+      this.canAccessDesk = !!canAccessDesk;
+      this.status = 'loaded';
+    },
+
     async fetchProfile() {
       if (this.status === 'loading' || this.status === 'loaded') return;
       this.status = 'loading';
       this.error = null;
+      this.canAccessDesk = false;
 
       try {
         const response = await fetch(
@@ -44,7 +62,7 @@ export const useProfileStore = defineStore('profile', {
         );
 
         if (response.status === 403 || response.status === 401) {
-          this.status = 'guest';
+          this.setGuestState();
           return;
         }
 
@@ -53,15 +71,28 @@ export const useProfileStore = defineStore('profile', {
         }
 
         const json = await response.json();
-        const data = json.message || json;
-        // get_my_profile retourne { profile: 'student'|'instructor'|... } ou null
-        if (data && data.profile) {
-          this.profile = data.profile;
-          this.status = 'loaded';
-        } else {
-          this.profile = 'generic';
-          this.status = 'loaded';
+        const hasMessage = json && Object.prototype.hasOwnProperty.call(json, 'message');
+        const data = hasMessage ? json.message : json;
+        const isEmptyPayload = !data || (typeof data === 'object' && Object.keys(data).length === 0);
+        const sessionUser = window.user || 'Guest';
+        const resolvedProfile = data?.profile ?? data?.profile_type ?? null;
+
+        if (resolvedProfile === 'guest' || data?.profile_type === 'guest') {
+          this.setGuestState();
+          return;
         }
+
+        if (isEmptyPayload) {
+          if (sessionUser === 'Guest') {
+            this.setGuestState();
+            return;
+          }
+
+          throw new Error('Empty profile payload for authenticated session');
+        }
+
+        // R2: can_access_desk vient du backend — plus de lecture frontend des rôles système.
+        this.setResolvedProfile(resolvedProfile, data?.user, data?.can_access_desk);
       } catch (err) {
         this.error = err;
         this.status = 'error';

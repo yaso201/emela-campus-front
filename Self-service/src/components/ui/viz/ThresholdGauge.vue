@@ -26,7 +26,7 @@ const clampedValue = computed(() => Math.max(0, Math.min(100, props.value)));
     <div
       class="relative h-2 rounded-sm"
       :style="{
-        background: 'linear-gradient(to right, var(--color-success-100) 0%, var(--color-success-100) 50%, var(--color-warning-100) 50%, var(--color-warning-100) 75%, var(--color-error-100) 75%, var(--color-error-100) 100%)'
+        background: 'linear-gradient(to right, var(--color-ln-success-bg) 0%, var(--color-ln-success-bg) 50%, var(--color-ln-warning-bg) 50%, var(--color-ln-warning-bg) 75%, var(--color-ln-error-bg) 75%, var(--color-ln-error-bg) 100%)'
       }"
       role="meter"
       :aria-valuenow="value"
@@ -35,7 +35,7 @@ const clampedValue = computed(() => Math.max(0, Math.min(100, props.value)));
       :aria-label="ariaLabel"
     >
       <div
-        class="absolute -top-1 w-1 h-4 bg-neutral-950 rounded-xs"
+        class="absolute -top-1 w-1 h-4 bg-ln-gray-900 rounded-xs"
         :style="{ left: clampedValue + '%' }"
         aria-hidden="true"
       ></div>
@@ -45,7 +45,7 @@ const clampedValue = computed(() => Math.max(0, Math.min(100, props.value)));
         v-for="(t, i) in thresholds"
         :key="i"
         class="text-[10px]"
-        :class="i === 0 ? 'text-success-700' : i < thresholds.length - 1 ? 'text-warning-700' : 'text-error-700'"
+        :class="i === 0 ? 'text-ln-success' : i < thresholds.length - 1 ? 'text-ln-warning' : 'text-ln-error'"
       >
         {{ t.label }}
       </span>

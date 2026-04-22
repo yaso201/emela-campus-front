@@ -17,11 +17,11 @@ const attendance = useFrappeCall('portal_app.api.cockpit.get_attendance_summary'
 const payload = computed(() => attendance.data?.payload || null);
 const hasData = computed(() => payload.value?.has_data === true);
 
-const thresholdVariant = computed(() => {
+const thresholdStatus = computed(() => {
   const rate = payload.value?.unjustified_rate ?? 0;
-  if (rate < 10) return 'success';
-  if (rate < 15) return 'warning';
-  return 'error';
+  if (rate < 10) return 'validated';
+  if (rate < 15) return 'compensated';
+  return 'blocked';
 });
 
 const thresholdLabel = computed(() => {
@@ -34,7 +34,7 @@ const thresholdLabel = computed(() => {
 
 <template>
   <section class="flex flex-col gap-3">
-    <h2 class="text-[11px] font-semibold text-neutral-600 tracking-wider uppercase">
+    <h2 class="text-sm font-semibold text-ln-gray-900">
       Assiduité
     </h2>
 
@@ -49,14 +49,14 @@ const thresholdLabel = computed(() => {
 
     <div
       v-else-if="!hasData"
-      class="bg-white rounded-lg border border-subtle p-6 text-sm text-neutral-500"
+      class="bg-white rounded-lg border border-ln-gray-200 p-6 text-sm text-ln-gray-500"
     >
       Aucune donnée d'assiduité disponible pour votre compte.
     </div>
 
     <div v-else class="grid grid-cols-1 sm:grid-cols-3 gap-3">
       <!-- Carte 1 : Taux de présence (DonutGauge) -->
-      <div class="bg-white rounded-lg border border-subtle p-5 flex items-center gap-4">
+      <div class="bg-white rounded-lg border border-ln-gray-200 p-5 flex items-center gap-4">
         <DonutGauge
           :value="payload.present"
           :total="payload.total"
@@ -64,21 +64,21 @@ const thresholdLabel = computed(() => {
           :aria-label="`Taux de présence ${payload.presence_rate} pourcent`"
         />
         <div>
-          <div class="text-sm font-semibold text-neutral-950">Présence</div>
-          <div class="text-xs text-neutral-500 mt-0.5">
+          <div class="text-sm font-semibold text-ln-gray-900">Présence</div>
+          <div class="text-xs text-ln-gray-500 mt-0.5">
             {{ payload.present }}/{{ payload.total }} séances
           </div>
         </div>
       </div>
 
       <!-- Carte 2 : Absences par type (ProgressBar × 2) -->
-      <div class="bg-white rounded-lg border border-subtle p-5">
-        <div class="text-xs text-neutral-500 mb-3">Absences par type</div>
+      <div class="bg-white rounded-lg border border-ln-gray-200 p-5">
+        <div class="text-xs text-ln-gray-500 mb-3">Absences par type</div>
 
         <div class="mb-3">
           <div class="flex justify-between mb-1">
-            <span class="text-xs text-neutral-600">Non justifiées</span>
-            <span class="text-xs font-semibold text-neutral-950 tabular-nums">
+            <span class="text-xs text-ln-gray-600">Non justifiées</span>
+            <span class="text-xs font-semibold text-ln-gray-900 tabular-nums">
               {{ payload.absent_unjustified }}
             </span>
           </div>
@@ -92,8 +92,8 @@ const thresholdLabel = computed(() => {
 
         <div>
           <div class="flex justify-between mb-1">
-            <span class="text-xs text-neutral-600">Justifiées</span>
-            <span class="text-xs font-semibold text-neutral-950 tabular-nums">
+            <span class="text-xs text-ln-gray-600">Justifiées</span>
+            <span class="text-xs font-semibold text-ln-gray-900 tabular-nums">
               {{ payload.absent_justified }}
             </span>
           </div>
@@ -107,8 +107,8 @@ const thresholdLabel = computed(() => {
       </div>
 
       <!-- Carte 3 : Seuils d'alerte (ThresholdGauge) -->
-      <div class="bg-white rounded-lg border border-subtle p-5">
-        <div class="text-xs text-neutral-500 mb-3">Seuils d'alerte</div>
+      <div class="bg-white rounded-lg border border-ln-gray-200 p-5">
+        <div class="text-xs text-ln-gray-500 mb-3">Seuils d'alerte</div>
         <ThresholdGauge
           :value="payload.unjustified_rate"
           :thresholds="[
@@ -120,7 +120,7 @@ const thresholdLabel = computed(() => {
           :aria-label="`Taux absences non justifiées ${payload.unjustified_rate} pourcent`"
         />
         <div class="mt-3">
-          <StatusBadge :variant="thresholdVariant" :label="thresholdLabel" :dot="false" />
+          <StatusBadge :status="thresholdStatus" :label="thresholdLabel" />
         </div>
       </div>
     </div>

@@ -1,43 +1,24 @@
-// frontend/src/main.js — Bootstrap Vue 3 (PWA désactivée)
+// frontend/src/main.js — Bootstrap Vue 3 pour la SPA privée /app-emela (DEC-151)
+// Les bannières/prompts PWA restent désactivés : VitePWA est retiré et le SW
+// historique est neutralisé par le killswitch L11.
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import App from './App.vue';
 import router from './router';
-// PWA désactivée — scope SW incompatible avec /mela/ (audit 2026-04-06)
-// import { registerSW } from 'virtual:pwa-register';
 
-// Polices auto-hébergées via @fontsource
-import '@fontsource/plus-jakarta-sans/400.css';
-import '@fontsource/plus-jakarta-sans/500.css';
-import '@fontsource/plus-jakarta-sans/600.css';
-import '@fontsource/plus-jakarta-sans/700.css';
+// Police Inter auto-hébergée (DEC-149) — définie dans tailwind.css via @font-face
 
-// Tokens F01 (source de vérité visuelle)
-import '@design/tokens/tokens.css';
-
-// Tailwind (utilitaires)
+// Tailwind (utilitaires + fonts)
 import './assets/tailwind.css';
-
-// PWA désactivée — scope SW incompatible avec /mela/
-// import { usePwaStore } from '@/stores/pwa';
 
 const app = createApp(App);
 const pinia = createPinia();
 app.use(pinia);
 app.use(router);
 
-// PWA désactivée — scope SW incompatible avec /mela/ (audit 2026-04-06)
-// Réactiver quand sw.js sera servi depuis /mela/sw.js via website_route_rule
-// ou quand le serveur enverra Service-Worker-Allowed: /mela/
-// const pwa = usePwaStore(pinia);
-// pwa.init();
-// const updateSW = registerSW({
-//   onNeedRefresh() {
-//     pwa.setUpdateAvailable(updateSW);
-//   },
-//   onOfflineReady() {
-//     console.log('[PWA] mela est disponible hors ligne');
-//   },
-// });
-
-app.mount('#mela-app');
+// R3: attendre que la navigation initiale soit résolue avant de monter.
+// Sans cela, mount() s'exécute pendant que les chunks de route sont encore
+// en transit (import() réseau), causant un crash nextSibling dans Vue.
+router.isReady().then(() => {
+  app.mount('#emela-app');
+});

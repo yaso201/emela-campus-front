@@ -1,54 +1,59 @@
+<template>
+  <span
+    :class="[
+      'inline-flex items-center gap-1.5 font-semibold rounded tracking-wide',
+      sizeClasses,
+      colorClasses,
+    ]"
+    role="status"
+  >
+    <span :class="['rounded-full flex-shrink-0', dotSize, dotColor]" aria-hidden="true" />
+    {{ displayLabel }}
+  </span>
+</template>
+
 <script setup>
-// StatusBadge — badge sémantique avec dot optionnel
-// Réf visuelle : specs-interfaces/mela_component_library_reference.html §StatusBadge
 import { computed } from 'vue';
 
 const props = defineProps({
-  variant: {
-    type: String,
-    default: 'neutral',
-    validator: (v) => ['success', 'warning', 'error', 'info', 'neutral'].includes(v),
-  },
-  label: { type: String, required: true },
-  dot: { type: Boolean, default: true },
+  status: { type: String, required: true },
+  label: { type: String, default: null },
+  size: { type: String, default: 'md' },
 });
 
-const variantClasses = computed(() => {
-  const map = {
-    success: 'bg-success-100 text-success-700',
-    warning: 'bg-warning-100 text-warning-700',
-    error:   'bg-error-100 text-error-700',
-    info:    'bg-info-100 text-info-700',
-    neutral: 'bg-neutral-100 text-neutral-600',
-  };
-  return map[props.variant];
-});
+const statusMap = {
+  active: { color: 'success', label: 'Actif' },
+  suspended: { color: 'warning', label: 'Suspendu' },
+  blocked: { color: 'error', label: 'Bloqué' },
+  pending: { color: 'neutral', label: 'En attente' },
+  admitted: { color: 'success', label: 'Admis' },
+  rejected: { color: 'error', label: 'Refusé' },
+  'in-review': { color: 'info', label: 'En cours' },
+  graduated: { color: 'success', label: 'Diplômé' },
+  withdrawn: { color: 'neutral', label: 'Retiré' },
+  open: { color: 'success', label: 'Ouvert' },
+  closed: { color: 'neutral', label: 'Fermé' },
+  overdue: { color: 'error', label: 'En retard' },
+  validated: { color: 'success', label: 'Validé' },
+  failed: { color: 'error', label: 'Échoué' },
+  compensated: { color: 'warning', label: 'Compensé' },
+};
 
-const dotColor = computed(() => {
-  const map = {
-    success: 'bg-success-600',
-    warning: 'bg-warning-600',
-    error:   'bg-error-600',
-    info:    'bg-info-600',
-    neutral: 'bg-neutral-500',
-  };
-  return map[props.variant];
-});
+const colorTokens = {
+  success: { bg: 'bg-ln-success-bg', text: 'text-ln-success', dot: 'bg-ln-success' },
+  warning: { bg: 'bg-ln-warning-bg', text: 'text-ln-warning', dot: 'bg-ln-warning' },
+  error: { bg: 'bg-ln-error-bg', text: 'text-ln-error', dot: 'bg-ln-error' },
+  neutral: { bg: 'bg-ln-gray-100', text: 'text-ln-gray-600', dot: 'bg-ln-gray-400' },
+  info: { bg: 'bg-ln-blue-100', text: 'text-ln-blue-700', dot: 'bg-ln-blue-600' },
+};
 
-const showDot = computed(() => props.dot && props.variant !== 'neutral');
+const config = computed(() => statusMap[props.status] ?? { color: 'neutral', label: props.status });
+const tokens = computed(() => colorTokens[config.value.color]);
+const displayLabel = computed(() => props.label ?? config.value.label);
+const sizeClasses = computed(() =>
+  props.size === 'sm' ? 'text-[11px] px-1.5 py-0.5' : 'text-xs px-2 py-0.5',
+);
+const colorClasses = computed(() => `${tokens.value.bg} ${tokens.value.text}`);
+const dotSize = computed(() => (props.size === 'sm' ? 'w-1.5 h-1.5' : 'w-2 h-2'));
+const dotColor = computed(() => tokens.value.dot);
 </script>
-
-<template>
-  <span
-    class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-sm text-xs font-semibold"
-    :class="variantClasses"
-  >
-    <span
-      v-if="showDot"
-      class="w-1.5 h-1.5 rounded-full"
-      :class="dotColor"
-      aria-hidden="true"
-    ></span>
-    {{ label }}
-  </span>
-</template>

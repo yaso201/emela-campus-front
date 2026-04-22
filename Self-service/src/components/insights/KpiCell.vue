@@ -58,32 +58,30 @@ const frequencyLabel = computed(() => {
 </script>
 
 <template>
-  <div class="bg-white rounded-lg border border-subtle p-4">
+  <div class="bg-white rounded-lg border border-ln-gray-200 p-4">
     <!-- Label -->
     <div class="flex items-start justify-between gap-2 mb-2">
-      <div class="text-xs text-neutral-500 min-w-0">
+      <div class="text-xs text-ln-gray-500 min-w-0">
         <div class="truncate">{{ kpi.kpi_name || kpi.kpi_id }}</div>
-        <div class="text-[10px] text-neutral-400 font-mono mt-0.5">{{ kpi.kpi_id }}</div>
+        <div class="text-[10px] text-ln-gray-400 font-mono mt-0.5">{{ kpi.kpi_id }}</div>
       </div>
       <StatusBadge
         v-if="isError"
-        variant="error"
+        status="failed"
         label="Indisponible"
-        :dot="false"
       />
       <StatusBadge
         v-else-if="isStub"
-        variant="neutral"
+        status="stub"
         label="Stub"
-        :dot="false"
       />
     </div>
 
     <!-- Value -->
-    <div class="text-2xl font-bold text-neutral-950 tabular-nums">{{ displayValue }}</div>
+    <div class="text-2xl font-bold text-ln-gray-900 tabular-nums">{{ displayValue }}</div>
 
     <!-- Footer -->
-    <div class="flex items-center justify-between mt-2 text-[11px] text-neutral-400">
+    <div class="flex items-center justify-between mt-2 text-[11px] text-ln-gray-400">
       <span>{{ frequencyLabel }}</span>
       <span v-if="computedAtLabel">Mis à jour {{ computedAtLabel }}</span>
     </div>

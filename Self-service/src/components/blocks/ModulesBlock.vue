@@ -16,17 +16,16 @@ const modules = useCockpitBlock('teaching_load');
         <div
           v-for="(item, i) in payload.items"
           :key="i"
-          class="bg-white rounded-lg border border-subtle p-4 flex items-start gap-3"
+          class="rounded-md-ln border border-ln-gray-200 p-4 flex items-start gap-3"
         >
           <div class="flex-1 min-w-0">
-            <div class="text-sm font-semibold text-neutral-950">{{ item.title }}</div>
-            <div class="text-xs text-neutral-600 mt-0.5">{{ item.description }}</div>
+            <div class="text-sm font-semibold text-ln-gray-900">{{ item.title }}</div>
+            <div class="text-xs text-ln-gray-600 mt-0.5">{{ item.description }}</div>
           </div>
           <StatusBadge
             v-if="item.badge"
-            :variant="item.badge.includes('Résultats') ? 'success' : 'neutral'"
+            :status="item.badge.includes('Résultats') ? 'validated' : 'module-badge'"
             :label="item.badge"
-            :dot="false"
           />
         </div>
       </div>

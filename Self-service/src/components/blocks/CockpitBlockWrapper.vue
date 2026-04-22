@@ -1,14 +1,23 @@
 <script setup>
 // CockpitBlockWrapper — wrapper universel loading/error/empty/data pour les blocs du cockpit.
+// P6-Ph3 : restylé avec Card.vue + EmptyState.vue — les blocs qui le consomment
+// (AlertsBlock, PlanningBlock, MetricsBlock, ModulesBlock, StatusBlock, TasksBlock)
+// héritent automatiquement du design institutionnel LaNEM.
 // Utilisé par AlertsBlock, PlanningBlock, etc.
+import Card from '@/components/ui/Card.vue';
 import BlockSkeleton from '@/components/ui/BlockSkeleton.vue';
 import BlockError from '@/components/ui/BlockError.vue';
+import EmptyState from '@/components/ui/EmptyState.vue';
 import { computed } from 'vue';
 
 const props = defineProps({
   resource: { type: Object, required: true },
   title: { type: String, default: '' },
   skeletonLines: { type: Number, default: 3 },
+  /**
+   * Icône Lucide pour l'état vide (passé à EmptyState)
+   */
+  emptyIcon: { type: String, default: 'Inbox' },
 });
 
 const state = computed(() => {
@@ -36,14 +45,7 @@ const emptyMessage = computed(() =>
 </script>
 
 <template>
-  <section class="flex flex-col gap-3">
-    <h2
-      v-if="title"
-      class="text-[11px] font-semibold text-neutral-600 tracking-wider uppercase"
-    >
-      {{ title }}
-    </h2>
-
+  <Card :title="title" padding="md">
     <BlockSkeleton v-if="state === 'loading'" :lines="skeletonLines" :show-title="false" />
 
     <BlockError
@@ -53,17 +55,16 @@ const emptyMessage = computed(() =>
       :retry="() => resource.reload()"
     />
 
-    <div
+    <EmptyState
       v-else-if="state === 'empty'"
-      class="bg-white rounded-lg border border-subtle p-6 text-sm text-neutral-500"
-    >
-      {{ emptyMessage }}
-    </div>
+      :icon="emptyIcon"
+      :label="emptyMessage"
+    />
 
     <slot
       v-else
       :payload="resource.data.payload"
       :profile="resource.data.profile"
     />
-  </section>
+  </Card>
 </template>

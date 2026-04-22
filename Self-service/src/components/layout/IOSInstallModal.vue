@@ -45,14 +45,14 @@ function dismiss() {
     aria-labelledby="ios-install-title"
   >
     <div class="bg-white rounded-lg max-w-sm w-full p-6 shadow-lg">
-      <h2 id="ios-install-title" class="text-base font-bold text-neutral-950 mb-4">
-        Installer mela sur iPhone
+      <h2 id="ios-install-title" class="text-base font-bold text-ln-gray-900 mb-4">
+        Installer emela sur iPhone
       </h2>
 
-      <ol class="space-y-3 text-sm text-neutral-700">
+      <ol class="space-y-3 text-sm text-ln-gray-700">
         <li class="flex items-start gap-3">
           <span
-            class="w-6 h-6 rounded-full bg-brand-50 text-brand-900 text-xs font-bold flex items-center justify-center flex-shrink-0"
+            class="w-6 h-6 rounded-full bg-ln-blue-50 text-ln-blue-900 text-xs font-bold flex items-center justify-center flex-shrink-0"
           >1</span>
           <span>
             Appuyez sur l'icône de partage
@@ -77,13 +77,13 @@ function dismiss() {
         </li>
         <li class="flex items-start gap-3">
           <span
-            class="w-6 h-6 rounded-full bg-brand-50 text-brand-900 text-xs font-bold flex items-center justify-center flex-shrink-0"
+            class="w-6 h-6 rounded-full bg-ln-blue-50 text-ln-blue-900 text-xs font-bold flex items-center justify-center flex-shrink-0"
           >2</span>
           <span>Faites défiler et sélectionnez <strong>« Sur l'écran d'accueil »</strong></span>
         </li>
         <li class="flex items-start gap-3">
           <span
-            class="w-6 h-6 rounded-full bg-brand-50 text-brand-900 text-xs font-bold flex items-center justify-center flex-shrink-0"
+            class="w-6 h-6 rounded-full bg-ln-blue-50 text-ln-blue-900 text-xs font-bold flex items-center justify-center flex-shrink-0"
           >3</span>
           <span>Appuyez sur <strong>« Ajouter »</strong> en haut à droite</span>
         </li>
@@ -91,7 +91,7 @@ function dismiss() {
 
       <button
         type="button"
-        class="mt-6 w-full text-sm font-semibold text-white bg-brand-900 hover:bg-brand-700 px-4 py-2.5 rounded-sm focus:outline-none focus:ring-2 focus:ring-brand-500/25 min-h-[44px]"
+        class="mt-6 w-full text-sm font-semibold text-white bg-ln-blue-900 hover:bg-ln-blue-700 px-4 py-2.5 rounded-sm focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25 min-h-[44px]"
         @click="dismiss"
       >
         Compris

@@ -39,11 +39,11 @@ const fillPath = computed(
 
 const strokeClass = computed(() => {
   const map = {
-    brand:   'text-brand-900',
-    success: 'text-success-600',
-    warning: 'text-warning-600',
-    error:   'text-error-600',
-    info:    'text-info-600',
+    brand:   'text-ln-blue-900',
+    success: 'text-ln-success',
+    warning: 'text-ln-warning',
+    error:   'text-ln-error',
+    info:    'text-ln-blue-600',
   };
   return map[props.color];
 });

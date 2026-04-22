@@ -43,30 +43,30 @@ function persistDismiss() {
 <template>
   <div
     v-if="visible"
-    class="fixed bottom-20 md:bottom-4 inset-x-4 z-toast bg-white rounded-lg border border-default shadow-md px-4 py-3 flex items-center gap-3 max-w-md mx-auto"
+    class="fixed bottom-20 md:bottom-4 inset-x-4 z-50 bg-white rounded-lg border border-ln-gray-200 shadow-md px-4 py-3 flex items-center gap-3 max-w-md mx-auto"
     role="region"
-    aria-label="Invitation à installer mela"
+    aria-label="Invitation à installer emela"
   >
-    <div class="w-10 h-10 rounded-md bg-brand-50 flex items-center justify-center flex-shrink-0">
-      <span class="text-lg font-bold tracking-tight text-brand-900">
-        m<span class="text-accent-500">.</span>
+    <div class="w-10 h-10 rounded-md bg-ln-blue-50 flex items-center justify-center flex-shrink-0">
+      <span class="text-lg font-bold tracking-tight text-ln-blue-900">
+        m<span class="text-ln-blue-600">.</span>
       </span>
     </div>
     <div class="flex-1 min-w-0">
-      <div class="text-sm font-semibold text-neutral-950">Installer mela</div>
-      <div class="text-xs text-neutral-600 mt-0.5">Accès rapide, fonctionne hors ligne</div>
+      <div class="text-sm font-semibold text-ln-gray-900">Installer emela</div>
+      <div class="text-xs text-ln-gray-600 mt-0.5">Accès rapide, fonctionne hors ligne</div>
     </div>
     <div class="flex items-center gap-1 flex-shrink-0">
       <button
         type="button"
-        class="text-xs font-semibold text-white bg-brand-900 hover:bg-brand-700 px-3 py-1.5 rounded-sm focus:outline-none focus:ring-2 focus:ring-brand-500/25 min-h-[32px]"
+        class="text-xs font-semibold text-white bg-ln-blue-900 hover:bg-ln-blue-700 px-3 py-1.5 rounded-sm focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25 min-h-[32px]"
         @click="handleInstall"
       >
         Installer
       </button>
       <button
         type="button"
-        class="text-neutral-400 hover:text-neutral-600 p-1 focus:outline-none focus:ring-2 focus:ring-brand-500/25 rounded-sm"
+        class="text-ln-gray-400 hover:text-ln-gray-600 p-1 focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25 rounded-sm"
         aria-label="Plus tard"
         @click="dismiss"
       >

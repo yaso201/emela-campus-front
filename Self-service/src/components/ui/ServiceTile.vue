@@ -21,7 +21,7 @@ const isDisabled = computed(() => props.disabled || !props.url);
   <router-link
     v-if="isInternal"
     :to="url"
-    class="bg-white rounded-lg border border-subtle p-4 text-center block relative min-h-[44px] focus:outline-none focus:ring-2 focus:ring-brand-500/25 cursor-pointer hover:border-default transition-colors"
+    class="bg-white rounded-lg border border-ln-gray-200 p-4 text-center block relative min-h-[44px] focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25 cursor-pointer hover:border-ln-gray-200 transition-colors"
   >
     <!-- Icône externe (visible uniquement pour liens externes) -->
     <svg
@@ -29,7 +29,7 @@ const isDisabled = computed(() => props.disabled || !props.url);
       width="10"
       height="10"
       viewBox="0 0 12 12"
-      class="absolute top-2 right-2 text-neutral-400"
+      class="absolute top-2 right-2 text-ln-gray-400"
       role="img"
       aria-label="Ouvre dans un nouvel onglet"
     >
@@ -43,13 +43,14 @@ const isDisabled = computed(() => props.disabled || !props.url);
       />
     </svg>
 
-    <div class="w-9 h-9 rounded-md flex items-center justify-center mx-auto mb-2 bg-brand-50">
+    <div class="w-9 h-9 rounded-md flex items-center justify-center mx-auto mb-2 bg-ln-blue-50">
       <slot name="icon" />
     </div>
 
-    <div class="text-xs font-medium text-neutral-950">
+    <div class="text-xs font-medium text-ln-gray-900">
       {{ title }}
     </div>
+    <slot name="subtitle" />
   </router-link>
 
   <!-- Lien externe -->
@@ -58,13 +59,13 @@ const isDisabled = computed(() => props.disabled || !props.url);
     :href="url"
     target="_blank"
     rel="noopener noreferrer"
-    class="bg-white rounded-lg border border-subtle p-4 text-center block relative min-h-[44px] focus:outline-none focus:ring-2 focus:ring-brand-500/25 cursor-pointer hover:border-default transition-colors"
+    class="bg-white rounded-lg border border-ln-gray-200 p-4 text-center block relative min-h-[44px] focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25 cursor-pointer hover:border-ln-gray-200 transition-colors"
   >
     <svg
       width="10"
       height="10"
       viewBox="0 0 12 12"
-      class="absolute top-2 right-2 text-neutral-400"
+      class="absolute top-2 right-2 text-ln-gray-400"
       role="img"
       aria-label="Ouvre dans un nouvel onglet"
     >
@@ -78,27 +79,29 @@ const isDisabled = computed(() => props.disabled || !props.url);
       />
     </svg>
 
-    <div class="w-9 h-9 rounded-md flex items-center justify-center mx-auto mb-2 bg-brand-50">
+    <div class="w-9 h-9 rounded-md flex items-center justify-center mx-auto mb-2 bg-ln-blue-50">
       <slot name="icon" />
     </div>
 
-    <div class="text-xs font-medium text-neutral-950">
+    <div class="text-xs font-medium text-ln-gray-900">
       {{ title }}
     </div>
+    <slot name="subtitle" />
   </a>
 
   <!-- Désactivé -->
   <div
     v-else
-    class="bg-white rounded-lg border border-subtle p-4 text-center block relative min-h-[44px] opacity-40 cursor-not-allowed"
+    class="bg-white rounded-lg border border-ln-gray-200 p-4 text-center block relative min-h-[44px] opacity-40 cursor-not-allowed"
     aria-disabled="true"
   >
-    <div class="w-9 h-9 rounded-md flex items-center justify-center mx-auto mb-2 bg-neutral-100">
+    <div class="w-9 h-9 rounded-md flex items-center justify-center mx-auto mb-2 bg-ln-gray-100">
       <slot name="icon" />
     </div>
 
-    <div class="text-xs font-medium text-neutral-400">
+    <div class="text-xs font-medium text-ln-gray-400">
       {{ title }}
     </div>
+    <slot name="subtitle" />
   </div>
 </template>

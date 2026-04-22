@@ -67,7 +67,7 @@ async function markAsRead(name) {
 
 <template>
   <section class="flex flex-col gap-3">
-    <h2 class="text-[11px] font-semibold text-neutral-600 tracking-wider uppercase">
+    <h2 class="text-sm font-semibold text-ln-gray-900">
       Notifications
     </h2>
 
@@ -82,17 +82,17 @@ async function markAsRead(name) {
 
     <div
       v-else-if="items.length === 0"
-      class="bg-white rounded-lg border border-subtle p-6 text-sm text-neutral-500"
+      class="bg-white rounded-lg border border-ln-gray-200 p-6 text-sm text-ln-gray-500"
     >
       Aucune notification récente.
     </div>
 
-    <div v-else class="bg-white rounded-lg border border-subtle overflow-hidden">
+    <div v-else class="bg-white rounded-lg border border-ln-gray-200 overflow-hidden">
       <button
         v-for="item in items"
         :key="item.name"
         type="button"
-        class="w-full text-left block focus:outline-none focus:bg-brand-50/30 focus:ring-2 focus:ring-inset focus:ring-brand-500/25"
+        class="w-full text-left block focus:outline-none focus:bg-ln-blue-50/30 focus:ring-2 focus:ring-inset focus:ring-ln-blue-500/25"
         @click="markAsRead(item.name)"
       >
         <NotificationItem

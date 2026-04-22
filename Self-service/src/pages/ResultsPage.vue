@@ -1,34 +1,352 @@
 <script setup>
-// ResultsPage — placeholder. Les résultats transitent par Moodle (F11).
-// En Phase 4 cette page affichera un résumé + lien contextualisé Moodle.
+// ResultsPage — résultats officiels (Flux 2) + notes temporaires (Flux 3).
+//
+// Section 1 : résultats officiels via portal_app.api.academic_results.get_published_results
+//   → is_official=true, Deliberation Clôturée uniquement.
+// Section 2 : notes temporaires via portal_app.api.on_course_grades.get_student_on_course_grades
+//   → is_official=false, status="temporary", warning permanent visible.
+//
+// L'ancien endpoint legacy (teaching_eval) a été supprimé dans cette vague.
+import { computed, watch } from 'vue';
+import { useFrappeCall } from '@/composables/useFrappeCall';
+import { useProfileStore } from '@/stores/profile';
+import BlockSkeleton from '@/components/ui/BlockSkeleton.vue';
+import BlockError from '@/components/ui/BlockError.vue';
+import StatusBadge from '@/components/ui/StatusBadge.vue';
+
+const profile = useProfileStore();
+
+// ── Section 1 : résultats officiels ──────────────────────────────────
+const officialResource = useFrappeCall(
+  'portal_app.api.academic_results.get_published_results',
+  {},
+  { auto: false },
+);
+
+// ── Section 2 : notes temporaires ────────────────────────────────────
+const temporaryResource = useFrappeCall(
+  'portal_app.api.on_course_grades.get_student_on_course_grades',
+  {},
+  { auto: false },
+);
+
+watch(
+  () => [profile.status, profile.profile],
+  ([status, currentProfile]) => {
+    if (status === 'loaded' && currentProfile === 'student') {
+      officialResource.reload();
+      temporaryResource.reload();
+    }
+  },
+  { immediate: true },
+);
+
+// ── Computed — officiel ──────────────────────────────────────────────
+const semesters = computed(() => officialResource.data?.semesters || []);
+const pendingPublication = computed(() => Boolean(officialResource.data?.pending_publication));
+const isStudent = computed(() => profile.profile === 'student');
+const showProfileGuard = computed(() => !profile.isLoading && !profile.isGuest && !isStudent.value);
+
+const showPendingState = computed(() =>
+  !officialResource.loading
+  && !officialResource.error
+  && pendingPublication.value
+  && semesters.value.length === 0
+);
+const showEmptyOfficial = computed(() =>
+  !officialResource.loading
+  && !officialResource.error
+  && !pendingPublication.value
+  && semesters.value.length === 0
+);
+
+// ── Computed — temporaire ────────────────────────────────────────────
+const tempItems = computed(() => temporaryResource.data?.items || []);
+const tempWarning = computed(() =>
+  temporaryResource.data?.warning
+  || 'Notes temporaires en attente de validation du jury semestriel ou annuel.'
+);
+const tempLabel = computed(() =>
+  temporaryResource.data?.label || 'Suivi temporaire des notes'
+);
+// Section visible si étudiant chargé (même items vide), sauf erreur propre.
+const showTempSection = computed(() =>
+  isStudent.value && !profile.isLoading && !profile.isGuest
+);
+
+// ── Helpers ──────────────────────────────────────────────────────────
+function semesterTitle(semester) {
+  const term = semester.academic_term || 'Semestre';
+  const year = semester.academic_year || '';
+  return year ? `${term} · ${year}` : term;
+}
+
+function mapDecisionStatus(decision) {
+  const map = {
+    APD: 'validated',
+    PIN: 'pending',
+    PRE: 'pending',
+    PCO: 'pending',
+    RED: 'failed',
+    EXC: 'failed',
+    REO: 'failed',
+    COA: 'compensated',
+  };
+  return map[decision] || 'decision';
+}
+
+function mapResultStatus(status) {
+  const map = {
+    'Validée': 'validated',
+    'Compensée': 'compensated',
+    'Échouée': 'failed',
+  };
+  return map[status] || status || 'pending';
+}
+
+function formatNote(note) {
+  if (note === null || note === undefined || Number.isNaN(Number(note))) {
+    return '—';
+  }
+  return `${Number(note).toFixed(1).replace('.', ',')} /20`;
+}
 </script>
 
 <template>
   <div class="flex flex-col gap-6">
     <header>
-      <h1 class="text-2xl font-bold text-neutral-950 mb-1">Résultats</h1>
-      <p class="text-sm text-neutral-600">Consultation de vos notes et relevés.</p>
+      <h1 class="text-2xl font-bold text-ln-gray-900 mb-1">Résultats</h1>
+      <p class="text-sm text-ln-gray-600">Consultation de vos résultats officiels et suivi temporaire des notes.</p>
     </header>
-    <div class="bg-white rounded-lg border border-subtle p-10 text-center">
-      <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-brand-50 mb-4">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="text-brand-900">
-          <path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
-      </div>
-      <h2 class="text-base font-semibold text-neutral-950">Résultats disponibles sur Moodle</h2>
-      <p class="text-sm text-neutral-600 mt-2 max-w-md mx-auto">
-        Vos relevés de notes et résultats d'examens sont publiés sur la plateforme Moodle.
-        Cliquez ci-dessous pour y accéder directement.
+
+    <!-- Guard : profil non étudiant -->
+    <div
+      v-if="showProfileGuard"
+      class="bg-white rounded-lg border border-ln-gray-200 p-6 text-center"
+    >
+      <h2 class="text-base font-semibold text-ln-gray-900">Résultats réservés aux étudiants</h2>
+      <p class="text-sm text-ln-gray-600 mt-2">
+        Cette page est accessible uniquement depuis un profil étudiant.
       </p>
-      <a
-        href="/moodle-launch"
-        class="inline-flex items-center gap-2 mt-5 text-xs font-semibold text-white bg-brand-900 hover:bg-brand-700 px-5 py-2.5 rounded-sm focus:outline-none focus:ring-2 focus:ring-brand-500/25 min-h-[44px]"
-      >
-        Ouvrir Moodle
-        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
-          <path d="M3 9L9 3M9 3H4M9 3v5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-        </svg>
-      </a>
+    </div>
+
+    <div v-else>
+      <!-- Guard : guest -->
+      <div v-if="profile.isGuest" class="bg-white rounded-lg border border-ln-gray-200 p-6 text-center">
+        <h2 class="text-base font-semibold text-ln-gray-900">Connexion requise</h2>
+        <p class="text-sm text-ln-gray-600 mt-2">
+          Connectez-vous avec votre compte étudiant pour consulter vos résultats.
+        </p>
+      </div>
+
+      <!-- Guard : loading profil -->
+      <div v-else-if="profile.isLoading" class="grid gap-4">
+        <BlockSkeleton :lines="5" :show-title="false" />
+      </div>
+
+      <div v-else class="flex flex-col gap-6">
+
+        <!-- ════════════════════════════════════════════════════════════ -->
+        <!-- SECTION 1 — Résultats officiels (Flux 2)                   -->
+        <!-- ════════════════════════════════════════════════════════════ -->
+        <section>
+          <h2 class="text-lg font-semibold text-ln-gray-900 mb-3">Résultats officiels</h2>
+
+          <div v-if="officialResource.loading" class="grid gap-4">
+            <BlockSkeleton :lines="5" :show-title="false" />
+            <BlockSkeleton :lines="4" :show-title="false" />
+          </div>
+
+          <BlockError
+            v-else-if="officialResource.error"
+            title="Résultats officiels indisponibles"
+            :message="officialResource.error.message || 'Erreur réseau'"
+            :retry="() => officialResource.reload()"
+          />
+
+          <div
+            v-else-if="showPendingState"
+            class="bg-white rounded-lg border border-ln-gray-200 p-6 text-center"
+          >
+            <h3 class="text-base font-semibold text-ln-gray-900">Résultats en attente</h3>
+            <p class="text-sm text-ln-gray-600 mt-2">
+              Résultats disponibles après délibération.
+            </p>
+          </div>
+
+          <div
+            v-else-if="showEmptyOfficial"
+            class="bg-white rounded-lg border border-ln-gray-200 p-6 text-center"
+          >
+            <h3 class="text-base font-semibold text-ln-gray-900">Aucun résultat officiel</h3>
+            <p class="text-sm text-ln-gray-600 mt-2">
+              Vos semestres publiés apparaîtront ici dès leur mise à disposition.
+            </p>
+          </div>
+
+          <!-- Semestres publiés -->
+          <div v-else class="flex flex-col gap-4">
+            <div
+              v-for="semester in semesters"
+              :key="`${semester.academic_year}-${semester.academic_term}`"
+              class="bg-white rounded-lg border border-ln-gray-200 p-5 md:p-6"
+            >
+              <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <h3 class="text-lg font-semibold text-ln-gray-900">
+                    {{ semesterTitle(semester) }}
+                  </h3>
+                  <p class="text-sm text-ln-gray-600 mt-1">
+                    Niveau {{ semester.academic_level || '—' }} · {{ semester.total_ects_earned ?? '—' }} / {{ semester.total_ects_possible ?? '—' }} ECTS
+                  </p>
+                  <p class="text-xs text-ln-gray-500 mt-1">
+                    Cumul : {{ semester.cumulative_ects ?? '—' }} ECTS
+                  </p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <StatusBadge
+                    v-if="semester.jury_decision"
+                    :status="mapDecisionStatus(semester.jury_decision)"
+                    :label="`Jury ${semester.jury_decision}`"
+                  />
+                  <StatusBadge
+                    :status="semester.semester_validated ? 'validated' : 'failed'"
+                    :label="semester.semester_validated ? 'Semestre validé' : 'Semestre non validé'"
+                  />
+                </div>
+              </div>
+
+              <div class="mt-5 overflow-x-auto">
+                <table class="min-w-full border-separate border-spacing-0">
+                  <thead>
+                    <tr>
+                      <th class="px-3 py-2 text-left text-[11px] font-semibold text-ln-gray-500 uppercase tracking-wider border-b border-ln-gray-200">UE</th>
+                      <th class="px-3 py-2 text-left text-[11px] font-semibold text-ln-gray-500 uppercase tracking-wider border-b border-ln-gray-200">Note</th>
+                      <th class="px-3 py-2 text-left text-[11px] font-semibold text-ln-gray-500 uppercase tracking-wider border-b border-ln-gray-200">Statut</th>
+                      <th class="px-3 py-2 text-right text-[11px] font-semibold text-ln-gray-500 uppercase tracking-wider border-b border-ln-gray-200">ECTS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      v-for="ue in semester.ue_results"
+                      :key="`${semester.academic_year}-${semester.academic_term}-${ue.ue_code}`"
+                      class="align-top"
+                    >
+                      <td class="px-3 py-3 border-b border-ln-gray-100">
+                        <div class="text-sm font-medium text-ln-gray-900">{{ ue.ue_name }}</div>
+                        <div class="text-xs text-ln-gray-500 mt-1">{{ ue.ue_code }}</div>
+                      </td>
+                      <td class="px-3 py-3 border-b border-ln-gray-100 text-sm text-ln-gray-700 whitespace-nowrap">
+                        {{ formatNote(ue.ue_average) }}
+                      </td>
+                      <td class="px-3 py-3 border-b border-ln-gray-100">
+                        <StatusBadge :status="mapResultStatus(ue.status)" :label="ue.status" />
+                      </td>
+                      <td class="px-3 py-3 border-b border-ln-gray-100 text-right text-sm text-ln-gray-700 whitespace-nowrap">
+                        {{ ue.ects_earned ?? '—' }} / {{ ue.ects_possible ?? '—' }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ════════════════════════════════════════════════════════════ -->
+        <!-- SECTION 2 — Notes temporaires (Flux 3 on-course)           -->
+        <!-- ════════════════════════════════════════════════════════════ -->
+        <section v-if="showTempSection">
+          <h2 class="text-lg font-semibold text-ln-gray-900 mb-3">{{ tempLabel }}</h2>
+
+          <!-- Warning permanent — toujours visible -->
+          <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+            <p class="text-sm text-amber-800 font-medium">
+              ⚠ {{ tempWarning }}
+            </p>
+            <p class="text-xs text-amber-700 mt-1">
+              Ces données n'ont aucune valeur officielle et ne constituent pas un relevé de notes.
+            </p>
+          </div>
+
+          <div v-if="temporaryResource.loading">
+            <BlockSkeleton :lines="3" :show-title="false" />
+          </div>
+
+          <BlockError
+            v-else-if="temporaryResource.error"
+            title="Notes temporaires indisponibles"
+            :message="temporaryResource.error.message || 'Erreur réseau'"
+            :retry="() => temporaryResource.reload()"
+          />
+
+          <div
+            v-else-if="tempItems.length === 0"
+            class="bg-white rounded-lg border border-ln-gray-200 p-5 text-center"
+          >
+            <p class="text-sm text-ln-gray-600">
+              Aucune note temporaire disponible pour le moment.
+            </p>
+          </div>
+
+          <div v-else class="bg-white rounded-lg border border-ln-gray-200 overflow-x-auto">
+            <table class="min-w-full border-separate border-spacing-0">
+              <thead>
+                <tr>
+                  <th class="px-3 py-2 text-left text-[11px] font-semibold text-ln-gray-500 uppercase tracking-wider border-b border-ln-gray-200">Module</th>
+                  <th class="px-3 py-2 text-left text-[11px] font-semibold text-ln-gray-500 uppercase tracking-wider border-b border-ln-gray-200">UE</th>
+                  <th class="px-3 py-2 text-left text-[11px] font-semibold text-ln-gray-500 uppercase tracking-wider border-b border-ln-gray-200">Type</th>
+                  <th class="px-3 py-2 text-left text-[11px] font-semibold text-ln-gray-500 uppercase tracking-wider border-b border-ln-gray-200">Note</th>
+                  <th class="px-3 py-2 text-left text-[11px] font-semibold text-ln-gray-500 uppercase tracking-wider border-b border-ln-gray-200">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="(item, idx) in tempItems"
+                  :key="item.source_name || item.grade_submission || `temp-${idx}`"
+                  class="align-top"
+                >
+                  <td class="px-3 py-3 border-b border-ln-gray-100">
+                    <div class="text-sm font-medium text-ln-gray-900">{{ item.course_name || '—' }}</div>
+                  </td>
+                  <td class="px-3 py-3 border-b border-ln-gray-100">
+                    <div class="text-xs text-ln-gray-500">{{ item.ue_code || '—' }}</div>
+                    <div class="text-xs text-ln-gray-400">{{ item.ue_name || '' }}</div>
+                  </td>
+                  <td class="px-3 py-3 border-b border-ln-gray-100 text-xs text-ln-gray-600">
+                    {{ item.evaluation_component || '—' }}
+                  </td>
+                  <td class="px-3 py-3 border-b border-ln-gray-100 text-sm text-ln-gray-700 whitespace-nowrap">
+                    {{ formatNote(item.grade) }}
+                  </td>
+                  <td class="px-3 py-3 border-b border-ln-gray-100 text-xs text-ln-gray-500 whitespace-nowrap">
+                    {{ item.integrated_at ? item.integrated_at.substring(0, 10) : '—' }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Lien Moodle -->
+        <div class="bg-white rounded-lg border border-ln-gray-200 p-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 class="text-sm font-semibold text-ln-gray-900">Activités Moodle</h2>
+            <p class="text-sm text-ln-gray-600 mt-1">
+              Pour les détails pédagogiques complémentaires, consultez Moodle.
+            </p>
+          </div>
+          <a
+            href="/app-emela/moodle-launch"
+            class="inline-flex items-center justify-center gap-2 text-xs font-semibold text-white bg-ln-blue-900 hover:bg-ln-blue-700 px-5 py-2.5 rounded-sm focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25 min-h-[44px]"
+          >
+            Voir sur Moodle
+            <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+              <path d="M3 9L9 3M9 3H4M9 3v5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+            </svg>
+          </a>
+        </div>
+      </div>
     </div>
   </div>
 </template>

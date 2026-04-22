@@ -1,50 +1,104 @@
 <script setup>
-// PlanningWeek — vue semaine en grille 5 colonnes (lun-ven)
+// PlanningWeek — vue semaine en grille 7 colonnes (lun-dim)
 // Mobile (< 768px) : fallback vers PlanningAgenda (grille trop étroite)
 // Phase 5 — consommé par PlanningPage
 import { computed } from 'vue';
 import PlanningAgenda from './PlanningAgenda.vue';
-import { formatTimeRange, getSessionState, getWeekStart, addDaysIso } from '@/utils/planning';
+import {
+  buildSessionOverlapLayout,
+  clamp,
+  formatTimeRange,
+  getSessionVisualState,
+  getWeekDays,
+  normalizePlanningSession,
+  sessionDurationMinutes,
+  sessionDate,
+  timeToMinutes,
+} from '@/utils/planning';
 
 const props = defineProps({
   sessions: { type: Array, required: true },
   currentDate: { type: String, required: true }, // ISO YYYY-MM-DD
 });
 
-const weekStart = computed(() => getWeekStart(props.currentDate));
-
-// 5 days (Lun à Ven) — on pourrait étendre à 7 mais le samedi/dimanche est rarement utilisé
-const weekDays = computed(() => {
-  const days = [];
-  for (let i = 0; i < 5; i++) {
-    const iso = addDaysIso(weekStart.value, i);
-    const d = new Date(iso + 'T00:00:00');
-    days.push({
-      iso,
-      label: d.toLocaleDateString('fr-FR', { weekday: 'short' }),
-      dayNumber: d.getDate(),
-      isToday: iso === new Date().toISOString().slice(0, 10),
-    });
-  }
-  return days;
-});
-
-const sessionsByDay = computed(() => {
-  const map = {};
-  for (const day of weekDays.value) map[day.iso] = [];
-  for (const s of props.sessions) {
-    if (map[s.date]) map[s.date].push(s);
-  }
-  for (const iso in map) {
-    map[iso].sort((a, b) => (a.from_time || '').localeCompare(b.from_time || ''));
-  }
-  return map;
-});
+const weekDays = computed(() => getWeekDays(props.currentDate));
+const DAY_START_HOUR = 7;
+const DAY_END_HOUR = 22;
+const HOUR_HEIGHT = 68;
+const hours = computed(() =>
+  Array.from(
+    { length: DAY_END_HOUR - DAY_START_HOUR + 1 },
+    (_, index) => DAY_START_HOUR + index,
+  ),
+);
+const timelineHeight = computed(() => (DAY_END_HOUR - DAY_START_HOUR) * HOUR_HEIGHT);
 
 function barColor(state) {
-  if (state === 'current') return 'bg-accent-500';
-  if (state === 'past') return 'bg-neutral-300';
-  return 'bg-brand-900';
+  if (state === 'current') return 'bg-ln-blue-600';
+  if (state === 'cancelled') return 'bg-ln-error';
+  if (state === 'past') return 'bg-ln-gray-300';
+  return 'bg-orange-500';
+}
+
+const calendarSessions = computed(() => {
+  const dayIndexByIso = Object.fromEntries(
+    weekDays.value.map((day, index) => [day.iso, index]),
+  );
+
+  const sessionsByDay = new Map();
+  for (const rawSession of props.sessions) {
+    const session = normalizePlanningSession(rawSession);
+    const dayIndex = dayIndexByIso[sessionDate(session)];
+    if (dayIndex === undefined) continue;
+    if (!sessionsByDay.has(dayIndex)) sessionsByDay.set(dayIndex, []);
+    sessionsByDay.get(dayIndex).push(session);
+  }
+
+  const items = [];
+  for (const [dayIndex, daySessions] of sessionsByDay.entries()) {
+    for (const layoutItem of buildSessionOverlapLayout(daySessions)) {
+      items.push({
+        ...layoutItem,
+        dayIndex,
+        state: getSessionVisualState(layoutItem.session),
+      });
+    }
+  }
+
+  return items.sort((a, b) =>
+    a.dayIndex - b.dayIndex ||
+    (a.session.from_time || '').localeCompare(b.session.from_time || ''),
+  );
+});
+
+function sessionStyle(item) {
+  const dayStart = DAY_START_HOUR * 60;
+  const dayEnd = DAY_END_HOUR * 60;
+  const start = clamp(timeToMinutes(item.session.from_time, dayStart), dayStart, dayEnd);
+  const duration = sessionDurationMinutes(item.session, 60);
+  const top = ((start - dayStart) / 60) * HOUR_HEIGHT;
+  const height = clamp((duration / 60) * HOUR_HEIGHT, 44, timelineHeight.value - top);
+  const dayWidth = 100 / 7;
+  const columnWidth = dayWidth / item.columnCount;
+  const leftPercent = (item.dayIndex * dayWidth) + (item.columnIndex * columnWidth);
+
+  return {
+    top: `${top}px`,
+    height: `${height}px`,
+    left: `calc(${leftPercent}% + 4px)`,
+    width: `calc(${columnWidth}% - 8px)`,
+  };
+}
+
+function sessionCardClass(state) {
+  if (state === 'cancelled') return 'opacity-75 bg-ln-error-bg border-red-200';
+  if (state === 'past') return 'opacity-60 bg-ln-gray-50 border-ln-gray-200';
+  if (state === 'current') return 'bg-ln-blue-50 border-ln-blue-200 shadow-card';
+  return 'bg-orange-50 border-orange-200 shadow-card';
+}
+
+function titleClass(state) {
+  return state === 'cancelled' ? 'line-through text-ln-error' : 'text-ln-gray-900';
 }
 </script>
 
@@ -55,58 +109,111 @@ function barColor(state) {
   </div>
 
   <!-- Desktop grid -->
-  <div class="hidden md:grid grid-cols-5 gap-3">
-    <div
-      v-for="day in weekDays"
-      :key="day.iso"
-      class="flex flex-col gap-2"
-    >
-      <!-- Day header -->
-      <div
-        class="text-center pb-2 border-b"
-        :class="day.isToday ? 'border-brand-900' : 'border-subtle'"
-      >
+  <section class="hidden md:block rounded-xl border border-ln-gray-200 bg-white shadow-card overflow-hidden">
+    <div class="grid grid-cols-[64px_1fr] border-b border-ln-gray-200">
+      <div class="bg-ln-gray-50"></div>
+      <div class="grid grid-cols-7">
         <div
-          class="text-[10px] font-semibold uppercase tracking-wider"
-          :class="day.isToday ? 'text-brand-900' : 'text-neutral-500'"
+          v-for="day in weekDays"
+          :key="day.iso"
+          class="py-3 text-center border-l border-ln-gray-200"
+          :class="day.isWeekend ? 'bg-slate-50' : 'bg-white'"
         >
-          {{ day.label }}
-        </div>
-        <div
-          class="text-xl font-bold mt-1"
-          :class="day.isToday ? 'text-brand-900' : 'text-neutral-950'"
-        >
-          {{ day.dayNumber }}
-        </div>
-      </div>
-
-      <!-- Sessions of the day -->
-      <div v-if="sessionsByDay[day.iso].length === 0" class="text-center py-2">
-        <span class="text-xs text-neutral-400">—</span>
-      </div>
-      <div
-        v-for="s in sessionsByDay[day.iso]"
-        :key="s.name"
-        class="bg-white rounded-md border border-subtle p-2.5 flex gap-2"
-        :class="{ 'opacity-60': getSessionState(s) === 'past' }"
-      >
-        <div
-          class="w-1 self-stretch rounded-xs flex-shrink-0"
-          :class="barColor(getSessionState(s))"
-          aria-hidden="true"
-        ></div>
-        <div class="min-w-0 flex-1">
-          <div class="text-xs font-semibold text-neutral-950 truncate">
-            {{ s.title }}
+          <div
+            class="text-[11px] font-semibold capitalize"
+            :class="day.isToday ? 'text-ln-blue-900' : day.isWeekend ? 'text-ln-gray-400' : 'text-ln-gray-600'"
+          >
+            {{ day.label }}
           </div>
-          <div class="text-[10px] text-neutral-500 mt-0.5">
-            {{ formatTimeRange(s) }}
-          </div>
-          <div v-if="s.room" class="text-[10px] text-neutral-500 truncate">
-            {{ s.room }}
+          <div
+            class="mx-auto mt-1 flex h-7 min-w-7 items-center justify-center rounded-full px-2 text-sm font-bold"
+            :class="day.isToday ? 'bg-orange-500 text-white' : 'text-ln-gray-900'"
+          >
+            {{ day.dayNumber }}
           </div>
         </div>
       </div>
     </div>
-  </div>
+
+    <div class="grid grid-cols-[64px_1fr]">
+      <div
+        class="relative border-r border-ln-gray-200 bg-ln-gray-50"
+        :style="{ height: `${timelineHeight}px` }"
+      >
+        <div
+          v-for="hour in hours"
+          :key="hour"
+          class="absolute right-3 -translate-y-1/2 text-xs tabular-nums text-ln-gray-500"
+          :style="{ top: `${(hour - DAY_START_HOUR) * HOUR_HEIGHT}px` }"
+        >
+          {{ String(hour).padStart(2, '0') }}
+        </div>
+      </div>
+
+      <div class="relative bg-white" :style="{ height: `${timelineHeight}px` }">
+        <div class="absolute inset-0 grid grid-cols-7">
+          <div
+            v-for="day in weekDays"
+            :key="`col-${day.iso}`"
+            class="border-l border-ln-gray-200"
+            :class="day.isWeekend ? 'bg-slate-50' : 'bg-white'"
+          ></div>
+        </div>
+        <div
+          v-for="hour in hours"
+          :key="`line-${hour}`"
+          class="absolute left-0 right-0 border-t border-ln-gray-200"
+          :style="{ top: `${(hour - DAY_START_HOUR) * HOUR_HEIGHT}px` }"
+        ></div>
+        <div
+          v-for="hour in hours.slice(0, -1)"
+          :key="`half-${hour}`"
+          class="absolute left-0 right-0 border-t border-ln-gray-100"
+          :style="{ top: `${((hour - DAY_START_HOUR) * HOUR_HEIGHT) + (HOUR_HEIGHT / 2)}px` }"
+        ></div>
+
+        <article
+          v-for="item in calendarSessions"
+          :key="item.session.name || `${item.session.title}-${item.session.from_time}`"
+          class="absolute rounded-lg border p-2 overflow-hidden"
+          :class="sessionCardClass(item.state)"
+          :style="sessionStyle(item)"
+          :title="`${formatTimeRange(item.session)} · ${item.session.title}`"
+        >
+          <div class="flex h-full gap-2">
+            <div
+              class="w-1 rounded-full flex-shrink-0"
+              :class="[barColor(item.state), item.state === 'current' ? 'motion-safe:animate-pulse' : '']"
+              aria-hidden="true"
+            ></div>
+            <div class="min-w-0">
+              <span class="mb-1 inline-flex rounded-full bg-orange-500 px-2 py-0.5 text-[10px] font-bold uppercase leading-none text-white">
+                Cours
+              </span>
+              <h3 class="truncate text-xs font-bold" :class="titleClass(item.state)">
+                {{ item.session.title }}
+              </h3>
+              <p class="truncate text-[10px] text-ln-gray-600">
+                {{ formatTimeRange(item.session) }}
+              </p>
+              <p v-if="item.session.room" class="truncate text-[10px] text-ln-gray-500">
+                {{ item.session.room }}
+              </p>
+              <p v-if="item.state === 'cancelled'" class="truncate text-[10px] font-semibold text-ln-error">
+                Annulé
+              </p>
+            </div>
+          </div>
+        </article>
+
+        <div
+          v-if="calendarSessions.length === 0"
+          class="absolute inset-0 flex items-center justify-center text-sm text-ln-gray-400"
+        >
+          Aucune séance publiée cette semaine.
+        </div>
+      </div>
+    </div>
+  </section>
+
 </template>

@@ -1,7 +1,7 @@
 {
-  "name": "mela-design-system",
+  "name": "emela-design-system",
   "private": true,
   "version": "0.1.0",
-  "description": "Design tokens partagés mela (Vue + SCSS + Tailwind)",
+  "description": "Design tokens partagés emela (Vue + SCSS + Tailwind)",
   "type": "module"
 }

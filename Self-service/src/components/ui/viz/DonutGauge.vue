@@ -24,11 +24,11 @@ const displayPercent = computed(() => Math.round(percent.value * 100));
 
 const strokeClass = computed(() => {
   const map = {
-    brand:   'text-brand-900',
-    success: 'text-success-600',
-    warning: 'text-warning-600',
-    error:   'text-error-600',
-    info:    'text-info-600',
+    brand:   'text-ln-blue-900',
+    success: 'text-ln-success',
+    warning: 'text-ln-warning',
+    error:   'text-ln-error',
+    info:    'text-ln-blue-600',
   };
   return map[props.color];
 });
@@ -52,7 +52,7 @@ const center = computed(() => props.size / 2);
         fill="none"
         stroke="currentColor"
         stroke-width="5"
-        class="text-neutral-100"
+        class="text-ln-gray-100"
       />
       <circle
         :cx="center"
@@ -67,7 +67,7 @@ const center = computed(() => props.size / 2);
         :class="strokeClass"
       />
     </svg>
-    <div class="absolute inset-0 flex items-center justify-center text-sm font-bold text-neutral-950">
+    <div class="absolute inset-0 flex items-center justify-center text-sm font-bold text-ln-gray-900">
       {{ displayPercent }}%
     </div>
   </div>

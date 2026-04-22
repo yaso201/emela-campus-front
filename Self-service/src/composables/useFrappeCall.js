@@ -53,6 +53,13 @@ export function useFrappeCall(method, params = {}, options = {}) {
         }
         const err = new Error(message);
         err.status = response.status;
+        // P3: classification explicite pour les appelants
+        // 'auth' = 401 (session expirée, géré globalement par useAuth)
+        // 'forbidden' = 403 (interdit métier, à gérer localement)
+        // 'error' = autre erreur serveur
+        err.category = response.status === 401 ? 'auth'
+          : response.status === 403 ? 'forbidden'
+          : 'error';
         throw err;
       }
 

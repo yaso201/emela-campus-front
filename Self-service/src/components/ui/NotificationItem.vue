@@ -10,22 +10,22 @@ defineProps({
 
 <template>
   <div
-    class="px-4 py-3.5 flex items-start gap-2.5 border-b border-subtle last:border-b-0"
-    :class="{ 'bg-brand-50/30': !read }"
+    class="px-4 py-3.5 flex items-start gap-2.5 border-b border-ln-gray-200 last:border-b-0"
+    :class="{ 'bg-ln-blue-50/30': !read }"
   >
     <span
       class="w-2 h-2 rounded-full flex-shrink-0 mt-1.5"
-      :class="read ? 'border border-neutral-300 bg-transparent' : 'bg-brand-500'"
+      :class="read ? 'border border-ln-gray-300 bg-transparent' : 'bg-ln-blue-500'"
       :aria-label="read ? 'Lu' : 'Non lu'"
     ></span>
     <div class="flex-1 min-w-0">
       <div
         class="text-sm"
-        :class="read ? 'text-neutral-600' : 'text-neutral-950 font-medium'"
+        :class="read ? 'text-ln-gray-600' : 'text-ln-gray-900 font-medium'"
       >
         {{ title }}
       </div>
-      <div class="text-xs text-neutral-400 mt-0.5">{{ timestamp }}</div>
+      <div class="text-xs text-ln-gray-400 mt-0.5">{{ timestamp }}</div>
     </div>
   </div>
 </template>

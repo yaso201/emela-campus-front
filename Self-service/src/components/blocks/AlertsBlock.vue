@@ -4,11 +4,13 @@
 import { useCockpitBlock } from '@/composables/useCockpitBlock';
 import CockpitBlockWrapper from './CockpitBlockWrapper.vue';
 import AlertBlock from '@/components/ui/AlertBlock.vue';
+import { normalizePortalHref } from '@/utils/portalUrls';
 
 const alerts = useCockpitBlock('alerts');
 
 function handleAction(url) {
-  if (url) window.location.href = url;
+  const href = normalizePortalHref(url);
+  if (href) window.location.href = href;
 }
 </script>
 

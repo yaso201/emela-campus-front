@@ -19,7 +19,7 @@ const trendDirection = computed(() => {
 });
 
 const trendClass = computed(() =>
-  trendDirection.value === 'up' ? 'text-success-700' : 'text-error-700',
+  trendDirection.value === 'up' ? 'text-ln-success' : 'text-ln-error',
 );
 
 const trendText = computed(() => {
@@ -30,11 +30,11 @@ const trendText = computed(() => {
 </script>
 
 <template>
-  <div class="bg-white rounded-lg border border-subtle p-4">
-    <div class="text-xs text-neutral-500 mb-1.5">{{ label }}</div>
+  <div class="bg-white rounded-lg border border-ln-gray-200 p-4">
+    <div class="text-xs text-ln-gray-500 mb-1.5">{{ label }}</div>
     <div class="flex items-baseline gap-1.5 flex-wrap">
-      <span class="text-2xl font-bold text-neutral-950 tabular-nums">{{ value }}</span>
-      <span v-if="unit" class="text-xs text-neutral-500">{{ unit }}</span>
+      <span class="text-2xl font-bold text-ln-gray-900 tabular-nums">{{ value }}</span>
+      <span v-if="unit" class="text-xs text-ln-gray-500">{{ unit }}</span>
       <span v-if="trend !== null" class="text-xs font-medium inline-flex items-center gap-1" :class="trendClass">
         <svg
           v-if="trendDirection === 'up'"
@@ -59,7 +59,7 @@ const trendText = computed(() => {
         {{ trendText }}
       </span>
     </div>
-    <div v-if="subtitle && trend === null" class="text-xs text-neutral-500 mt-1.5">
+    <div v-if="subtitle && trend === null" class="text-xs text-ln-gray-500 mt-1.5">
       {{ subtitle }}
     </div>
     <div v-if="$slots.viz" class="mt-2.5">

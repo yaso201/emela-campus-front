@@ -17,10 +17,10 @@ const props = defineProps({
 
 const severityClasses = computed(() => {
   const map = {
-    error:   { bg: 'bg-error-100',   border: 'border-l-error-600',   text: 'text-error-700',   btn: 'bg-error-600 hover:bg-error-700' },
-    warning: { bg: 'bg-warning-100', border: 'border-l-warning-600', text: 'text-warning-700', btn: 'bg-warning-600 hover:bg-warning-700' },
-    info:    { bg: 'bg-info-100',    border: 'border-l-info-600',    text: 'text-info-700',    btn: 'bg-info-600 hover:bg-info-700' },
-    success: { bg: 'bg-success-100', border: 'border-l-success-600', text: 'text-success-700', btn: 'bg-success-600 hover:bg-success-700' },
+    error:   { bg: 'bg-ln-error-bg',   border: 'border-l-ln-error',   text: 'text-ln-error',   btn: 'bg-ln-error hover:bg-ln-error' },
+    warning: { bg: 'bg-ln-warning-bg', border: 'border-l-ln-warning', text: 'text-ln-warning', btn: 'bg-ln-warning hover:bg-ln-warning' },
+    info:    { bg: 'bg-ln-blue-100',    border: 'border-l-ln-blue-600',    text: 'text-ln-blue-700',    btn: 'bg-ln-blue-600 hover:bg-ln-blue-700' },
+    success: { bg: 'bg-ln-success-bg', border: 'border-l-ln-success', text: 'text-ln-success', btn: 'bg-ln-success hover:bg-ln-success' },
   };
   return map[props.severity];
 });

@@ -9,19 +9,19 @@ defineProps({
 
 <template>
   <div
-    class="bg-white rounded-lg border border-subtle p-6"
+    class="bg-white rounded-lg border border-ln-gray-200 p-6"
     role="status"
     aria-label="Chargement en cours"
   >
     <div
       v-if="showTitle"
-      class="h-4 bg-neutral-100 rounded-xs w-1/3 mb-4 motion-safe:animate-pulse"
+      class="h-4 bg-ln-gray-100 rounded-xs w-1/3 mb-4 motion-safe:animate-pulse"
     ></div>
     <div class="space-y-3">
       <div
         v-for="i in lines"
         :key="i"
-        class="h-3 bg-neutral-100 rounded-xs motion-safe:animate-pulse"
+        class="h-3 bg-ln-gray-100 rounded-xs motion-safe:animate-pulse"
         :class="i === lines ? 'w-2/3' : 'w-full'"
       ></div>
     </div>

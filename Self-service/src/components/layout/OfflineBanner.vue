@@ -9,7 +9,7 @@ const pwa = usePwaStore();
 <template>
   <div
     v-if="pwa.isOffline"
-    class="fixed top-0 inset-x-0 z-toast bg-warning-100 border-b border-warning-600/20 text-warning-700 text-xs font-medium px-4 py-2 flex items-center justify-center gap-2"
+    class="fixed top-0 inset-x-0 z-50 bg-ln-warning-bg border-b border-ln-warning/20 text-ln-warning text-xs font-medium px-4 py-2 flex items-center justify-center gap-2"
     role="status"
     aria-live="polite"
   >

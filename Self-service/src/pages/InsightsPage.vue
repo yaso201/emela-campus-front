@@ -1,6 +1,6 @@
 <script setup>
 // InsightsPage — page de pilotage direction (Phase 7)
-// Lit les 56 KPIs de university_finance via frappe.client.get_list (RBAC auto).
+// Lit les KPIs direction via l'endpoint dédié get_director_kpis.
 // Filtrage par catégorie + groupement visuel par domaine.
 // Accessible uniquement aux profils 'director' via le routing (meta.requiresProfile).
 import { ref, computed, onMounted } from 'vue';
@@ -114,8 +114,8 @@ const isAuthorized = computed(() => profile.profile === 'director');
 <template>
   <div class="flex flex-col gap-6">
     <header>
-      <h1 class="text-2xl font-bold text-neutral-950 mb-1">Pilotage</h1>
-      <p class="text-sm text-neutral-600">
+      <h1 class="text-2xl font-bold text-ln-gray-900 mb-1">Pilotage</h1>
+      <p class="text-sm text-ln-gray-600">
         Indicateurs clés de la plateforme LaNEM. Chaque source est interrogée indépendamment
         pour ne pas bloquer la consultation.
       </p>
@@ -124,24 +124,23 @@ const isAuthorized = computed(() => profile.profile === 'director');
     <!-- Garde-fou profil -->
     <div
       v-if="!profile.isLoading && !isAuthorized"
-      class="bg-white rounded-lg border border-subtle p-6 text-sm text-neutral-500"
+      class="bg-white rounded-lg border border-ln-gray-200 p-6 text-sm text-ln-gray-500"
     >
       Cette page est réservée aux profils Direction.
     </div>
 
-    <template v-else>
+    <div v-else class="flex flex-col gap-6">
       <!-- Barre de stats + filtres -->
-      <div class="bg-white rounded-lg border border-subtle p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div class="bg-white rounded-lg border border-ln-gray-200 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div class="flex items-center gap-2">
-          <span class="text-sm font-semibold text-neutral-950 tabular-nums">
+          <span class="text-sm font-semibold text-ln-gray-900 tabular-nums">
             {{ availableKpis }}
           </span>
-          <span class="text-sm text-neutral-500">/ {{ totalKpis }} indicateurs disponibles</span>
+          <span class="text-sm text-ln-gray-500">/ {{ totalKpis }} indicateurs disponibles</span>
           <StatusBadge
             v-if="!loading && totalKpis > 0"
-            :variant="availableKpis / Math.max(1, totalKpis) > 0.7 ? 'success' : availableKpis / Math.max(1, totalKpis) > 0.3 ? 'warning' : 'error'"
+            :status="availableKpis / Math.max(1, totalKpis) > 0.7 ? 'validated' : availableKpis / Math.max(1, totalKpis) > 0.3 ? 'compensated' : 'failed'"
             :label="`${Math.round((availableKpis / Math.max(1, totalKpis)) * 100)}%`"
-            :dot="false"
           />
         </div>
 
@@ -149,10 +148,10 @@ const isAuthorized = computed(() => profile.profile === 'director');
         <div class="flex flex-wrap gap-1">
           <button
             type="button"
-            class="px-2.5 py-1 text-xs font-medium rounded-sm focus:outline-none focus:ring-2 focus:ring-brand-500/25 min-h-[32px]"
+            class="px-2.5 py-1 text-xs font-medium rounded-sm focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25 min-h-[32px]"
             :class="selectedCategory === 'all'
-              ? 'bg-brand-900 text-white'
-              : 'bg-white text-neutral-600 border border-default hover:bg-neutral-100'"
+              ? 'bg-ln-blue-900 text-white'
+              : 'bg-white text-ln-gray-600 border border-ln-gray-200 hover:bg-ln-gray-100'"
             @click="selectedCategory = 'all'"
           >
             Tous
@@ -161,10 +160,10 @@ const isAuthorized = computed(() => profile.profile === 'director');
             v-for="cat in CATEGORIES"
             :key="cat"
             type="button"
-            class="px-2.5 py-1 text-xs font-medium rounded-sm focus:outline-none focus:ring-2 focus:ring-brand-500/25 min-h-[32px]"
+            class="px-2.5 py-1 text-xs font-medium rounded-sm focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25 min-h-[32px]"
             :class="selectedCategory === cat
-              ? 'bg-brand-900 text-white'
-              : 'bg-white text-neutral-600 border border-default hover:bg-neutral-100'"
+              ? 'bg-ln-blue-900 text-white'
+              : 'bg-white text-ln-gray-600 border border-ln-gray-200 hover:bg-ln-gray-100'"
             @click="selectedCategory = cat"
           >
             {{ cat }}
@@ -189,7 +188,7 @@ const isAuthorized = computed(() => profile.profile === 'director');
       <!-- Empty -->
       <div
         v-else-if="kpisByCategory.length === 0"
-        class="bg-white rounded-lg border border-subtle p-6 text-sm text-neutral-500 text-center"
+        class="bg-white rounded-lg border border-ln-gray-200 p-6 text-sm text-ln-gray-500 text-center"
       >
         Aucun indicateur disponible pour ce filtre.
       </div>
@@ -203,6 +202,6 @@ const isAuthorized = computed(() => profile.profile === 'director');
           :kpis="group.kpis"
         />
       </div>
-    </template>
+    </div>
   </div>
 </template>

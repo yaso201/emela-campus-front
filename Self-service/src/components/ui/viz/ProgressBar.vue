@@ -21,11 +21,11 @@ const percent = computed(() => {
 
 const fillClass = computed(() => {
   const map = {
-    brand:   'bg-brand-900',
-    success: 'bg-success-600',
-    warning: 'bg-warning-600',
-    error:   'bg-error-600',
-    info:    'bg-info-600',
+    brand:   'bg-ln-blue-900',
+    success: 'bg-ln-success',
+    warning: 'bg-ln-warning',
+    error:   'bg-ln-error',
+    info:    'bg-ln-blue-600',
   };
   return map[props.color];
 });
@@ -33,7 +33,7 @@ const fillClass = computed(() => {
 
 <template>
   <div
-    class="h-1.5 bg-neutral-100 rounded-sm overflow-hidden"
+    class="h-1.5 bg-ln-gray-100 rounded-sm overflow-hidden"
     role="progressbar"
     :aria-valuenow="value"
     :aria-valuemin="0"
