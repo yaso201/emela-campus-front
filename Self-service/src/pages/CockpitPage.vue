@@ -215,7 +215,7 @@ const indicatorProgress = computed(() => {
   <div v-else-if="profileName === 'director'" :key="`director-${refreshKey}`" class="flex flex-col gap-8">
     <MetricsBlock />
     <router-link
-      to="/app-emela/insights"
+      to="/insights"
       class="flex items-center justify-between bg-ln-blue-900 text-white rounded-lg p-5 hover:bg-ln-blue-700 focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25 transition-colors min-h-[44px]"
     >
       <div>

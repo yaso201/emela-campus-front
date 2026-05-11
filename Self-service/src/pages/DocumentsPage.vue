@@ -5,6 +5,7 @@
 // ne modifie et n'émet aucun document.
 //
 import { computed, ref, watch } from 'vue';
+import DOMPurify from 'dompurify';
 import { useFrappeCall } from '@/composables/useFrappeCall';
 import { useProfileStore } from '@/stores/profile';
 import BlockSkeleton from '@/components/ui/BlockSkeleton.vue';
@@ -85,6 +86,30 @@ const previewHtml = ref('');
 const previewLoading = ref(false);
 const previewError = ref(null);
 const previewTitle = ref('');
+
+// HTML preview is sanitised even though it only comes from whitelisted backend
+// endpoints — defence in depth against compromised document sources.
+const PURIFY_CONFIG = {
+  ALLOWED_TAGS: [
+    'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'hr',
+    'ul', 'ol', 'li', 'dl', 'dt', 'dd',
+    'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td', 'caption', 'colgroup', 'col',
+    'strong', 'em', 'b', 'i', 'u', 's', 'sub', 'sup', 'mark', 'small',
+    'a', 'img', 'figure', 'figcaption',
+    'blockquote', 'pre', 'code',
+    'div', 'span', 'section', 'article',
+  ],
+  ALLOWED_ATTR: [
+    'href', 'target', 'rel', 'src', 'alt', 'title', 'width', 'height',
+    'class', 'id', 'style', 'colspan', 'rowspan', 'scope',
+  ],
+  ALLOW_DATA_ATTR: false,
+};
+
+const sanitizedPreviewHtml = computed(() => {
+  if (!previewHtml.value) return '';
+  return DOMPurify.sanitize(previewHtml.value, PURIFY_CONFIG);
+});
 
 const ALLOWED_PREVIEW_ENDPOINTS = [
   'portal_app.api.academic_documents.get_document_content',
@@ -536,8 +561,8 @@ const showProfileGuard = computed(() => !profile.isLoading && !profile.isGuest &
                 :message="previewError"
                 :retry="null"
               />
-              <!-- Le contenu HTML ci-dessous provient exclusivement des endpoints whitelistés (get_document_content / get_receipt_html). Jamais de rendering HTML sur des champs utilisateur. -->
-              <div v-else class="text-sm text-ln-gray-800" v-html="previewHtml" />
+              <!-- HTML from whitelisted endpoints only, then sanitised via DOMPurify. -->
+              <div v-else class="text-sm text-ln-gray-800" v-html="sanitizedPreviewHtml" />
             </div>
 
             <!-- Footer modale -->

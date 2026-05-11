@@ -31,8 +31,18 @@ const allNavItems = [
   { to: '/results', label: 'Résultats', icon: 'chart', profiles: ['student'] },
   { to: '/evals', label: 'Évaluations', icon: 'star', profiles: ['student'] },
   { to: '/documents', label: 'Documents', icon: 'file-text', profiles: ['student'] },
+  { to: '/account/leave-requests', label: 'Congé académique', icon: 'file-text', profiles: ['student'] },
   { to: '/internship', label: 'Stage', icon: 'briefcase', profiles: ['student'] },
   { to: '/insights', label: 'Pilotage', icon: 'bar-chart', profiles: ['director'] },
+  { to: '/attendance-paper', label: 'Présences papier', icon: 'file-text', profiles: ['instructor', 'director', 'generic', 'employee'] },
+  { to: '/attendance-kpis', label: 'KPI présences', icon: 'bar-chart', profiles: ['director', 'generic', 'employee'] },
+  { to: '/attendance-corrections', label: 'Corrections', icon: 'file-text', profiles: ['student', 'instructor', 'director', 'generic', 'employee'] },
+  { to: '/attendance-leaves', label: 'Leaves', icon: 'file-text', profiles: ['student', 'director', 'generic', 'employee'] },
+  { to: '/attendance-antifraud', label: 'Revue antifraude', icon: 'shield-alert', profiles: ['director', 'generic', 'employee'] },
+  { to: '/attendance-sync-anomalies', label: 'Anomalies sync', icon: 'refresh-cw', profiles: ['director', 'generic', 'employee'] },
+  { to: '/attendance-pdfs', label: 'PDF attendance', icon: 'file-text', profiles: ['student', 'instructor', 'director', 'generic', 'employee'] },
+  { to: '/attendance-compliance', label: 'Conformité', icon: 'shield-check', profiles: ['director', 'generic', 'employee'] },
+  { to: '/attendance-observability', label: 'Santé attendance', icon: 'activity', profiles: ['director', 'generic', 'employee'] },
   { to: '/support', label: 'Support', icon: 'help-circle', profiles: ['student', 'instructor', 'director', 'candidate', 'generic', 'employee'] },
   { to: '/notifications', label: 'Notifications', icon: 'bell', profiles: ['student', 'instructor', 'director', 'candidate', 'generic', 'employee'] },
   { to: '/account', label: 'Mon compte', icon: 'user', profiles: ['student', 'instructor', 'director', 'candidate', 'generic', 'employee'] },
@@ -40,7 +50,7 @@ const allNavItems = [
 
 const visibleItems = computed(() => {
   const current = profile.profile || 'generic';
-  return allNavItems.filter((item) => item.profiles.includes(current));
+  return allNavItems.filter((item) => item.profiles.includes(current) && (!item.requiresDesk || profile.canAccessDesk));
 });
 
 function close() {

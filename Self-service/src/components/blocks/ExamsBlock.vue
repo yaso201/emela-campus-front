@@ -14,16 +14,16 @@ import BlockError from '@/components/ui/BlockError.vue';
 import { GraduationCap, Clock, MapPin } from 'lucide-vue-next';
 
 // Appel API — student_id résolu automatiquement depuis session (DEC-124)
-const { data, loading, error, reload } = useFrappeCall(
+const examsResource = useFrappeCall(
   'portal_app.api.cockpit.get_upcoming_exams'
 );
 
 // Le bloc ne s'affiche que s'il y a des examens (D05 §5.1 — pas de bloc fantôme)
-const exams = computed(() => data?.exams ?? []);
+const exams = computed(() => examsResource.data?.exams ?? []);
 const hasExams = computed(() => exams.value.length > 0);
 
 // Afficher le bloc uniquement si : loading, error, ou hasExams
-const shouldDisplay = computed(() => loading.value || error.value || hasExams.value);
+const shouldDisplay = computed(() => examsResource.loading || examsResource.error || hasExams.value);
 
 // Libellés des types d'épreuves — custom_session_type (DEC-124)
 const typeLabels = {
@@ -77,14 +77,14 @@ function getExamTypeClass(type) {
     </h2>
 
     <!-- État chargement -->
-    <BlockSkeleton v-if="loading" :lines="3" :show-title="false" />
+    <BlockSkeleton v-if="examsResource.loading" :lines="3" :show-title="false" />
 
     <!-- État erreur -->
     <BlockError
-      v-else-if="error"
+      v-else-if="examsResource.error"
       title="Examens indisponibles"
-      :message="error.message || 'Erreur réseau'"
-      :retry="reload"
+      :message="examsResource.error.message || 'Erreur réseau'"
+      :retry="examsResource.reload"
     />
 
     <!-- État data -->
@@ -104,7 +104,7 @@ function getExamTypeClass(type) {
 
         <!-- Intitulé du cours -->
         <div class="text-sm font-medium text-ln-gray-900 leading-tight">
-          {{ exam.course }}
+          {{ exam.course_name || exam.course }}
         </div>
 
         <!-- Métadonnées : date, heure, salle -->

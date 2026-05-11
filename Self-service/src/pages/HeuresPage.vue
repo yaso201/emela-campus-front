@@ -56,8 +56,8 @@ async function loadHours() {
 
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const json = await response.json();
-    hours.value = json.message?.summary;
-    sessions.value = json.message?.sessions || [];
+    hours.value = json.message;
+    sessions.value = json.message?.details || [];
   } catch (err) {
     error.value = err.message;
   } finally {
@@ -163,7 +163,7 @@ function formatTime(timeStr) {
           <div class="flex items-center gap-3">
             <Clock class="w-8 h-8 text-ln-blue-600" />
             <div>
-              <div class="text-2xl font-bold text-ln-blue-900">{{ hours.total_hours.toFixed(1) }}h</div>
+              <div class="text-2xl font-bold text-ln-blue-900">{{ hours?.total_hours?.toFixed(1) ?? '0.0' }}h</div>
               <div class="text-xs text-ln-blue-600">Total heures</div>
             </div>
           </div>
@@ -173,7 +173,7 @@ function formatTime(timeStr) {
           <div class="flex items-center gap-3">
             <Calendar class="w-8 h-8 text-ln-gray-400" />
             <div>
-              <div class="text-2xl font-bold text-ln-gray-900">{{ hours.session_count }}</div>
+              <div class="text-2xl font-bold text-ln-gray-900">{{ hours?.session_count ?? 0 }}</div>
               <div class="text-xs text-ln-gray-500">Séances</div>
             </div>
           </div>
@@ -186,7 +186,7 @@ function formatTime(timeStr) {
             </div>
             <div>
               <div class="text-2xl font-bold text-ln-gray-900">
-                {{ (hours.total_hours / (hours.session_count || 1)).toFixed(1) }}h
+                {{ ((hours?.total_hours ?? 0) / (hours?.session_count || 1)).toFixed(1) }}h
               </div>
               <div class="text-xs text-ln-gray-500">Moyenne/séance</div>
             </div>

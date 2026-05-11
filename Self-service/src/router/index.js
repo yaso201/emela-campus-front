@@ -57,13 +57,67 @@ const routes = [
     path: '/internship',
     name: 'internship',
     component: () => import('@/pages/InternshipPage.vue'),
-    meta: { label: 'Stage', icon: 'briefcase' },
+    meta: { label: 'Stage', icon: 'briefcase', requiresProfile: ['student'] },
   },
   {
     path: '/insights',
     name: 'insights',
     component: () => import('@/pages/InsightsPage.vue'),
     meta: { label: 'Pilotage', icon: 'bar-chart', requiresProfile: ['director'] },
+  },
+  {
+    path: '/attendance-paper',
+    name: 'attendance-paper',
+    component: () => import('@/pages/AttendancePaperPage.vue'),
+    meta: { label: 'Présences papier', icon: 'file-text', requiresProfile: ['instructor', 'director', 'generic', 'employee'] },
+  },
+  {
+    path: '/attendance-kpis',
+    name: 'attendance-kpis',
+    component: () => import('@/pages/AttendanceKpiPage.vue'),
+    meta: { label: 'KPI présences', icon: 'bar-chart', requiresProfile: ['director'] },
+  },
+  {
+    path: '/attendance-corrections',
+    name: 'attendance-corrections',
+    component: () => import('@/pages/AttendanceCorrectionsPage.vue'),
+    meta: { label: 'Corrections attendance', icon: 'file-text', requiresProfile: ['student', 'instructor', 'director', 'generic', 'employee'] },
+  },
+  {
+    path: '/attendance-leaves',
+    name: 'attendance-leaves',
+    component: () => import('@/pages/AttendanceLeavesPage.vue'),
+    meta: { label: 'Leaves attendance', icon: 'file-text', requiresProfile: ['student', 'director', 'generic', 'employee'] },
+  },
+  {
+    path: '/attendance-antifraud',
+    name: 'attendance-antifraud',
+    component: () => import('@/pages/AttendanceAntifraudPage.vue'),
+    meta: { label: 'Revue antifraude', icon: 'shield-alert', requiresProfile: ['director', 'generic', 'employee'] },
+  },
+  {
+    path: '/attendance-sync-anomalies',
+    name: 'attendance-sync-anomalies',
+    component: () => import('@/pages/AttendanceSyncAnomaliesPage.vue'),
+    meta: { label: 'Anomalies sync', icon: 'refresh-cw', requiresProfile: ['director', 'generic', 'employee'] },
+  },
+  {
+    path: '/attendance-pdfs',
+    name: 'attendance-pdfs',
+    component: () => import('@/pages/AttendancePdfPage.vue'),
+    meta: { label: 'PDF attendance', icon: 'file-text', requiresProfile: ['student', 'instructor', 'director', 'generic', 'employee'] },
+  },
+  {
+    path: '/attendance-compliance',
+    name: 'attendance-compliance',
+    component: () => import('@/pages/AttendanceCompliancePage.vue'),
+    meta: { label: 'Conformité attendance', icon: 'shield-check', requiresProfile: ['director', 'generic', 'employee'] },
+  },
+  {
+    path: '/attendance-observability',
+    name: 'attendance-observability',
+    component: () => import('@/pages/AttendanceObservabilityPage.vue'),
+    meta: { label: 'Santé attendance', icon: 'activity', requiresProfile: ['director', 'generic', 'employee'] },
   },
   // Routes enseignant — Zone A (lecture) + Zone B (écriture)
   {
@@ -115,6 +169,18 @@ const routes = [
     name: 'preferences',
     component: () => import('@/pages/PreferencesPage.vue'),
     meta: { label: 'Préférences' },
+  },
+  {
+    path: '/account/security',
+    name: 'account-security',
+    component: () => import('@/pages/TeacherPinForm.vue'),
+    meta: { label: 'PIN enseignant', requiresProfile: ['instructor'] },
+  },
+  {
+    path: '/account/leave-requests',
+    name: 'academic-leave-requests',
+    component: () => import('@/pages/AcademicLeaveRequestsPage.vue'),
+    meta: { label: 'Congé académique', icon: 'file-text', requiresProfile: ['student'] },
   },
   // Route catch-all — redirection vers cockpit (C-004)
   {

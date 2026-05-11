@@ -52,16 +52,7 @@ async function loadStats() {
   }
 }
 
-// Calcul distribution pour barres
-const distribution = computed(() => {
-  if (!stats.value?.distribution) return [];
-  const buckets = stats.value.distribution;
-  const maxCount = Math.max(...buckets.map((b) => b.count), 1);
-  return buckets.map((b) => ({
-    ...b,
-    percent: (b.count / maxCount) * 100,
-  }));
-});
+
 </script>
 
 <template>
@@ -120,32 +111,8 @@ const distribution = computed(() => {
         />
       </div>
 
-      <!-- Distribution des notes -->
-      <Card title="Distribution des notes">
-        <div v-if="distribution.length === 0" class="py-8">
-          <EmptyState label="Aucune donnée de distribution" />
-        </div>
-        <div v-else class="space-y-3">
-          <div
-            v-for="bucket in distribution"
-            :key="bucket.range"
-            class="flex items-center gap-3"
-          >
-            <span class="w-16 text-xs text-ln-gray-500 text-right">{{ bucket.range }}</span>
-            <div class="flex-1 h-6 bg-ln-gray-100 rounded-sm overflow-hidden">
-              <div
-                class="h-full bg-ln-blue-600 transition-all duration-500"
-                :style="{ width: `${bucket.percent}%` }"
-              />
-            </div>
-            <span class="w-8 text-xs text-ln-gray-700 text-right">{{ bucket.count }}</span>
-          </div>
-        </div>
-      </Card>
-
       <!-- Détails -->
-      <div class="grid md:grid-cols-2 gap-4">
-        <Card title="Taux de réussite">
+      <Card title="Taux de réussite">
           <div class="flex items-center justify-between py-2">
             <span class="text-sm text-ln-gray-600">Validé (≥10/20)</span>
             <span class="text-lg font-semibold text-ln-success">
@@ -159,24 +126,6 @@ const distribution = computed(() => {
             </span>
           </div>
         </Card>
-
-        <Card title="Médiane et quartiles">
-          <div class="space-y-2">
-            <div class="flex justify-between">
-              <span class="text-sm text-ln-gray-600">Médiane (Q2)</span>
-              <span class="font-medium">{{ stats.median?.toFixed(1) }}/20</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="text-sm text-ln-gray-600">1er quartile (Q1)</span>
-              <span class="font-medium">{{ stats.q1?.toFixed(1) }}/20</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="text-sm text-ln-gray-600">3e quartile (Q3)</span>
-              <span class="font-medium">{{ stats.q3?.toFixed(1) }}/20</span>
-            </div>
-          </div>
-        </Card>
-      </div>
     </div>
   </div>
 </template>

@@ -48,7 +48,7 @@ function formatDate(isoDate) {
 
 /** Navigue vers la page stage */
 function goToInternship() {
-  router.push('/app-emela/internship');
+  router.push('/internship');
 }
 
 /** Détermine si on affiche le bouton d'action */

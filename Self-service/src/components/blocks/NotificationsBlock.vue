@@ -46,7 +46,7 @@ async function markAsRead(name) {
   try {
     const formData = new URLSearchParams();
     formData.append('notification_name', name);
-    await fetch(
+    const response = await fetch(
       '/api/method/portal_app.api.notifications.mark_notification_read',
       {
         method: 'POST',
@@ -58,6 +58,9 @@ async function markAsRead(name) {
         credentials: 'same-origin',
       },
     );
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
   } catch {
     // Rollback optimistic update
     item.is_read = false;

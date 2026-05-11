@@ -12,7 +12,7 @@ export default {
       colors: {
         // ─── LaNEM Design System v1 ───
         // Référence : DESIGN_SYSTEM_LaNEM_Institutionnel_v1.md §2.2
-        // Migration : brand-* → ln-blue-*, neutral-* → ln-gray-*
+        // Migration terminée : utiliser exclusivement les préfixes ln-*.
 
         'ln-blue': {
           50: '#F4F8FF',   // Fond ultra-clair (hover)
@@ -44,9 +44,8 @@ export default {
         'ln-error': '#B91C1C',
         'ln-error-bg': '#FEF2F2',
 
-        // ─── Anciens tokens OBSOLÈTES ───
-        // Les tokens brand-* et neutral-* sont remplacés par ln-blue-* et ln-gray-*
-        // Voir token-migration-map.js pour le mapping complet
+        // Les anciens noms de tokens ne doivent plus être utilisés.
+        // Voir token-migration-map.js pour le mapping historique complet.
       },
 
       fontFamily: {

@@ -1,6 +1,5 @@
 <script setup>
-// ServicesBlock — Liste des services du portail (dynamique via API)
-// Correction B-005 : remplace la liste hardcodée par un appel à get_all_portal_services
+// ServicesBlock — Liste des services du portail, enrichie par le profil résolu.
 // Réf : U07 §4.8, CORRECTIONS.md B-005
 import { computed } from 'vue';
 import { useFrappeCall } from '@/composables/useFrappeCall';
@@ -22,8 +21,7 @@ import {
   ExternalLink
 } from 'lucide-vue-next';
 
-// Appel API pour récupérer les services dynamiques
-const servicesResource = useFrappeCall('portal_app.api.portal_access.get_all_portal_services');
+const servicesResource = useFrappeCall('portal_app.api.cockpit.get_my_portal_services');
 
 // Mapping des icônes par code d'icône
 const iconComponents = {

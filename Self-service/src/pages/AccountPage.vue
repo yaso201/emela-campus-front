@@ -1,42 +1,46 @@
 <script setup>
 // AccountPage — Mon profil utilisateur
 // UX-PROFIL — Phase 3
+// UI-INST-V1 — Comptes liés Moodle cliquable + conditionnel (DEC-079)
 import { computed } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useProfileStore } from '@/stores/profile';
 import { useAuth } from '@/composables/useAuth';
+import { useFrappeCall } from '@/composables/useFrappeCall';
 import Card from '@/components/ui/Card.vue';
 import {
+  AlertCircle,
+  ExternalLink as ExternalLinkIcon,
   Lock,
   Settings,
   LogOut,
   ChevronRight,
-  ExternalLink
 } from 'lucide-vue-next';
 
 const auth = useAuthStore();
 const profile = useProfileStore();
 const { logout } = useAuth();
+const profileResource = useFrappeCall('portal_app.api.portal_access.get_my_profile');
+
+// UI-INST-V1 — Fetch Moodle service (conditionnel sur compte actif, parité Student/Instructor)
+const moodleResource = useFrappeCall('portal_app.api.portal_access.get_moodle_service');
+
+const hasMoodleAccount = computed(() => !!moodleResource.data);
+const moodleLaunchUrl = computed(() =>
+  moodleResource.data?.target_url || '/app-emela/moodle-launch'
+);
 
 const initials = computed(() => auth.initials);
 const displayName = computed(() => auth.displayName);
 const email = computed(() => auth.user);
 const profileTypeLabel = computed(() => profile.profileLabel);
 
-// Données à enrichir via API ultérieurement
-const fullName = computed(() => auth.displayName);
-const matricule = computed(() => null); // À récupérer via API
-
-const linkedAccounts = computed(() => {
-  const accounts = [];
-  // Moodle
-  accounts.push({
-    type: 'moodle',
-    label: 'Moodle (Cours en ligne)',
-    id: email.value,
-  });
-  return accounts;
-});
+const profilePayload = computed(() => profileResource.data || {});
+const profileError = computed(() => profileResource.error ? "Impossible de charger les informations du profil." : '');
+const fullName = computed(() => profilePayload.value.display_name || auth.displayName);
+const matricule = computed(
+  () => profilePayload.value.student_id || profilePayload.value.student_applicant_id || null,
+);
 </script>
 
 <template>
@@ -51,6 +55,16 @@ const linkedAccounts = computed(() => {
         <p class="text-sm text-ln-gray-500">{{ profileTypeLabel }}</p>
       </div>
     </header>
+
+    <div
+      v-if="profileError"
+      class="p-3 rounded-lg text-sm flex items-center gap-2"
+      style="background-color: #FEF2F2; color: #B91C1C;"
+      role="alert"
+    >
+      <AlertCircle class="w-4 h-4 flex-shrink-0" />
+      {{ profileError }}
+    </div>
 
     <!-- Section Identité -->
     <Card title="Identité" padding="md">
@@ -70,27 +84,27 @@ const linkedAccounts = computed(() => {
       </div>
     </Card>
 
-    <!-- Section Comptes liés -->
-    <Card v-if="linkedAccounts.length" title="Comptes liés" padding="md">
+    <!-- Section Comptes liés — UI-INST-V1: conditionnel sur compte Moodle actif (DEC-079) -->
+    <Card v-if="hasMoodleAccount" title="Comptes liés" padding="md">
       <div class="space-y-2">
-        <div
-          v-for="account in linkedAccounts"
-          :key="account.type"
-          class="flex items-center justify-between p-3 bg-ln-gray-50 rounded-lg"
+        <a
+          :href="moodleLaunchUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="flex items-center justify-between p-3 bg-ln-gray-50 rounded-lg hover:bg-ln-blue-50 transition-colors focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25 min-h-[44px]"
+          aria-label="Ouvrir Moodle — espace de cours en ligne"
         >
           <div class="flex items-center gap-3">
             <div class="w-8 h-8 rounded-md bg-ln-blue-100 flex items-center justify-center">
-              <ExternalLink class="w-4 h-4 text-ln-blue-800" />
+              <ExternalLinkIcon class="w-4 h-4 text-ln-blue-800" />
             </div>
             <div>
-              <span class="text-sm font-medium text-ln-gray-900 block">{{ account.label }}</span>
-              <span class="text-xs text-ln-gray-500">{{ account.id }}</span>
+              <span class="text-sm font-medium text-ln-gray-900 block">Moodle (Cours en ligne)</span>
+              <span class="text-xs text-ln-gray-500">{{ email || '—' }}</span>
             </div>
           </div>
-          <span class="text-xs text-ln-gray-400 bg-white px-2 py-1 rounded border border-ln-gray-200">
-            Externe
-          </span>
-        </div>
+          <ExternalLinkIcon class="w-4 h-4 text-ln-gray-400" aria-hidden="true" />
+        </a>
       </div>
     </Card>
 

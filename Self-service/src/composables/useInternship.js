@@ -89,7 +89,7 @@ function getNextAction(status) {
     },
     'Convention signée étudiant': {
       label: 'Signer la convention de stage',
-      route: '/app-emela/internship',
+      route: '/internship',
     },
     'Convention signée tuteur entreprise': {
       label: 'En attente de signature du tuteur académique',
@@ -97,11 +97,11 @@ function getNextAction(status) {
     },
     'Rapport déposé': {
       label: 'Préparer la soutenance',
-      route: '/app-emela/internship',
+      route: '/internship',
     },
     'En cours': {
       label: 'Déposer le rapport de stage',
-      route: '/app-emela/internship',
+      route: '/internship',
     },
   };
   return actions[status] || null;

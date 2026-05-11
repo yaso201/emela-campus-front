@@ -5,7 +5,7 @@
 import { reactive, onMounted } from 'vue';
 
 /**
- * @param {string} method — dotted path, ex: 'portal_app.api.cockpit.get_financial_block'
+ * @param {string} method — dotted path, ex: 'portal_app.api.finance_summary.get_student_finance_summary'
  * @param {object} [params={}] — paramètres POST à envoyer
  * @param {object} [options]
  * @param {boolean} [options.auto=true] — fetch au mount

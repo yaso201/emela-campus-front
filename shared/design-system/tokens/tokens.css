@@ -2,13 +2,14 @@
 /* Extrait de F01-Design-System-v2.md §10 — ne pas modifier sans mettre à jour F01 */
 
 :root {
-  /* ===== COULEURS MARQUE ===== */
-  --color-brand-900: #0C3547;
-  --color-brand-700: #1A5C7A;
-  --color-brand-500: #2E86A8;
-  --color-brand-300: #7EC4DA;
-  --color-brand-100: #CBE9F2;
-  --color-brand-50:  #EAF5FA;
+  /* ===== COULEURS INSTITUTIONNELLES LANEM ===== */
+  --color-ln-blue-900: #0A2463;
+  --color-ln-blue-800: #0D3B8C;
+  --color-ln-blue-700: #104EAC;
+  --color-ln-blue-600: #1E62C4;
+  --color-ln-blue-200: #C7D8F5;
+  --color-ln-blue-100: #E8F0FE;
+  --color-ln-blue-50:  #F4F8FF;
 
   /* ===== COULEUR ACCENT (ambre) ===== */
   --color-accent-700: #92400E;
@@ -31,45 +32,46 @@
   --color-info-600:    #0284C7;
   --color-info-100:    #E0F2FE;
 
-  /* ===== NEUTRALS ===== */
-  --color-neutral-950: #0F172A;
-  --color-neutral-800: #1E293B;
-  --color-neutral-700: #334155;
-  --color-neutral-600: #475569;
-  --color-neutral-500: #64748B;
-  --color-neutral-400: #94A3B8;
-  --color-neutral-300: #CBD5E1;
-  --color-neutral-200: #E2E8F0;
-  --color-neutral-100: #F1F5F9;
-  --color-neutral-50:  #F8F7F4;
+  /* ===== GRIS INSTITUTIONNELS ===== */
+  --color-ln-gray-950: #0F172A;
+  --color-ln-gray-900: #111827;
+  --color-ln-gray-800: #1E293B;
+  --color-ln-gray-700: #374151;
+  --color-ln-gray-600: #4B5563;
+  --color-ln-gray-500: #6B7280;
+  --color-ln-gray-400: #9CA3AF;
+  --color-ln-gray-300: #D1D5DB;
+  --color-ln-gray-200: #E1E4E8;
+  --color-ln-gray-100: #F0F2F5;
+  --color-ln-gray-50:  #FAFBFC;
   --color-white:       #FFFFFF;
 
   /* ===== ALIAS SÉMANTIQUES (à utiliser dans le code) ===== */
-  --color-text-primary:    var(--color-neutral-950);
-  --color-text-secondary:  var(--color-neutral-600);
-  --color-text-tertiary:   var(--color-neutral-500);
-  --color-text-disabled:   var(--color-neutral-400);
-  --color-text-on-brand:   var(--color-white);
-  --color-text-link:       var(--color-brand-700);
-  --color-text-link-hover: var(--color-brand-900);
+  --color-text-primary:    var(--color-ln-gray-950);
+  --color-text-secondary:  var(--color-ln-gray-600);
+  --color-text-tertiary:   var(--color-ln-gray-500);
+  --color-text-disabled:   var(--color-ln-gray-400);
+  --color-text-on-ln-blue: var(--color-white);
+  --color-text-link:       var(--color-ln-blue-700);
+  --color-text-link-hover: var(--color-ln-blue-900);
 
-  --color-surface-page:    var(--color-neutral-50);
+  --color-surface-page:    var(--color-ln-gray-50);
   --color-surface-base:    var(--color-white);
-  --color-surface-subtle:  var(--color-neutral-100);
+  --color-surface-subtle:  var(--color-ln-gray-100);
   --color-surface-overlay: rgba(15, 23, 42, 0.48);
 
   --color-border-subtle:  rgba(15, 23, 42, 0.07);
   --color-border-default: rgba(15, 23, 42, 0.12);
-  --color-border-strong:  var(--color-neutral-300);
-  --color-border-brand:   var(--color-brand-900);
+  --color-border-strong:  var(--color-ln-gray-300);
+  --color-border-ln-blue: var(--color-ln-blue-900);
 
-  --color-action-primary:       var(--color-brand-900);
-  --color-action-primary-hover: var(--color-brand-700);
+  --color-action-primary:       var(--color-ln-blue-900);
+  --color-action-primary-hover: var(--color-ln-blue-700);
   --color-action-secondary:     transparent;
-  --color-action-focus-ring:    var(--color-brand-500);
+  --color-action-focus-ring:    var(--color-ln-blue-600);
 
   /* ===== TYPOGRAPHIE — FAMILLES ===== */
-  --font-family-base: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-family-mono: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
 
   /* ===== TYPOGRAPHIE — TAILLES ===== */
@@ -143,7 +145,7 @@
   --border-subtle:  1px solid rgba(15, 23, 42, 0.07);
   --border-default: 1px solid rgba(15, 23, 42, 0.12);
   --border-strong:  1px solid rgba(15, 23, 42, 0.20);
-  --border-brand:   1px solid var(--color-brand-900);
+  --border-ln-blue: 1px solid var(--color-ln-blue-900);
 
   /* ===== OMBRES (minimalistes — plat et net) ===== */
   --shadow-none:  none;

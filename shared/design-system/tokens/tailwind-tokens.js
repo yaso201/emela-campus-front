@@ -38,7 +38,7 @@ export default {
     },
   },
   fontFamily: {
-    base: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+    base: ['Inter', 'system-ui', 'sans-serif'],
     mono: ['JetBrains Mono', 'monospace'],
   },
   fontSize: {

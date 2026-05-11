@@ -38,8 +38,6 @@ const {
 // ── Mode formulaire : données existantes ────────────────────────────
 const tutorsResource = useFrappeCall(
   'internship_app.api.portal_internship.list_academic_tutors',
-  {},
-  { auto: false }, // Chargement manuel si besoin
 );
 
 const form = reactive({
@@ -190,7 +188,7 @@ function formatDate(isoDate) {
 }
 
 function goBack() {
-  router.push('/app-emela/');
+  router.push('/');
 }
 </script>
 

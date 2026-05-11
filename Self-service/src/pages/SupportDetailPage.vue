@@ -87,7 +87,24 @@ const canRate = computed(
   () => ['Répondu', 'Clos'].includes(currentRequest.value?.status),
 );
 
-const hasAttachment = computed(() => !!currentRequest.value?.attachment);
+function sanitizeAttachmentUrl(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+  if (raw.startsWith('/') && !raw.startsWith('//')) return raw;
+
+  try {
+    const parsed = new URL(raw, window.location.origin);
+    if (['http:', 'https:'].includes(parsed.protocol)) {
+      return parsed.href;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+const safeAttachmentUrl = computed(() => sanitizeAttachmentUrl(currentRequest.value?.attachment));
+const hasAttachment = computed(() => !!safeAttachmentUrl.value);
 
 // ── Rating interactif ──────────────────────────────────────────────
 const currentRating = computed(() => {
@@ -240,7 +257,7 @@ function goBack() {
         <!-- Pièce jointe si présente (le backend peut retourner une URL) -->
         <div v-if="hasAttachment" class="mt-3">
           <a
-            :href="currentRequest.attachment"
+            :href="safeAttachmentUrl"
             target="_blank"
             rel="noopener noreferrer"
             class="inline-flex items-center gap-1.5 text-sm text-ln-blue-900 hover:underline min-h-[44px] px-1"

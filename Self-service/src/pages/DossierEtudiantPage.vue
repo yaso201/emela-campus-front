@@ -100,9 +100,7 @@ async function loadDossier() {
             <div class="flex items-center gap-2">
               <BookOpen class="w-4 h-4 text-ln-gray-400" />
               <span class="text-sm text-ln-gray-900">{{ mod.course_name }}</span>
-              <span class="text-xs text-ln-gray-500">({{ mod.course_code }})</span>
             </div>
-            <span class="text-xs text-ln-gray-500">{{ mod.credits }} ECTS</span>
           </div>
         </div>
       </Card>
@@ -125,15 +123,15 @@ async function loadDossier() {
           >
             <div>
               <div class="font-medium text-ln-gray-900">{{ result.ue_name }}</div>
-              <div class="text-xs text-ln-gray-500">{{ result.semester }}</div>
+              <div class="text-xs text-ln-gray-500">{{ result.academic_term }}</div>
             </div>
             <div class="flex items-center gap-3">
-              <span class="text-lg font-semibold" :class="result.validated ? 'text-ln-success' : 'text-ln-error'">
-                {{ result.grade }}/20
+              <span class="text-lg font-semibold" :class="result.is_validated ? 'text-ln-success' : 'text-ln-error'">
+                {{ result.ue_average }}/20
               </span>
               <StatusBadge
-                :status="result.validated ? 'success' : 'error'"
-                :label="result.validated ? 'Validé' : 'Non validé'"
+                :status="result.is_validated ? 'success' : 'error'"
+                :label="result.is_validated ? 'Validé' : 'Non validé'"
               />
             </div>
           </div>

@@ -6,6 +6,7 @@
 //       DEC-127 (composable custom fetch), DEC-139 (pas de congés), DEC-140 (pas SupportBlock)
 
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue';
+import { useRoute } from 'vue-router';
 import { MessageCircle, ChevronRight, Paperclip, X } from 'lucide-vue-next';
 import {
   useSupportApi,
@@ -19,6 +20,7 @@ import StatusBadge from '@/components/ui/StatusBadge.vue';
 import AlertBlock from '@/components/ui/AlertBlock.vue';
 
 const api = useSupportApi();
+const route = useRoute();
 
 // Destructuration : les refs / reactive / computed restent réactifs,
 // les fonctions opèrent sur le singleton partagé du domaine support.
@@ -49,6 +51,16 @@ const attachmentError = ref('');
 
 const MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 const ACCEPTED_ATTACHMENT_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'];
+const QUERY_TYPE_SERVICE = {
+  conge: 'RH',
+  congé: 'RH',
+  bulletin: 'RH',
+  rh: 'RH',
+  scolarite: 'SCOLARITE',
+  scolarité: 'SCOLARITE',
+  finance: 'FINANCE',
+  technique: 'SUPPORT_TECH',
+};
 
 // ── Toast succès (AlertBlock inline + auto-hide 4s) ────────────────
 const showSuccess = ref(false);
@@ -136,6 +148,15 @@ function switchToScolarite() {
   }
 }
 
+function applyQueryType() {
+  const rawType = String(route.query.type || '').trim().toLowerCase();
+  const serviceCode = QUERY_TYPE_SERVICE[rawType];
+  if (!serviceCode) return;
+  if (!services.value.some((svc) => svc.service_code === serviceCode)) return;
+  form.service = serviceCode;
+  tab.value = 'new';
+}
+
 // ── Quota (DEC-119) ─────────────────────────────────────────────────
 const quotaStatus = computed(() => {
   if (openCount.value >= MAX_OPEN_REQUESTS) return 'blocked';
@@ -192,6 +213,7 @@ function formatRelative(iso) {
 
 onMounted(async () => {
   await loadServices();
+  applyQueryType();
   await loadMyRequests();
 });
 </script>
