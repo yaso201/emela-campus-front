@@ -93,6 +93,14 @@ function closeSideNav() {
 
 <template>
   <div>
+  <!-- Skip-link pour accessibilité clavier -->
+  <a
+    href="#main-content"
+    class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:bg-white focus:text-ln-blue-900 focus:px-4 focus:py-2 focus:rounded-md focus:shadow-md focus:ring-2 focus:ring-ln-blue-500/25"
+  >
+    Aller au contenu
+  </a>
+
   <!-- Bootstrap : chargement initial du profil -->
   <div
     v-if="shellState === 'bootstrap'"
@@ -132,7 +140,7 @@ function closeSideNav() {
     <!-- Desktop layout -->
     <div class="hidden md:flex min-h-screen">
       <SideNav />
-      <main class="flex-1 min-w-0 flex flex-col">
+      <main id="main-content" class="flex-1 min-w-0 flex flex-col">
         <TopBar />
         <div class="flex-1 px-8 lg:px-10 py-6 pb-16 overflow-y-auto">
           <div class="max-w-[1280px] mx-auto">
@@ -147,7 +155,7 @@ function closeSideNav() {
     <!-- Mobile layout -->
     <div class="md:hidden flex flex-col min-h-screen">
       <TopBar mobile show-menu-button @toggle-side-nav="toggleSideNav" />
-      <main class="flex-1 px-4 py-5 pb-24 overflow-y-auto">
+      <main id="main-content" class="flex-1 px-4 py-5 pb-24 overflow-y-auto">
         <router-view v-slot="{ Component }">
           <component :is="Component" />
         </router-view>
