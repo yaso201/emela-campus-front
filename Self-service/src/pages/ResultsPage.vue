@@ -12,7 +12,7 @@ import { useFrappeCall } from '@/composables/useFrappeCall';
 import { useProfileStore } from '@/stores/profile';
 import BlockSkeleton from '@/components/ui/BlockSkeleton.vue';
 import BlockError from '@/components/ui/BlockError.vue';
-import StatusBadge from '@/components/ui/StatusBadge.vue';
+import SemesterBlock from '@/components/results/SemesterBlock.vue';
 
 const profile = useProfileStore();
 
@@ -75,35 +75,6 @@ const showTempSection = computed(() =>
 );
 
 // ── Helpers ──────────────────────────────────────────────────────────
-function semesterTitle(semester) {
-  const term = semester.academic_term || 'Semestre';
-  const year = semester.academic_year || '';
-  return year ? `${term} · ${year}` : term;
-}
-
-function mapDecisionStatus(decision) {
-  const map = {
-    APD: 'validated',
-    PIN: 'pending',
-    PRE: 'pending',
-    PCO: 'pending',
-    RED: 'failed',
-    EXC: 'failed',
-    REO: 'failed',
-    COA: 'compensated',
-  };
-  return map[decision] || 'decision';
-}
-
-function mapResultStatus(status) {
-  const map = {
-    'Validée': 'validated',
-    'Compensée': 'compensated',
-    'Échouée': 'failed',
-  };
-  return map[status] || status || 'pending';
-}
-
 function formatNote(note) {
   if (note === null || note === undefined || Number.isNaN(Number(note))) {
     return '—';
@@ -185,71 +156,12 @@ function formatNote(note) {
           </div>
 
           <!-- Semestres publiés -->
-          <div v-else class="flex flex-col gap-4">
-            <div
+          <div v-else class="flex flex-col gap-6">
+            <SemesterBlock
               v-for="semester in semesters"
               :key="`${semester.academic_year}-${semester.academic_term}`"
-              class="bg-white rounded-lg border border-ln-gray-200 p-5 md:p-6"
-            >
-              <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                <div>
-                  <h3 class="text-lg font-semibold text-ln-gray-900">
-                    {{ semesterTitle(semester) }}
-                  </h3>
-                  <p class="text-sm text-ln-gray-600 mt-1">
-                    Niveau {{ semester.academic_level || '—' }} · {{ semester.total_ects_earned ?? '—' }} / {{ semester.total_ects_possible ?? '—' }} ECTS
-                  </p>
-                  <p class="text-xs text-ln-gray-500 mt-1">
-                    Cumul : {{ semester.cumulative_ects ?? '—' }} ECTS
-                  </p>
-                </div>
-                <div class="flex flex-wrap items-center gap-2">
-                  <StatusBadge
-                    v-if="semester.jury_decision"
-                    :status="mapDecisionStatus(semester.jury_decision)"
-                    :label="`Jury ${semester.jury_decision}`"
-                  />
-                  <StatusBadge
-                    :status="semester.semester_validated ? 'validated' : 'failed'"
-                    :label="semester.semester_validated ? 'Semestre validé' : 'Semestre non validé'"
-                  />
-                </div>
-              </div>
-
-              <div class="mt-5 overflow-x-auto">
-                <table class="min-w-full border-separate border-spacing-0">
-                  <thead>
-                    <tr>
-                      <th class="px-3 py-2 text-left text-[11px] font-semibold text-ln-gray-500 uppercase tracking-wider border-b border-ln-gray-200">UE</th>
-                      <th class="px-3 py-2 text-left text-[11px] font-semibold text-ln-gray-500 uppercase tracking-wider border-b border-ln-gray-200">Note</th>
-                      <th class="px-3 py-2 text-left text-[11px] font-semibold text-ln-gray-500 uppercase tracking-wider border-b border-ln-gray-200">Statut</th>
-                      <th class="px-3 py-2 text-right text-[11px] font-semibold text-ln-gray-500 uppercase tracking-wider border-b border-ln-gray-200">ECTS</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr
-                      v-for="ue in semester.ue_results"
-                      :key="`${semester.academic_year}-${semester.academic_term}-${ue.ue_code}`"
-                      class="align-top"
-                    >
-                      <td class="px-3 py-3 border-b border-ln-gray-100">
-                        <div class="text-sm font-medium text-ln-gray-900">{{ ue.ue_name }}</div>
-                        <div class="text-xs text-ln-gray-500 mt-1">{{ ue.ue_code }}</div>
-                      </td>
-                      <td class="px-3 py-3 border-b border-ln-gray-100 text-sm text-ln-gray-700 whitespace-nowrap">
-                        {{ formatNote(ue.ue_average) }}
-                      </td>
-                      <td class="px-3 py-3 border-b border-ln-gray-100">
-                        <StatusBadge :status="mapResultStatus(ue.status)" :label="ue.status" />
-                      </td>
-                      <td class="px-3 py-3 border-b border-ln-gray-100 text-right text-sm text-ln-gray-700 whitespace-nowrap">
-                        {{ ue.ects_earned ?? '—' }} / {{ ue.ects_possible ?? '—' }}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
+              :semester="semester"
+            />
           </div>
         </section>
 
