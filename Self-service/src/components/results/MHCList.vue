@@ -29,7 +29,7 @@ const props = defineProps({
           class="w-4 h-4 text-ln-error flex-shrink-0"
           aria-hidden="true"
         />
-        <span :class="allMhcValidated ? 'text-ln-gray-700' : 'text-ln-gray-700'">
+        <span class="text-ln-gray-700">
           <span class="font-medium">{{ mhc.mhc_code }}</span>
           <span class="text-ln-gray-500"> — {{ mhc.mhc_name }}</span>
         </span>
