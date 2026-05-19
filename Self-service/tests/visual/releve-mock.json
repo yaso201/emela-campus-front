@@ -1,0 +1,265 @@
+{
+  "message": {
+    "semesters": [
+      {
+        "academic_term": "Semestre 1",
+        "academic_year": "2026-2027",
+        "academic_level": "L1",
+        "semester_average": 11.58,
+        "total_ects_earned": 18,
+        "total_ects_possible": 30,
+        "cumulative_ects": 18,
+        "jury_decision": "APD",
+        "semester_validated": false,
+        "ue_results": [
+          {
+            "ue_code": "ALGO101",
+            "ue_name": "Algorithmique et structures de données",
+            "ue_average": 14.50,
+            "is_validated": true,
+            "is_compensated": false,
+            "has_floor_violation": false,
+            "grade_ects": "A",
+            "grade_ects_label": "Excellent",
+            "ects_earned": 6,
+            "ects_possible": 6,
+            "is_after_retake": false,
+            "compensation_floor": 6.0,
+            "calculation_formula": "(14,5 × 1 + 15,0 × 2 + 13,5 × 2) / 5 = 14,30 /20",
+            "modules": [
+              {
+                "module_code": "ALGO101-TP",
+                "module_name": "TP Algorithmique",
+                "module_average": 14.50,
+                "coefficient": 1,
+                "status": "validated",
+                "status_label": "Validé",
+                "is_retake_result": false,
+                "original_grade": null
+              },
+              {
+                "module_code": "ALGO101-EX",
+                "module_name": "Examen Algorithmique",
+                "module_average": 15.00,
+                "coefficient": 2,
+                "status": "validated",
+                "status_label": "Validé",
+                "is_retake_result": false,
+                "original_grade": null
+              },
+              {
+                "module_code": "ALGO101-CC",
+                "module_name": "Contrôle continu",
+                "module_average": 13.50,
+                "coefficient": 2,
+                "status": "validated",
+                "status_label": "Validé",
+                "is_retake_result": false,
+                "original_grade": null
+              }
+            ]
+          },
+          {
+            "ue_code": "BD104",
+            "ue_name": "Bases de données",
+            "ue_average": 11.30,
+            "is_validated": true,
+            "is_compensated": true,
+            "has_floor_violation": false,
+            "grade_ects": "E",
+            "grade_ects_label": "Passable",
+            "ects_earned": 6,
+            "ects_possible": 6,
+            "is_after_retake": false,
+            "compensation_floor": 6.0,
+            "calculation_formula": "(10,0 × 2 + 12,0 × 2 + 12,5 × 1) / 5 = 11,30 /20",
+            "modules": [
+              {
+                "module_code": "BD104-EX",
+                "module_name": "Examen BD",
+                "module_average": 10.00,
+                "coefficient": 2,
+                "status": "failed_compensable",
+                "status_label": "À rattraper",
+                "is_retake_result": false,
+                "original_grade": null
+              },
+              {
+                "module_code": "BD104-CC",
+                "module_name": "Contrôle continu",
+                "module_average": 12.00,
+                "coefficient": 2,
+                "status": "validated",
+                "status_label": "Validé",
+                "is_retake_result": false,
+                "original_grade": null
+              },
+              {
+                "module_code": "BD104-TP",
+                "module_name": "TP BD",
+                "module_average": 12.50,
+                "coefficient": 1,
+                "status": "validated",
+                "status_label": "Validé",
+                "is_retake_result": false,
+                "original_grade": null
+              }
+            ]
+          },
+          {
+            "ue_code": "PROG103",
+            "ue_name": "Programmation Python",
+            "ue_average": 6.00,
+            "is_validated": false,
+            "is_compensated": false,
+            "has_floor_violation": true,
+            "grade_ects": "F",
+            "grade_ects_label": "Échec",
+            "ects_earned": 0,
+            "ects_possible": 6,
+            "is_after_retake": false,
+            "compensation_floor": 6.0,
+            "calculation_formula": "(4,0 × 2 + 8,0 × 2 + 6,0 × 1) / 5 = 6,00 /20",
+            "modules": [
+              {
+                "module_code": "PROG103-EX",
+                "module_name": "Examen Python",
+                "module_average": 4.00,
+                "coefficient": 2,
+                "status": "failed_eliminatoire",
+                "status_label": "Éliminatoire",
+                "is_retake_result": false,
+                "original_grade": null
+              },
+              {
+                "module_code": "PROG103-CC",
+                "module_name": "Contrôle continu",
+                "module_average": 8.00,
+                "coefficient": 2,
+                "status": "failed_compensable",
+                "status_label": "À rattraper",
+                "is_retake_result": false,
+                "original_grade": null
+              },
+              {
+                "module_code": "PROG103-TP",
+                "module_name": "TP Python",
+                "module_average": 6.00,
+                "coefficient": 1,
+                "status": "failed_compensable",
+                "status_label": "À rattraper",
+                "is_retake_result": false,
+                "original_grade": null
+              }
+            ]
+          },
+          {
+            "ue_code": "MATH102",
+            "ue_name": "Mathématiques discrètes",
+            "ue_average": 8.50,
+            "is_validated": false,
+            "is_compensated": false,
+            "has_floor_violation": false,
+            "grade_ects": "NV",
+            "grade_ects_label": "Non validé",
+            "ects_earned": 0,
+            "ects_possible": 6,
+            "is_after_retake": false,
+            "compensation_floor": 6.0,
+            "calculation_formula": "(9,0 × 2 + 8,0 × 2 + 8,5 × 1) / 5 = 8,50 /20",
+            "modules": [
+              {
+                "module_code": "MATH102-EX",
+                "module_name": "Examen Maths",
+                "module_average": 9.00,
+                "coefficient": 2,
+                "status": "failed_compensable",
+                "status_label": "À rattraper",
+                "is_retake_result": false,
+                "original_grade": null
+              },
+              {
+                "module_code": "MATH102-CC",
+                "module_name": "Contrôle continu",
+                "module_average": 8.00,
+                "coefficient": 2,
+                "status": "failed_compensable",
+                "status_label": "À rattraper",
+                "is_retake_result": false,
+                "original_grade": null
+              },
+              {
+                "module_code": "MATH102-TP",
+                "module_name": "TP Maths",
+                "module_average": 8.50,
+                "coefficient": 1,
+                "status": "failed_compensable",
+                "status_label": "À rattraper",
+                "is_retake_result": false,
+                "original_grade": null
+              }
+            ]
+          },
+          {
+            "ue_code": "ENG106",
+            "ue_name": "Anglais technique",
+            "ue_average": 13.10,
+            "is_validated": true,
+            "is_compensated": false,
+            "has_floor_violation": false,
+            "grade_ects": "C",
+            "grade_ects_label": "Bien",
+            "ects_earned": 6,
+            "ects_possible": 6,
+            "is_after_retake": false,
+            "compensation_floor": 6.0,
+            "calculation_formula": "(12,0 × 2 + 13,5 × 2 + 13,5 × 1) / 5 = 13,10 /20",
+            "modules": [
+              {
+                "module_code": "ENG106-EX",
+                "module_name": "Examen Anglais",
+                "module_average": 12.00,
+                "coefficient": 2,
+                "status": "validated",
+                "status_label": "Validé",
+                "is_retake_result": false,
+                "original_grade": null
+              },
+              {
+                "module_code": "ENG106-CC",
+                "module_name": "Contrôle continu",
+                "module_average": 13.50,
+                "coefficient": 2,
+                "status": "validated",
+                "status_label": "Validé",
+                "is_retake_result": false,
+                "original_grade": null
+              },
+              {
+                "module_code": "ENG106-TP",
+                "module_name": "TP Anglais",
+                "module_average": 13.50,
+                "coefficient": 1,
+                "status": "validated",
+                "status_label": "Validé",
+                "is_retake_result": false,
+                "original_grade": null
+              }
+            ]
+          }
+        ],
+        "mhc_obligatoires": [
+          {
+            "mhc_code": "MHC-INFO",
+            "mhc_name": "Culture informatique"
+          },
+          {
+            "mhc_code": "MHC-ANG",
+            "mhc_name": "Anglais professionnel"
+          }
+        ],
+        "all_mhc_validated": false
+      }
+    ]
+  }
+}
