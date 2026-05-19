@@ -70,8 +70,8 @@ function formatNote(note) {
           </td>
           <td class="px-3 py-2.5 border-b border-ln-gray-100">
             <ModuleStatusBadge
-              :module-average="mod.module_average"
-              :compensation-floor="compensationFloor"
+              :status="mod.status || 'unknown'"
+              :label="mod.status_label || '—'"
               size="sm"
             />
           </td>
