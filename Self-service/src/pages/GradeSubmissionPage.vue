@@ -39,6 +39,7 @@ const submitting = ref(false);
 
 // Demandes de modification (DEC-INSTR-05)
 const modRequests = ref([]);
+const showConfirmModal = ref(false);
 const showModModal = ref(false);
 const modTarget = ref(null);
 
@@ -234,7 +235,13 @@ async function saveDraft() {
   }
 }
 
+function openConfirmModal() {
+  if (!canSubmit.value) return;
+  showConfirmModal.value = true;
+}
+
 async function submitGrades() {
+  showConfirmModal.value = false;
   if (!canSubmit.value) return;
   submitting.value = true;
   error.value = null;
@@ -520,7 +527,7 @@ async function importCsv(event) {
           type="button"
           :disabled="submitting || !canSubmit || isDeadlinePassed"
           class="inline-flex items-center gap-2 px-4 py-2 bg-ln-blue-900 text-white rounded-md-ln text-sm font-medium hover:bg-ln-blue-700 focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
-          @click="submitGrades"
+          @click="openConfirmModal"
         >
           <Send class="w-4 h-4" />
           <span v-if="submitting">Soumission...</span>
@@ -622,6 +629,48 @@ async function importCsv(event) {
         </div>
       </div>
     </Card>
+
+    <!-- Modal confirmation soumission -->
+    <div
+      v-if="showConfirmModal"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      @click.self="showConfirmModal = false"
+    >
+      <div class="bg-white rounded-lg border border-ln-gray-200 shadow-elevated max-w-md w-full mx-4 p-6 space-y-4">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-full bg-ln-warning-bg flex items-center justify-center flex-shrink-0">
+            <AlertTriangle class="w-5 h-5 text-ln-warning" />
+          </div>
+          <div>
+            <h3 class="text-base font-semibold text-ln-gray-900">Confirmer la soumission</h3>
+            <p class="text-sm text-ln-gray-600 mt-1">
+              Vous êtes sur le point de soumettre les notes du groupe
+              <strong class="text-ln-gray-900">{{ selectedGroup }}</strong>
+              pour la composante <strong class="text-ln-gray-900">{{ selectedComponent }}</strong>.
+              Cette action est <strong class="text-ln-error">irréversible</strong>.
+            </p>
+          </div>
+        </div>
+        <div class="flex gap-3 justify-end pt-2">
+          <button
+            type="button"
+            class="px-4 py-2 rounded-md border border-ln-gray-200 text-sm font-medium text-ln-gray-700 hover:bg-ln-gray-50 focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25"
+            @click="showConfirmModal = false"
+          >
+            Annuler
+          </button>
+          <button
+            type="button"
+            :disabled="submitting"
+            class="px-4 py-2 rounded-md bg-ln-blue-900 text-white text-sm font-medium hover:bg-ln-blue-700 focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25 disabled:opacity-50"
+            @click="submitGrades"
+          >
+            <span v-if="submitting">Soumission...</span>
+            <span v-else>Confirmer et soumettre</span>
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- Modal modification de note -->
     <GradeModificationModal
