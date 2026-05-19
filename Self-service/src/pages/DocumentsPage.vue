@@ -417,9 +417,9 @@ const showProfileGuard = computed(() => !profile.isLoading && !profile.isGuest &
                       size="sm"
                     />
                     <span class="text-[11px] text-ln-gray-500">{{ categoryLabel(item.category) }}</span>
-                    <span class="text-[11px] text-ln-gray-400">·</span>
+                    <span class="text-[11px] text-ln-gray-500">·</span>
                     <span class="text-[11px] text-ln-gray-500">{{ sourceLabel(item.source) }}</span>
-                    <span v-if="item.document_type" class="text-[11px] text-ln-gray-400">·</span>
+                    <span v-if="item.document_type" class="text-[11px] text-ln-gray-500">·</span>
                     <span
                       v-if="item.document_type"
                       class="text-[11px] text-ln-gray-500 capitalize"
@@ -498,7 +498,7 @@ const showProfileGuard = computed(() => !profile.isLoading && !profile.isGuest &
                     Télécharger
                   </button>
                 </template>
-                <span v-if="!item.actions?.length" class="text-xs text-ln-gray-400 italic">
+                <span v-if="!item.actions?.length" class="text-xs text-ln-gray-500 italic">
                   Aucune action disponible
                 </span>
               </div>

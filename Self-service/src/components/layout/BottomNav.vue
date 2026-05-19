@@ -44,7 +44,7 @@ function isActive(item) {
       :class="[
         isActive(item)
           ? 'text-ln-blue-800'
-          : 'text-ln-gray-400 hover:text-ln-gray-600 hover:bg-ln-gray-50'
+          : 'text-ln-gray-500 hover:text-ln-gray-600 hover:bg-ln-gray-50'
       ]"
     >
       <NavIcon :name="item.icon" class="w-5 h-5" />

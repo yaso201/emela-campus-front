@@ -311,7 +311,7 @@ function formatNote(note) {
                   </td>
                   <td class="px-3 py-3 border-b border-ln-gray-100">
                     <div class="text-xs text-ln-gray-500">{{ item.ue_code || '—' }}</div>
-                    <div class="text-xs text-ln-gray-400">{{ item.ue_name || '' }}</div>
+                    <div class="text-xs text-ln-gray-500">{{ item.ue_name || '' }}</div>
                   </td>
                   <td class="px-3 py-3 border-b border-ln-gray-100 text-xs text-ln-gray-600">
                     {{ item.evaluation_component || '—' }}

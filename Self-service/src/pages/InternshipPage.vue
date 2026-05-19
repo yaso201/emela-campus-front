@@ -278,7 +278,7 @@ function goBack() {
         
         <div class="grid gap-4 sm:grid-cols-2">
           <div class="flex items-start gap-3">
-            <Briefcase class="w-5 h-5 text-ln-gray-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
+            <Briefcase class="w-5 h-5 text-ln-gray-500 mt-0.5 flex-shrink-0" aria-hidden="true" />
             <div>
               <p class="text-xs text-ln-gray-500">Entreprise</p>
               <p class="text-sm font-medium text-ln-gray-900">{{ internship.company_name }}</p>
@@ -286,7 +286,7 @@ function goBack() {
           </div>
           
           <div class="flex items-start gap-3">
-            <User class="w-5 h-5 text-ln-gray-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
+            <User class="w-5 h-5 text-ln-gray-500 mt-0.5 flex-shrink-0" aria-hidden="true" />
             <div>
               <p class="text-xs text-ln-gray-500">Tuteur académique</p>
               <p class="text-sm font-medium text-ln-gray-900">{{ internship.academic_tutor_name || '—' }}</p>
@@ -294,7 +294,7 @@ function goBack() {
           </div>
           
           <div class="flex items-start gap-3">
-            <MapPin class="w-5 h-5 text-ln-gray-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
+            <MapPin class="w-5 h-5 text-ln-gray-500 mt-0.5 flex-shrink-0" aria-hidden="true" />
             <div>
               <p class="text-xs text-ln-gray-500">Lieu</p>
               <p class="text-sm font-medium text-ln-gray-900">{{ internship.company_city || '—' }}</p>
@@ -302,7 +302,7 @@ function goBack() {
           </div>
           
           <div class="flex items-start gap-3">
-            <Calendar class="w-5 h-5 text-ln-gray-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
+            <Calendar class="w-5 h-5 text-ln-gray-500 mt-0.5 flex-shrink-0" aria-hidden="true" />
             <div>
               <p class="text-xs text-ln-gray-500">Période</p>
               <p class="text-sm font-medium text-ln-gray-900">

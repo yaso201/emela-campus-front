@@ -171,7 +171,7 @@ function formatTime(timeStr) {
 
         <Card>
           <div class="flex items-center gap-3">
-            <Calendar class="w-8 h-8 text-ln-gray-400" />
+            <Calendar class="w-8 h-8 text-ln-gray-500" />
             <div>
               <div class="text-2xl font-bold text-ln-gray-900">{{ hours?.session_count ?? 0 }}</div>
               <div class="text-xs text-ln-gray-500">Séances</div>

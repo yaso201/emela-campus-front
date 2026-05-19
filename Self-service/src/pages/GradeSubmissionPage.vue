@@ -572,7 +572,7 @@ async function importCsv(event) {
         >
           <div class="flex items-center gap-3">
             <CheckCircle v-if="sub.status === 'Soumise'" class="w-5 h-5 text-ln-success" />
-            <Save v-else class="w-5 h-5 text-ln-gray-400" />
+            <Save v-else class="w-5 h-5 text-ln-gray-500" />
             <div>
               <div class="font-medium text-ln-gray-900">
                 {{ sub.evaluation_component }} — {{ sub.status }}

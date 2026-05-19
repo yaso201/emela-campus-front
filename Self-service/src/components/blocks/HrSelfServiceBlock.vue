@@ -54,7 +54,7 @@ const quickLinks = [
           >
             {{ link.label }}
           </span>
-          <ChevronRight class="w-4 h-4 text-ln-gray-400 flex-shrink-0" aria-hidden="true" />
+          <ChevronRight class="w-4 h-4 text-ln-gray-500 flex-shrink-0" aria-hidden="true" />
         </a>
       </div>
 

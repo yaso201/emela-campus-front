@@ -98,7 +98,7 @@ async function loadDossier() {
             class="flex items-center justify-between py-2 border-b border-ln-gray-100 last:border-0"
           >
             <div class="flex items-center gap-2">
-              <BookOpen class="w-4 h-4 text-ln-gray-400" />
+              <BookOpen class="w-4 h-4 text-ln-gray-500" />
               <span class="text-sm text-ln-gray-900">{{ mod.course_name }}</span>
             </div>
           </div>

@@ -144,7 +144,7 @@ const warnings = computed(() => payload.value?.warnings || []);
       </div>
 
       <!-- Fraîcheur -->
-      <div class="flex items-center gap-2 text-xs text-ln-gray-400 px-1">
+      <div class="flex items-center gap-2 text-xs text-ln-gray-500 px-1">
         <span
           class="inline-block w-2 h-2 rounded-full"
           :class="isStale ? 'bg-ln-warning' : 'bg-ln-success'"

@@ -91,7 +91,7 @@ const descriptions = [
           <button
             type="button"
             @click="emit('close')"
-            class="absolute top-4 right-4 p-1 rounded-md text-ln-gray-400 hover:text-ln-gray-600 hover:bg-ln-gray-100 transition-colors"
+            class="absolute top-4 right-4 p-1 rounded-md text-ln-gray-500 hover:text-ln-gray-600 hover:bg-ln-gray-100 transition-colors"
             aria-label="Fermer"
           >
             <X class="w-5 h-5" />

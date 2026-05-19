@@ -414,7 +414,7 @@ onMounted(async () => {
           <!-- Pièce jointe -->
           <div>
             <label for="sreq-attachment" class="block text-xs font-semibold text-ln-gray-700 mb-1">
-              Pièce jointe <span class="text-ln-gray-400">(optionnel)</span>
+              Pièce jointe <span class="text-ln-gray-500">(optionnel)</span>
             </label>
             <input
               id="sreq-attachment"
@@ -450,7 +450,7 @@ onMounted(async () => {
                 <span class="min-w-0 flex-1 truncate">{{ form.attachment.name }}</span>
                 <button
                   type="button"
-                  class="text-ln-gray-400 hover:text-ln-gray-600 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                  class="text-ln-gray-500 hover:text-ln-gray-600 min-h-[44px] min-w-[44px] flex items-center justify-center"
                   aria-label="Supprimer la pièce jointe"
                   @click="clearAttachment"
                 >
@@ -543,7 +543,7 @@ onMounted(async () => {
       >
         <MessageCircle class="w-8 h-8 text-ln-gray-300 mb-3" aria-hidden="true" />
         <p class="text-sm font-medium text-ln-gray-500">Aucune demande en cours</p>
-        <p class="text-xs text-ln-gray-400 mt-1">Posez votre première question ci-dessus.</p>
+        <p class="text-xs text-ln-gray-500 mt-1">Posez votre première question ci-dessus.</p>
         <button
           type="button"
           class="mt-4 text-sm text-ln-blue-900 underline min-h-[44px] px-2"
@@ -581,7 +581,7 @@ onMounted(async () => {
                 {{ req.name }} · {{ req.category }}<span v-if="req.creation"> · {{ formatRelative(req.creation) }}</span>
               </p>
             </div>
-            <ChevronRight class="w-5 h-5 text-ln-gray-400 flex-shrink-0 mt-1" aria-hidden="true" />
+            <ChevronRight class="w-5 h-5 text-ln-gray-500 flex-shrink-0 mt-1" aria-hidden="true" />
           </router-link>
         </li>
       </ul>

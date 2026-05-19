@@ -54,7 +54,7 @@ function progressPercent(item) {
       </div>
 
       <div v-else class="flex items-start gap-3 rounded-md border border-ln-gray-100 bg-ln-gray-50 p-3">
-        <AlertCircle class="w-4 h-4 text-ln-gray-400 mt-0.5" aria-hidden="true" />
+        <AlertCircle class="w-4 h-4 text-ln-gray-500 mt-0.5" aria-hidden="true" />
         <p class="text-sm text-ln-gray-500">
           Aucun solde de congé actif.
         </p>

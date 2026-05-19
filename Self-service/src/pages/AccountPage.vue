@@ -103,7 +103,7 @@ const matricule = computed(
               <span class="text-xs text-ln-gray-500">{{ email || '—' }}</span>
             </div>
           </div>
-          <ExternalLinkIcon class="w-4 h-4 text-ln-gray-400" aria-hidden="true" />
+          <ExternalLinkIcon class="w-4 h-4 text-ln-gray-500" aria-hidden="true" />
         </a>
       </div>
     </Card>
@@ -120,7 +120,7 @@ const matricule = computed(
           </div>
           <span class="text-sm font-medium text-ln-gray-900">Modifier mon mot de passe</span>
         </div>
-        <ChevronRight class="w-5 h-5 text-ln-gray-400" />
+        <ChevronRight class="w-5 h-5 text-ln-gray-500" />
       </router-link>
 
       <router-link
@@ -133,7 +133,7 @@ const matricule = computed(
           </div>
           <span class="text-sm font-medium text-ln-gray-900">Préférences</span>
         </div>
-        <ChevronRight class="w-5 h-5 text-ln-gray-400" />
+        <ChevronRight class="w-5 h-5 text-ln-gray-500" />
       </router-link>
 
       <button

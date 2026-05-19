@@ -147,7 +147,7 @@ const showActionButton = computed(() => {
         <span v-else-if="nextAction" class="text-xs text-ln-gray-500">
           {{ nextAction.label }}
         </span>
-        <span v-else class="text-xs text-ln-gray-400">—</span>
+        <span v-else class="text-xs text-ln-gray-500">—</span>
 
         <button
           type="button"

@@ -114,7 +114,7 @@ async function loadPlanning(instructorName) {
     <!-- Search -->
     <Card>
       <div class="relative">
-        <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-ln-gray-400" />
+        <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-ln-gray-500" />
         <input
           v-model="searchQuery"
           type="text"

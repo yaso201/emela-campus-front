@@ -29,7 +29,7 @@ const isDisabled = computed(() => props.disabled || !props.url);
       width="10"
       height="10"
       viewBox="0 0 12 12"
-      class="absolute top-2 right-2 text-ln-gray-400"
+      class="absolute top-2 right-2 text-ln-gray-500"
       role="img"
       aria-label="Ouvre dans un nouvel onglet"
     >
@@ -65,7 +65,7 @@ const isDisabled = computed(() => props.disabled || !props.url);
       width="10"
       height="10"
       viewBox="0 0 12 12"
-      class="absolute top-2 right-2 text-ln-gray-400"
+      class="absolute top-2 right-2 text-ln-gray-500"
       role="img"
       aria-label="Ouvre dans un nouvel onglet"
     >
@@ -99,7 +99,7 @@ const isDisabled = computed(() => props.disabled || !props.url);
       <slot name="icon" />
     </div>
 
-    <div class="text-xs font-medium text-ln-gray-400">
+    <div class="text-xs font-medium text-ln-gray-500">
       {{ title }}
     </div>
     <slot name="subtitle" />

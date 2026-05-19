@@ -121,7 +121,7 @@ function titleClass(state) {
         >
           <div
             class="text-[11px] font-semibold capitalize"
-            :class="day.isToday ? 'text-ln-blue-900' : day.isWeekend ? 'text-ln-gray-400' : 'text-ln-gray-600'"
+            :class="day.isToday ? 'text-ln-blue-900' : day.isWeekend ? 'text-ln-gray-500' : 'text-ln-gray-600'"
           >
             {{ day.label }}
           </div>
@@ -208,7 +208,7 @@ function titleClass(state) {
 
         <div
           v-if="calendarSessions.length === 0"
-          class="absolute inset-0 flex items-center justify-center text-sm text-ln-gray-400"
+          class="absolute inset-0 flex items-center justify-center text-sm text-ln-gray-500"
         >
           Aucune séance publiée cette semaine.
         </div>

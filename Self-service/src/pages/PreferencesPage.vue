@@ -99,7 +99,7 @@ async function save() {
     <!-- Langue -->
     <Card title="Langue" padding="md">
       <div class="flex items-center gap-3 mb-4">
-        <Globe class="w-5 h-5 text-ln-gray-400" />
+        <Globe class="w-5 h-5 text-ln-gray-500" />
         <span class="text-sm text-ln-gray-600">Langue d'affichage</span>
       </div>
       <select
@@ -117,7 +117,7 @@ async function save() {
       <div class="space-y-4">
         <label class="flex items-center justify-between cursor-pointer">
           <div class="flex items-center gap-3">
-            <Bell class="w-5 h-5 text-ln-gray-400" />
+            <Bell class="w-5 h-5 text-ln-gray-500" />
             <div>
               <span class="text-sm font-medium text-ln-gray-900 block">Notifications par email</span>
               <span class="text-xs text-ln-gray-500">Recevoir les alertes par email</span>
@@ -133,7 +133,7 @@ async function save() {
 
         <label class="flex items-center justify-between cursor-pointer pt-4 border-t border-ln-gray-100">
           <div class="flex items-center gap-3">
-            <Bell class="w-5 h-5 text-ln-gray-400" />
+            <Bell class="w-5 h-5 text-ln-gray-500" />
             <div>
               <span class="text-sm font-medium text-ln-gray-900 block">Notifications par SMS</span>
               <span class="text-xs text-ln-gray-500">Recevoir les alertes par SMS</span>
@@ -153,7 +153,7 @@ async function save() {
       <div class="space-y-4">
         <label class="flex items-center justify-between cursor-pointer">
           <div class="flex items-center gap-3">
-            <Bell class="w-5 h-5 text-ln-gray-400" />
+            <Bell class="w-5 h-5 text-ln-gray-500" />
             <div>
               <span class="text-sm font-medium text-ln-gray-900 block">Afficher dans emela</span>
               <span class="text-xs text-ln-gray-500">Alertes attendance non critiques</span>
@@ -169,7 +169,7 @@ async function save() {
 
         <label class="flex items-center justify-between cursor-pointer pt-4 border-t border-ln-gray-100">
           <div class="flex items-center gap-3">
-            <Bell class="w-5 h-5 text-ln-gray-400" />
+            <Bell class="w-5 h-5 text-ln-gray-500" />
             <div>
               <span class="text-sm font-medium text-ln-gray-900 block">Emails attendance</span>
               <span class="text-xs text-ln-gray-500">Si le canal email institutionnel est actif</span>

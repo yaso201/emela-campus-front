@@ -210,7 +210,7 @@ function goHome() {
               <button
                 type="button"
                 @click="showCurrent = !showCurrent"
-                class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-ln-gray-400 hover:text-ln-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25"
+                class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-ln-gray-500 hover:text-ln-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25"
                 :aria-label="showCurrent ? 'Masquer' : 'Afficher'"
               >
                 <Eye v-if="!showCurrent" class="w-4 h-4" />
@@ -237,7 +237,7 @@ function goHome() {
               <button
                 type="button"
                 @click="showNew = !showNew"
-                class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-ln-gray-400 hover:text-ln-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25"
+                class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-ln-gray-500 hover:text-ln-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25"
                 :aria-label="showNew ? 'Masquer' : 'Afficher'"
               >
                 <Eye v-if="!showNew" class="w-4 h-4" />
@@ -264,7 +264,7 @@ function goHome() {
               </div>
               <div class="flex items-center justify-between mt-1.5">
                 <span class="text-xs text-ln-gray-500">{{ strengthLabel }}</span>
-                <span class="text-[10px] text-ln-gray-400">
+                <span class="text-[10px] text-ln-gray-500">
                   8+ caractères, majuscule, chiffre
                 </span>
               </div>
@@ -289,7 +289,7 @@ function goHome() {
               <button
                 type="button"
                 @click="showConfirm = !showConfirm"
-                class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-ln-gray-400 hover:text-ln-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25"
+                class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-ln-gray-500 hover:text-ln-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25"
                 :aria-label="showConfirm ? 'Masquer' : 'Afficher'"
               >
                 <Eye v-if="!showConfirm" class="w-4 h-4" />

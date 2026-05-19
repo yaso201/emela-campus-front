@@ -66,7 +66,7 @@ function persistDismiss() {
       </button>
       <button
         type="button"
-        class="text-ln-gray-400 hover:text-ln-gray-600 p-1 focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25 rounded-sm"
+        class="text-ln-gray-500 hover:text-ln-gray-600 p-1 focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25 rounded-sm"
         aria-label="Plus tard"
         @click="dismiss"
       >

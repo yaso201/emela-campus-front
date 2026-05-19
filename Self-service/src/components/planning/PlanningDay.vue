@@ -211,7 +211,7 @@ function titleClass(state) {
         >
           <div class="rounded-full border border-dashed border-ln-gray-300 bg-white/85 px-5 py-3 shadow-card">
             <p class="text-sm font-semibold text-ln-gray-600">Aucune séance planifiée</p>
-            <p class="mt-0.5 text-xs text-ln-gray-400">C'est quartier libre aujourd'hui.</p>
+            <p class="mt-0.5 text-xs text-ln-gray-500">C'est quartier libre aujourd'hui.</p>
           </div>
         </div>
       </div>

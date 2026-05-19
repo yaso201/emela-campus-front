@@ -25,7 +25,7 @@ defineProps({
       >
         {{ title }}
       </div>
-      <div class="text-xs text-ln-gray-400 mt-0.5">{{ timestamp }}</div>
+      <div class="text-xs text-ln-gray-500 mt-0.5">{{ timestamp }}</div>
     </div>
   </div>
 </template>

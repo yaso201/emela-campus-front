@@ -654,7 +654,7 @@ function fileNameFromUrl(value) {
                     <td class="px-4 py-3">
                       <select
                         v-model="row.punctuality_status"
-                        class="rounded-md-ln border border-ln-gray-200 bg-white px-3 py-2 text-sm text-ln-gray-900 focus:border-ln-blue-500 focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25 disabled:bg-ln-gray-50 disabled:text-ln-gray-400 min-h-[40px]"
+                        class="rounded-md-ln border border-ln-gray-200 bg-white px-3 py-2 text-sm text-ln-gray-900 focus:border-ln-blue-500 focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25 disabled:bg-ln-gray-50 disabled:text-ln-gray-500 min-h-[40px]"
                         :disabled="row.status !== 'Present'"
                       >
                         <option
@@ -702,7 +702,7 @@ function fileNameFromUrl(value) {
                 </div>
                 <select
                   v-model="row.punctuality_status"
-                  class="mt-3 w-full rounded-md-ln border border-ln-gray-200 bg-white px-3 py-2 text-sm text-ln-gray-900 focus:border-ln-blue-500 focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25 disabled:bg-ln-gray-50 disabled:text-ln-gray-400 min-h-[44px]"
+                  class="mt-3 w-full rounded-md-ln border border-ln-gray-200 bg-white px-3 py-2 text-sm text-ln-gray-900 focus:border-ln-blue-500 focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25 disabled:bg-ln-gray-50 disabled:text-ln-gray-500 min-h-[44px]"
                   :disabled="row.status !== 'Present'"
                 >
                   <option

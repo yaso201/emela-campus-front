@@ -49,7 +49,7 @@ function selectDay(iso) {
         v-for="(wd, i) in weekdayHeaders"
         :key="wd"
         class="text-center py-2 text-[10px] font-semibold uppercase tracking-wider text-ln-gray-500"
-        :class="i >= 5 ? 'text-ln-gray-400' : ''"
+        :class="i >= 5 ? 'text-ln-gray-500' : ''"
       >
         {{ wd }}
       </div>
@@ -71,7 +71,7 @@ function selectDay(iso) {
         <span
           class="text-sm font-medium"
           :class="[
-            cell.inCurrentMonth ? 'text-ln-gray-900' : 'text-ln-gray-400',
+            cell.inCurrentMonth ? 'text-ln-gray-900' : 'text-ln-gray-500',
             cell.isToday ? 'text-ln-blue-900 font-bold' : '',
           ]"
         >
@@ -85,7 +85,7 @@ function selectDay(iso) {
             v-for="session in sessionsByDay[cell.iso].slice(0, 2)"
             :key="session.name || `${session.title}-${session.from_time}`"
             class="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] leading-none truncate"
-            :class="cell.inCurrentMonth ? 'text-ln-blue-900' : 'text-ln-gray-400'"
+            :class="cell.inCurrentMonth ? 'text-ln-blue-900' : 'text-ln-gray-500'"
           >
             <span class="h-1.5 w-1.5 rounded-full bg-orange-400 flex-shrink-0" aria-hidden="true"></span>
             <span class="truncate">

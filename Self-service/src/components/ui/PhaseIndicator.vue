@@ -76,7 +76,7 @@ function getLineState(lineIndex) {
         class="text-[10px] uppercase tracking-wide flex-1 text-center"
         :class="{
           'text-ln-blue-700 font-semibold': phase === currentPhase,
-          'text-ln-gray-400': phase !== currentPhase,
+          'text-ln-gray-500': phase !== currentPhase,
         }"
       >
         {{ labels[phase] || `Phase ${phase}` }}

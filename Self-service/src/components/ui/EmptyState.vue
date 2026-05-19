@@ -70,10 +70,10 @@ const iconComponent = computed(() => {
   <div class="flex flex-col items-center justify-center py-10 px-4 text-center gap-3">
     <component
       :is="iconComponent"
-      class="w-6 h-6 text-ln-gray-400"
+      class="w-6 h-6 text-ln-gray-500"
       aria-hidden="true"
     />
     <p class="text-sm font-medium text-ln-gray-600">{{ label }}</p>
-    <p v-if="description" class="text-xs text-ln-gray-400">{{ description }}</p>
+    <p v-if="description" class="text-xs text-ln-gray-500">{{ description }}</p>
   </div>
 </template>

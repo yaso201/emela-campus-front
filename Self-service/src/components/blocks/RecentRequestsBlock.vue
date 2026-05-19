@@ -112,7 +112,7 @@ onMounted(() => {
     >
       <MessageCircle class="w-8 h-8 text-ln-gray-300 mx-auto mb-3" aria-hidden="true" />
       <p class="text-sm font-medium text-ln-gray-500">Aucune demande en cours</p>
-      <p class="text-xs text-ln-gray-400 mt-1">Vos demandes apparaîtront ici</p>
+      <p class="text-xs text-ln-gray-500 mt-1">Vos demandes apparaîtront ici</p>
     </div>
 
     <!-- Liste des demandes -->

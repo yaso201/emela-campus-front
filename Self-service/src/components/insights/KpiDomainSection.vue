@@ -34,7 +34,7 @@ function safeParse(str) {
       <h2 class="text-[11px] font-semibold text-ln-gray-600 tracking-wider uppercase">
         {{ category }}
       </h2>
-      <span class="text-[11px] text-ln-gray-400 tabular-nums">
+      <span class="text-[11px] text-ln-gray-500 tabular-nums">
         {{ availableCount }}/{{ kpis.length }}
       </span>
     </div>

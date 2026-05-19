@@ -174,7 +174,7 @@ async function submit() {
             <button
               type="button"
               @click="showPin = !showPin"
-              class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-ln-gray-400 hover:text-ln-gray-600 rounded-md"
+              class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-ln-gray-500 hover:text-ln-gray-600 rounded-md"
             >
               <Eye v-if="!showPin" class="w-4 h-4" />
               <EyeOff v-else class="w-4 h-4" />
@@ -203,7 +203,7 @@ async function submit() {
             <button
               type="button"
               @click="showConfirm = !showConfirm"
-              class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-ln-gray-400 hover:text-ln-gray-600 rounded-md"
+              class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-ln-gray-500 hover:text-ln-gray-600 rounded-md"
             >
               <Eye v-if="!showConfirm" class="w-4 h-4" />
               <EyeOff v-else class="w-4 h-4" />

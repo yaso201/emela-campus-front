@@ -149,7 +149,7 @@ function resetForm() {
           <h2 class="text-lg font-semibold text-ln-gray-900">Demander une modification de note</h2>
           <button
             type="button"
-            class="p-1.5 text-ln-gray-400 hover:text-ln-gray-600 rounded-md"
+            class="p-1.5 text-ln-gray-500 hover:text-ln-gray-600 rounded-md"
             @click="$emit('close')"
           >
             <X class="w-5 h-5" />
@@ -209,7 +209,7 @@ function resetForm() {
             <div>
               <label class="block text-sm font-medium text-ln-gray-700 mb-1.5">
                 Motif
-                <span class="text-ln-gray-400 font-normal">(20 caractères minimum)</span>
+                <span class="text-ln-gray-500 font-normal">(20 caractères minimum)</span>
               </label>
               <textarea
                 v-model="reason"
@@ -218,7 +218,7 @@ function resetForm() {
                 class="w-full border border-ln-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25 resize-none"
                 :class="reason && !reasonValid ? 'border-ln-warning' : ''"
               />
-              <p class="mt-1 text-xs text-ln-gray-400">
+              <p class="mt-1 text-xs text-ln-gray-500">
                 {{ reason.trim().length }} / 20 caractères minimum
               </p>
             </div>

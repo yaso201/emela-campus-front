@@ -95,6 +95,6 @@ const courseTitle = computed(() => normalizedSession.value.title || 'Sans titre'
       :status="badgeConfig.status"
       :label="badgeConfig.label"
     />
-    <span v-else class="text-xs text-ln-gray-400 flex-shrink-0">Passé</span>
+    <span v-else class="text-xs text-ln-gray-500 flex-shrink-0">Passé</span>
   </div>
 </template>
