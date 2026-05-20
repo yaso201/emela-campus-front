@@ -40,6 +40,31 @@ async function finish() {
   }
 }
 
+async function dismiss() {
+  saving.value = true;
+  try {
+    await fetch('/api/method/frappe.client.set_value', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Frappe-CSRF-Token': window.csrf_token || '',
+      },
+      body: JSON.stringify({
+        doctype: 'User',
+        name: window.user,
+        fieldname: 'custom_onboarding_done',
+        value: 1,
+      }),
+      credentials: 'same-origin',
+    });
+  } catch (e) {
+    console.warn('[OnboardingModal] Failed to save dismiss:', e);
+  } finally {
+    saving.value = false;
+    emit('close');
+  }
+}
+
 function next() {
   if (step.value < totalSteps) {
     step.value++;
@@ -90,7 +115,7 @@ const descriptions = [
           <!-- Bouton fermer (optionnel) -->
           <button
             type="button"
-            @click="emit('close')"
+            @click="dismiss"
             class="absolute top-4 right-4 p-1 rounded-md text-ln-gray-500 hover:text-ln-gray-600 hover:bg-ln-gray-100 transition-colors"
             aria-label="Fermer"
           >
