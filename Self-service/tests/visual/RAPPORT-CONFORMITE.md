@@ -1,8 +1,8 @@
 # Rapport de conformité visuelle — Relevé de notes
 
 **Date** : 2026-05-20  
-**Site** : campus-recette (localhost:8080)  
-**Méthode** : Mock API fidèle + session Admin (Playwright)  
+**Site** : campus-test-v1 (localhost:8081) pour auth réelle ; campus-recette (localhost:8080) pour mock  
+**Méthode** : Auth réelle étudiant (Playwright) + Mock API fidèle + session Admin (Playwright)  
 **Viewport testés** : Desktop 1280×900, Mobile 375×667  
 
 ---
@@ -20,7 +20,49 @@
 
 ---
 
-## ✅ Conformité maquette PC1 — Élément par élément
+## ✅ Validation avec auth réelle — Student Setupb 002 (ETU-SETUPB-00002)
+
+**User** : `student.setupb.002@recette.lanem.bj` / `Test2026!`  
+**Site** : `campus-test-v1` (port 8081)  
+**Données** : 41 UE Results sur semestre 2026-2027 (S1), statut `published`
+
+| Élément | Statut | Détail données réelles |
+|---------|--------|------------------------|
+| Auth étudiant | ✅ OK | Login réussi, session valide, nom affiché "Student Setupb 002" |
+| Header semestre | ⚠️ NOK mineur | Titre redondant : "2026-2027 (S1) · 2026-2027" — `academic_term` contient déjà l'année |
+| Moyenne semestrielle | ✅ OK | 12,1 /20 (indicatif — Art. 20.2) |
+| ECTS validés / possibles | ✅ OK | 184 / 342 |
+| Cumul programme | ✅ OK | 184 |
+| Badges jury + semestre | ✅ OK | "Jury APD" (vert), "Semestre non validé" (rouge) |
+| Bloc UE (code + nom) | ✅ OK | "LIS-S1-02 — Architecture des ordinateurs" |
+| Note UE | ✅ OK | "12,5 /20" en gras |
+| Badge grade ECTS | ✅ OK | Grades A, B, C, F affichés selon UE ; badge vide quand `grade_ects=""` |
+| ECTS acquis/possibles | ✅ OK | "6 / 6 ECTS", "0 / 8 ECTS" |
+| Notice compensation | ✅ OK | Texte vert ℹ "Validée avec compensation intra-UE (Art. 23.1)" visible sur au moins une UE |
+| Alerte plancher | ✅ OK | Texte rouge ⚠ Art. 23.2 visible sur UE avec module éliminatoire |
+| Alerte UE non validée | ✅ OK | Texte orange ⚠ "rattrapage obligatoire" visible |
+| Table modules | ✅ OK | Colonnes Module, Coef., Note, Statut |
+| Badge statut module | ✅ OK | Vert/orange/rouge selon statut module |
+| Formule calcul UE | ✅ OK | "CALCUL NOTE UE — ART. 19.1" + formule détaillée |
+| Section MHC | ✅ OK | Liste vide (`mhc_obligatoires: []`), pas d'alerte bloquante — conforme aux données |
+| Section suivi temporaire | ✅ OK | Bannière jaune + message "Aucune note temporaire" |
+| Section Moodle | ✅ OK | "Voir sur Moodle" |
+| Responsive mobile | ✅ OK | Bottom nav, contenu adapté, scroll fluide sur 22 061 px |
+| Console errors | ✅ OK | Zéro erreur console (auth réelle et mock) |
+
+### Différences mock vs réel
+
+| Aspect | Mock | Réel | Impact |
+|--------|------|------|--------|
+| Nombre d'UE | 5 | 41 | Fidélité données réelles — la page est très longue (15 506 px desktop) |
+| Grade ECTS vide | Aucun | Plusieurs UE avec `grade_ects=""` | Badge grade absent — comportement normal (pas de données) |
+| ECTS par UE | 6 uniforme | 6 ou 8 selon UE | Conforme règlement |
+| MHC | 2 non validés | 0 | Conforme aux données de l'étudiant |
+| Titre semestre | "Semestre 1 · 2026-2027" | "2026-2027 (S1) · 2026-2027" | **Finding** : redondance dans `academic_term` vs `academic_year` |
+
+---
+
+## ✅ Conformité maquette PC1 — Élément par élément (mock)
 
 | Élément | Statut | Détail |
 |---------|--------|--------|
@@ -48,10 +90,10 @@
 
 ## ⚠️ Points de vigilance / Ajustements mineurs
 
-1. **Auth étudiant réelle** : les tests ont été faits avec mock API. La connexion directe étudiant est bloquée (dettes `RV2-DEBT-AUTH-ETUDIANT-SETUP-B`).
-2. **Modal onboarding** : fermé par interception API `custom_onboarding_done=1`. En conditions réelles, 3 clics "Suivant" seraient nécessaires au premier login (dettes `RV2-DEBT-WELCOME-MODAL-FIRST-LOGIN`).
-3. **Grade ECTS label F** : le frontend affiche "Insuffisant" (conforme au composant `GradeEctsBadge.vue`). Le backend envoie aussi `grade_ects_label` mais ce champ est ignoré côté frontend — pas de risque de désynchro.
-4. **Tokens ln-*** : tous les tokens Tailwind (`ln-success`, `ln-warning`, `ln-error`, `ln-blue-*`, `ln-gray-*`) sont correctement appliqués.
+1. **Titre semestre redondant** (Finding) : `academic_term = "2026-2027 (S1)"` et `academic_year = "2026-2027"` produisent "2026-2027 (S1) · 2026-2027". Recommandation : utiliser `semesterTitle()` qui concatène `academic_term` et `academic_year` uniquement si l'année n'est pas déjà dans le terme.
+2. **Grade ECTS vide** : quand `grade_ects=""`, le badge `GradeEctsBadge` retourne un label `"—"` avec style gris. C'est acceptable mais pourrait être masqué si vide.
+3. **Page très longue** : 41 UE dans un semestre produisent une page de 15 000+ px. La pagination ou un accordéon pourrait améliorer l'UX en V2.
+4. **Modal onboarding** : fermé par clic croix dans le test réel. La 1ère connexion affiche bien le modal (pas besoin d'interception API).
 
 ---
 
@@ -59,11 +101,16 @@
 
 | Fichier | Chemin |
 |---------|--------|
-| Mock JSON corrigé | `tests/visual/releve-mock.json` |
-| Screenshot desktop fullpage | `screenshots-releve/releve-desktop-fullpage.png` |
-| Screenshot desktop viewport | `screenshots-releve/releve-desktop-viewport.png` |
-| Screenshot mobile fullpage | `screenshots-releve/releve-mobile-fullpage.png` |
-| Screenshot mobile viewport | `screenshots-releve/releve-mobile-viewport.png` |
+| Mock JSON corrigé | `frontend/tests/visual/releve-mock.json` |
+| Screenshots mock desktop fullpage | `frontend/screenshots-releve/releve-desktop-fullpage.png` |
+| Screenshots mock desktop viewport | `frontend/screenshots-releve/releve-desktop-viewport.png` |
+| Screenshots mock mobile fullpage | `frontend/screenshots-releve/releve-mobile-fullpage.png` |
+| Screenshots mock mobile viewport | `frontend/screenshots-releve/releve-mobile-viewport.png` |
+| **Screenshots réels desktop fullpage** | `frontend/screenshots-releve/real-auth/releve-real-desktop-fullpage.png` |
+| **Screenshots réels desktop viewport** | `frontend/screenshots-releve/real-auth/releve-real-desktop-viewport.png` |
+| **Screenshots réels mobile fullpage** | `frontend/screenshots-releve/real-auth/releve-real-mobile-fullpage.png` |
+| **Screenshots réels mobile viewport** | `frontend/screenshots-releve/real-auth/releve-real-mobile-viewport.png` |
+| Rapport conformité | `frontend/tests/visual/RAPPORT-CONFORMITE.md` |
 | Dette auth étudiant | `specifications/kimi/RV2-DEBT-AUTH-ETUDIANT-SETUP-B.md` |
 | Dette modal onboarding | `specifications/kimi/RV2-DEBT-WELCOME-MODAL-FIRST-LOGIN.md` |
 
@@ -71,5 +118,6 @@
 
 ## Verdict
 
-**🟢 GO V1 — Conforme maquette PC1**  
-Le rendu visuel du Relevé de notes couvre tous les cas métier critiques (validation directe, compensation, plancher, MHC) avec les tokens de design corrects, le responsive est fonctionnel, et aucune erreur console n'est détectée.
+**🟢 GO V1 — Conforme maquette PC1**
+
+Le rendu visuel du Relevé de notes est validé avec **auth réelle étudiante** sur `campus-test-v1`. Tous les cas métier critiques sont visibles (validation directe A/B/C, compensation Art. 23.1, plancher Art. 23.2, UE non validée). Le mock et le rendu réel sont **conformes** ; le seul finding mineur est la redondance du titre semestre (`2026-2027 (S1) · 2026-2027`).
