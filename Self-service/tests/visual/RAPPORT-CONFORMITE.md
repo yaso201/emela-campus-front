@@ -29,7 +29,7 @@
 | Élément | Statut | Détail données réelles |
 |---------|--------|------------------------|
 | Auth étudiant | ✅ OK | Login réussi, session valide, nom affiché "Student Setupb 002" |
-| Header semestre | ⚠️ NOK mineur | Titre redondant : "2026-2027 (S1) · 2026-2027" — `academic_term` contient déjà l'année |
+| Header semestre | ✅ OK (corrigé) | Titre : "2026-2027 (S1)" — redondance corrigée via `semesterTitle()` |
 | Moyenne semestrielle | ✅ OK | 12,1 /20 (indicatif — Art. 20.2) |
 | ECTS validés / possibles | ✅ OK | 184 / 342 |
 | Cumul programme | ✅ OK | 184 |
@@ -58,7 +58,7 @@
 | Grade ECTS vide | Aucun | Plusieurs UE avec `grade_ects=""` | Badge grade absent — comportement normal (pas de données) |
 | ECTS par UE | 6 uniforme | 6 ou 8 selon UE | Conforme règlement |
 | MHC | 2 non validés | 0 | Conforme aux données de l'étudiant |
-| Titre semestre | "Semestre 1 · 2026-2027" | "2026-2027 (S1) · 2026-2027" | **Finding** : redondance dans `academic_term` vs `academic_year` |
+| Titre semestre | "Semestre 1 · 2026-2027" | "2026-2027 (S1)" | ✅ Corrigé : `semesterTitle()` évite la duplication |
 
 ---
 
@@ -90,7 +90,7 @@
 
 ## ⚠️ Points de vigilance / Ajustements mineurs
 
-1. **Titre semestre redondant** (Finding) : `academic_term = "2026-2027 (S1)"` et `academic_year = "2026-2027"` produisent "2026-2027 (S1) · 2026-2027". Recommandation : utiliser `semesterTitle()` qui concatène `academic_term` et `academic_year` uniquement si l'année n'est pas déjà dans le terme.
+1. **Finding résolu — Titre semestre redondant** : `semesterTitle()` dans `SemesterBlock.vue` corrigée pour éviter la duplication quand `academic_term` contient déjà `academic_year`. Capture confirmée : "2026-2027 (S1)" affiché seul.
 2. **Grade ECTS vide** : quand `grade_ects=""`, le badge `GradeEctsBadge` retourne un label `"—"` avec style gris. C'est acceptable mais pourrait être masqué si vide.
 3. **Page très longue** : 41 UE dans un semestre produisent une page de 15 000+ px. La pagination ou un accordéon pourrait améliorer l'UX en V2.
 4. **Modal onboarding** : fermé par clic croix dans le test réel. La 1ère connexion affiche bien le modal (pas besoin d'interception API).
@@ -108,6 +108,7 @@
 | Screenshots mock mobile viewport | `frontend/screenshots-releve/releve-mobile-viewport.png` |
 | **Screenshots réels desktop fullpage** | `frontend/screenshots-releve/real-auth/releve-real-desktop-fullpage.png` |
 | **Screenshots réels desktop viewport** | `frontend/screenshots-releve/real-auth/releve-real-desktop-viewport.png` |
+| **Screenshot fix titre semestre** | `frontend/screenshots-releve/real-auth/releve-real-desktop-viewport-fixed.png` |
 | **Screenshots réels mobile fullpage** | `frontend/screenshots-releve/real-auth/releve-real-mobile-fullpage.png` |
 | **Screenshots réels mobile viewport** | `frontend/screenshots-releve/real-auth/releve-real-mobile-viewport.png` |
 | Rapport conformité | `frontend/tests/visual/RAPPORT-CONFORMITE.md` |
@@ -120,4 +121,4 @@
 
 **🟢 GO V1 — Conforme maquette PC1**
 
-Le rendu visuel du Relevé de notes est validé avec **auth réelle étudiante** sur `campus-test-v1`. Tous les cas métier critiques sont visibles (validation directe A/B/C, compensation Art. 23.1, plancher Art. 23.2, UE non validée). Le mock et le rendu réel sont **conformes** ; le seul finding mineur est la redondance du titre semestre (`2026-2027 (S1) · 2026-2027`).
+Le rendu visuel du Relevé de notes est validé avec **auth réelle étudiante** sur `campus-test-v1`. Tous les cas métier critiques sont visibles (validation directe A/B/C, compensation Art. 23.1, plancher Art. 23.2, UE non validée). Le mock et le rendu réel sont **conformes** ; le finding mineur du titre semestre a été **corrigé** (`2026-2027 (S1)` sans redondance).

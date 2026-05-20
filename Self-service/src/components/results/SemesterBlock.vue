@@ -10,9 +10,16 @@ const props = defineProps({
 });
 
 function semesterTitle(semester) {
-  const term = semester.academic_term || 'Semestre';
+  if (!semester) return '';
+  const term = semester.academic_term || '';
   const year = semester.academic_year || '';
-  return year ? `${term} · ${year}` : term;
+  if (!year || term.includes(year)) {
+    return term || 'Semestre';
+  }
+  if (!term) {
+    return year;
+  }
+  return `${term} · ${year}`;
 }
 
 function formatNote(note) {
