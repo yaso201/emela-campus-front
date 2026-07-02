@@ -10,6 +10,7 @@
     "build": "vite build",
     "postbuild": "node scripts/postbuild-sw-killswitch.js",
     "preview": "vite preview",
+    "test:contracts": "node --test tests/source-contracts.mjs",
     "test:attendance:p2-visual": "playwright test tests/attendance-p2-visual.spec.js --project=chromium",
     "test:attendance:p3-finalisation-visual": "playwright test tests/attendance-p3-finalisation-visual.spec.js --project=chromium"
   },

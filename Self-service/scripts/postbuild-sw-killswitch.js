@@ -22,7 +22,11 @@ import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const outDir = resolve(__dirname, '../../portal_app/public/emela');
+// F1 : cible dans le back campus, configurable comme vite.config (EMELA_BACK_PUBLIC).
+// Défaut sain = arbre Campus local (scripts/ est 3 niveaux sous Campus).
+const outDir =
+  process.env.EMELA_BACK_PUBLIC ||
+  resolve(__dirname, '../../../Backs/apps/portal_app/portal_app/public/emela');
 
 const SW_KILLSWITCH = `// L11 — Service Worker killswitch
 // Remplace l'ancien SW Workbox. Se désenregistre après activation.
