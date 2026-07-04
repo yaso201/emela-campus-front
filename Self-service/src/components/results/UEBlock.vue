@@ -75,9 +75,20 @@ function formatNote(note) {
         Validée avec compensation intra-UE (Art. 23.1)
       </div>
 
-      <!-- Floor violation notice -->
+      <!-- Jury validation notice (DEC-288 / Art. 25.3) — mention sobre, motif DS
+           réutilisé de la notice compensation, aucun nouveau composant -->
       <div
-        v-if="ue.has_floor_violation"
+        v-if="ue.is_jury_validated"
+        class="mt-2 text-xs text-ln-success font-medium flex items-center gap-1"
+      >
+        <span aria-hidden="true">ℹ</span>
+        Validée par décision de jury (Art. 25.3)
+      </div>
+
+      <!-- Floor violation notice — masquée si l'UE est validée par le jury :
+           la dérogation jury prime sur le plancher (DEC-288, D-FRONT-JURY-PLANCHER-01) -->
+      <div
+        v-if="ue.has_floor_violation && !ue.is_jury_validated"
         class="mt-2 text-xs text-ln-error font-medium flex items-center gap-1"
         role="alert"
       >
