@@ -1,0 +1,690 @@
+{
+ "portal_app.api.academic.chassis.get_academic_context": [],
+ "portal_app.api.academic.chassis.get_unit_usage": [
+  "ue"
+ ],
+ "portal_app.api.academic.chassis.get_work_queue": [
+  "domain",
+  "limit",
+  "only_mine"
+ ],
+ "portal_app.api.academic.chassis.get_work_queue_counts": [],
+ "portal_app.api.academic.chassis.list_stalled_dossiers": [],
+ "portal_app.api.academic.deliberation_mgmt.add_decision": [
+  "deliberation",
+  "student",
+  "semester_result",
+  "decision",
+  "new_academic_status",
+  "decision_reason",
+  "attendance_derogation_reason"
+ ],
+ "portal_app.api.academic.deliberation_mgmt.add_jury_member": [
+  "deliberation",
+  "member_role",
+  "user"
+ ],
+ "portal_app.api.academic.deliberation_mgmt.apply_jury_ue_decision": [
+  "deliberation",
+  "ue_result",
+  "kind",
+  "basis"
+ ],
+ "portal_app.api.academic.deliberation_mgmt.close_deliberation": [
+  "name"
+ ],
+ "portal_app.api.academic.deliberation_mgmt.create_deliberation": [
+  "program",
+  "academic_level",
+  "academic_year",
+  "academic_term",
+  "deliberation_date",
+  "president",
+  "jury_members"
+ ],
+ "portal_app.api.academic.deliberation_mgmt.get_deliberation_dashboard": [
+  "name",
+  "include_undecided"
+ ],
+ "portal_app.api.academic.deliberation_mgmt.list_deliberations": [
+  "academic_year",
+  "academic_level",
+  "status"
+ ],
+ "portal_app.api.academic.deliberation_mgmt.start_deliberation": [
+  "name"
+ ],
+ "portal_app.api.academic.discipline.appeal_suspension": [
+  "name",
+  "appeal_grounds"
+ ],
+ "portal_app.api.academic.discipline.close_without_sanction": [
+  "name",
+  "closure_reason"
+ ],
+ "portal_app.api.academic.discipline.convoke_disciplinary_council": [
+  "name",
+  "convocation_date",
+  "council_date"
+ ],
+ "portal_app.api.academic.discipline.create_disciplinary_case": [
+  "student_id",
+  "ground_category",
+  "ground_details"
+ ],
+ "portal_app.api.academic.discipline.decide_suspension_appeal": [
+  "name",
+  "decision",
+  "appeal_reason",
+  "resume_start",
+  "resume_days_remaining"
+ ],
+ "portal_app.api.academic.discipline.get_my_disciplinary_cases": [
+  "student_id"
+ ],
+ "portal_app.api.academic.discipline.lift_suspension": [
+  "name",
+  "lift_reason"
+ ],
+ "portal_app.api.academic.discipline.list_active_suspensions": [],
+ "portal_app.api.academic.discipline.list_suspensions_needing_moodle_reactivation": [],
+ "portal_app.api.academic.discipline.pronounce_disciplinary_suspension": [
+  "name",
+  "duration_weeks",
+  "pronounce_reason",
+  "council_members",
+  "is_suspended_sentence",
+  "period_start"
+ ],
+ "portal_app.api.academic.discipline.reactivate_moodle_after_expiry": [
+  "name",
+  "reason"
+ ],
+ "portal_app.api.academic.discipline.record_disciplinary_notification": [
+  "name",
+  "notified_on"
+ ],
+ "portal_app.api.academic.document_requests.create_document_request": [
+  "document_type",
+  "academic_year",
+  "academic_term",
+  "student_id"
+ ],
+ "portal_app.api.academic.document_requests.fulfill_document_request": [
+  "name"
+ ],
+ "portal_app.api.academic.document_requests.get_my_document_requests": [
+  "student_id"
+ ],
+ "portal_app.api.academic.document_requests.list_document_requests": [
+  "status"
+ ],
+ "portal_app.api.academic.document_requests.refuse_document_request": [
+  "name",
+  "refusal_reason"
+ ],
+ "portal_app.api.academic.dossiers_read.list_dossiers": [
+  "kind",
+  "limit"
+ ],
+ "portal_app.api.academic.early_warning.add_preconisation": [
+  "student",
+  "kind",
+  "academic_term",
+  "details",
+  "owner_user",
+  "objectives",
+  "support_plan",
+  "source_session"
+ ],
+ "portal_app.api.academic.early_warning.close_preconisation": [
+  "name",
+  "closure_note"
+ ],
+ "portal_app.api.academic.early_warning.convoke_cps_session": [
+  "name"
+ ],
+ "portal_app.api.academic.early_warning.create_cps_session": [
+  "academic_term",
+  "session_date",
+  "prefill_candidates"
+ ],
+ "portal_app.api.academic.early_warning.get_cps_session": [
+  "name"
+ ],
+ "portal_app.api.academic.early_warning.get_my_preconisations": [
+  "student_id"
+ ],
+ "portal_app.api.academic.early_warning.hold_cps_session": [
+  "name",
+  "attendance"
+ ],
+ "portal_app.api.academic.early_warning.list_absence_threshold_signals": [
+  "academic_term"
+ ],
+ "portal_app.api.academic.early_warning.list_cps_candidates": [
+  "academic_term"
+ ],
+ "portal_app.api.academic.early_warning.list_cps_sessions": [
+  "academic_term",
+  "status"
+ ],
+ "portal_app.api.academic.early_warning.list_preconisations": [
+  "academic_term",
+  "student",
+  "status",
+  "kind"
+ ],
+ "portal_app.api.academic.early_warning.record_contract_finding": [
+  "name",
+  "finding"
+ ],
+ "portal_app.api.academic.early_warning.update_cps_examined": [
+  "name",
+  "examined"
+ ],
+ "portal_app.api.academic.enrollment_mgmt.create_program_enrollment": [
+  "student",
+  "program",
+  "academic_year",
+  "academic_term",
+  "academic_level",
+  "pathway"
+ ],
+ "portal_app.api.academic.enrollment_mgmt.enroll_student_in_course": [
+  "student",
+  "course",
+  "program_enrollment"
+ ],
+ "portal_app.api.academic.enrollment_mgmt.enroll_student_in_mhc": [
+  "student",
+  "mhc_module"
+ ],
+ "portal_app.api.academic.enrollment_mgmt.get_enrollment_log": [
+  "integration_log"
+ ],
+ "portal_app.api.academic.enrollment_mgmt.list_incomplete_enrollments": [
+  "limit"
+ ],
+ "portal_app.api.academic.enrollment_mgmt.list_moodle_orphans": [
+  "limit"
+ ],
+ "portal_app.api.academic.enrollment_mgmt.replay_enrollment": [
+  "integration_log"
+ ],
+ "portal_app.api.academic.enrollment_mgmt.run_pedagogical_enrollment": [
+  "student"
+ ],
+ "portal_app.api.academic.enrollment_mgmt.withdraw_course_enrollment": [
+  "course_enrollment",
+  "reason"
+ ],
+ "portal_app.api.academic.exam_mgmt.add_exam_students": [
+  "exam_schedule",
+  "students"
+ ],
+ "portal_app.api.academic.exam_mgmt.create_exam_schedule": [
+  "values"
+ ],
+ "portal_app.api.academic.exam_mgmt.get_exam_schedule": [
+  "name"
+ ],
+ "portal_app.api.academic.exam_mgmt.list_exam_schedules": [
+  "program",
+  "academic_year",
+  "academic_term",
+  "course",
+  "date_from",
+  "date_to",
+  "limit"
+ ],
+ "portal_app.api.academic.exam_mgmt.populate_exam_students_from_group": [
+  "exam_schedule",
+  "student_group"
+ ],
+ "portal_app.api.academic.exam_mgmt.remove_exam_students": [
+  "exam_schedule",
+  "students"
+ ],
+ "portal_app.api.academic.exam_mgmt.update_exam_schedule": [
+  "name",
+  "values"
+ ],
+ "portal_app.api.academic.grade_control.decide_modification": [
+  "name",
+  "decision",
+  "reason"
+ ],
+ "portal_app.api.academic.grade_control.integrate_submission": [
+  "name"
+ ],
+ "portal_app.api.academic.grade_control.list_submissions_for_control": [
+  "status",
+  "course",
+  "student_group",
+  "evaluation_component",
+  "limit",
+  "include_attendance",
+  "academic_year"
+ ],
+ "portal_app.api.academic.grade_control.process_submission": [
+  "name"
+ ],
+ "portal_app.api.academic.grade_control.receive_submission": [
+  "name"
+ ],
+ "portal_app.api.academic.grade_control.reject_submission": [
+  "name",
+  "reason"
+ ],
+ "portal_app.api.academic.grade_control.set_module_deadline": [
+  "course",
+  "evaluation_component",
+  "deadline_date"
+ ],
+ "portal_app.api.academic.graduation.attest_national_exam": [
+  "name",
+  "attachment"
+ ],
+ "portal_app.api.academic.graduation.award_felicitations": [
+  "name"
+ ],
+ "portal_app.api.academic.graduation.create_graduation_dossier": [
+  "student_id",
+  "program"
+ ],
+ "portal_app.api.academic.graduation.decide_graduation": [
+  "name",
+  "decision",
+  "decision_reason",
+  "adjournment_deadline"
+ ],
+ "portal_app.api.academic.graduation.get_graduation_dossier": [
+  "name"
+ ],
+ "portal_app.api.academic.graduation.get_my_graduation": [
+  "student_id"
+ ],
+ "portal_app.api.academic.graduation.issue_graduation_document": [
+  "name",
+  "doc_type"
+ ],
+ "portal_app.api.academic.graduation.list_graduation_dossiers": [
+  "status",
+  "limit"
+ ],
+ "portal_app.api.academic.graduation.open_graduation_jury": [
+  "name",
+  "jury_members"
+ ],
+ "portal_app.api.academic.graduation.present_eligibility": [
+  "name"
+ ],
+ "portal_app.api.academic.graduation.reopen_after_adjournment": [
+  "name"
+ ],
+ "portal_app.api.academic.groups.add_students_to_group": [
+  "group",
+  "students"
+ ],
+ "portal_app.api.academic.groups.assign_instructor": [
+  "group",
+  "instructor"
+ ],
+ "portal_app.api.academic.groups.create_group": [
+  "values"
+ ],
+ "portal_app.api.academic.groups.deactivate_students_in_group": [
+  "group",
+  "students"
+ ],
+ "portal_app.api.academic.groups.get_cohort_overview": [
+  "program",
+  "academic_year",
+  "academic_term"
+ ],
+ "portal_app.api.academic.groups.get_group": [
+  "name",
+  "count_only"
+ ],
+ "portal_app.api.academic.groups.get_student_groups": [
+  "student"
+ ],
+ "portal_app.api.academic.groups.list_group_candidates": [
+  "group"
+ ],
+ "portal_app.api.academic.groups.list_groups": [
+  "program",
+  "academic_year",
+  "academic_term",
+  "group_type",
+  "include_disabled"
+ ],
+ "portal_app.api.academic.groups.remove_instructor": [
+  "group",
+  "instructor"
+ ],
+ "portal_app.api.academic.groups.set_group_disabled": [
+  "name",
+  "disabled"
+ ],
+ "portal_app.api.academic.groups.transfer_student": [
+  "from_group",
+  "to_group",
+  "student"
+ ],
+ "portal_app.api.academic.groups.update_group": [
+  "name",
+  "values"
+ ],
+ "portal_app.api.academic.module_grade.list_adjusted_module_averages": [
+  "course",
+  "student",
+  "limit"
+ ],
+ "portal_app.api.academic.module_grade.propose_module_average": [
+  "course",
+  "student_group"
+ ],
+ "portal_app.api.academic.module_grade.validate_module_average": [
+  "course",
+  "student_group",
+  "decisions"
+ ],
+ "portal_app.api.academic.planning_mgmt.assign_instructor": [
+  "schedules",
+  "instructor"
+ ],
+ "portal_app.api.academic.planning_mgmt.check_schedule_conflicts": [
+  "schedule_date",
+  "from_time",
+  "to_time",
+  "student_group",
+  "instructor",
+  "room",
+  "exclude"
+ ],
+ "portal_app.api.academic.planning_mgmt.create_schedule": [
+  "values"
+ ],
+ "portal_app.api.academic.planning_mgmt.get_instructor_day_load": [
+  "instructor",
+  "day"
+ ],
+ "portal_app.api.academic.planning_mgmt.get_module_planning_summary": [
+  "course"
+ ],
+ "portal_app.api.academic.planning_mgmt.get_schedule": [
+  "name"
+ ],
+ "portal_app.api.academic.planning_mgmt.list_schedules": [
+  "student_group",
+  "course",
+  "instructor",
+  "room",
+  "program",
+  "date_from",
+  "date_to",
+  "planning_status",
+  "session_type",
+  "status",
+  "limit",
+  "count_only"
+ ],
+ "portal_app.api.academic.planning_mgmt.list_tp_requalification_candidates": [
+  "limit"
+ ],
+ "portal_app.api.academic.planning_mgmt.publish_schedules": [
+  "schedules",
+  "override_reason"
+ ],
+ "portal_app.api.academic.planning_mgmt.set_schedule_status": [
+  "name",
+  "status",
+  "reason"
+ ],
+ "portal_app.api.academic.planning_mgmt.update_schedule": [
+  "name",
+  "values"
+ ],
+ "portal_app.api.academic.service_allocation.carry_over_service_lines": [
+  "program",
+  "from_year",
+  "to_year"
+ ],
+ "portal_app.api.academic.service_allocation.delete_service_line": [
+  "name"
+ ],
+ "portal_app.api.academic.service_allocation.get_instructor_service_summary": [
+  "instructor",
+  "academic_year"
+ ],
+ "portal_app.api.academic.service_allocation.get_service_coverage": [
+  "program",
+  "academic_year"
+ ],
+ "portal_app.api.academic.service_allocation.get_service_plan": [
+  "program",
+  "academic_year"
+ ],
+ "portal_app.api.academic.service_allocation.get_service_realized": [
+  "instructor",
+  "academic_year"
+ ],
+ "portal_app.api.academic.service_allocation.get_service_reconciliation": [
+  "instructor",
+  "academic_year"
+ ],
+ "portal_app.api.academic.service_allocation.get_suggested_instructor": [
+  "course",
+  "student_group",
+  "activity_type"
+ ],
+ "portal_app.api.academic.service_allocation.list_service_lines": [
+  "academic_year",
+  "program",
+  "status"
+ ],
+ "portal_app.api.academic.service_allocation.list_service_signals": [
+  "academic_year",
+  "program"
+ ],
+ "portal_app.api.academic.service_allocation.propose_service_lines": [
+  "program",
+  "academic_year"
+ ],
+ "portal_app.api.academic.service_allocation.return_service_line": [
+  "name",
+  "return_reason"
+ ],
+ "portal_app.api.academic.service_allocation.upsert_service_line": [
+  "values",
+  "name"
+ ],
+ "portal_app.api.academic.service_allocation.validate_service_lines": [
+  "names",
+  "derogation_reason"
+ ],
+ "portal_app.api.academic.status_cause.get_my_status_cause": [
+  "student_id"
+ ],
+ "portal_app.api.academic.structure.attach_module_to_ue": [
+  "ue",
+  "course",
+  "coefficient"
+ ],
+ "portal_app.api.academic.structure.create_academic_level": [
+  "values"
+ ],
+ "portal_app.api.academic.structure.create_academic_term": [
+  "academic_year",
+  "term_name",
+  "term_start_date",
+  "term_end_date"
+ ],
+ "portal_app.api.academic.structure.create_academic_year": [
+  "academic_year_name",
+  "year_start_date",
+  "year_end_date"
+ ],
+ "portal_app.api.academic.structure.create_mhc": [
+  "values"
+ ],
+ "portal_app.api.academic.structure.create_module": [
+  "course_name",
+  "ue",
+  "values"
+ ],
+ "portal_app.api.academic.structure.create_parcours": [
+  "values"
+ ],
+ "portal_app.api.academic.structure.create_program": [
+  "program_name",
+  "values"
+ ],
+ "portal_app.api.academic.structure.create_ue": [
+  "values"
+ ],
+ "portal_app.api.academic.structure.detach_module_from_ue": [
+  "ue",
+  "course"
+ ],
+ "portal_app.api.academic.structure.get_maquette_validation_status": [
+  "program",
+  "academic_term"
+ ],
+ "portal_app.api.academic.structure.get_module": [
+  "course"
+ ],
+ "portal_app.api.academic.structure.get_program": [
+  "program"
+ ],
+ "portal_app.api.academic.structure.get_structure_tree": [
+  "program",
+  "academic_year"
+ ],
+ "portal_app.api.academic.structure.get_ue": [
+  "ue"
+ ],
+ "portal_app.api.academic.structure.get_ue_shared_programs": [
+  "ue"
+ ],
+ "portal_app.api.academic.structure.list_academic_terms": [
+  "academic_year"
+ ],
+ "portal_app.api.academic.structure.list_academic_years": [],
+ "portal_app.api.academic.structure.list_programs": [
+  "program_type",
+  "include_inactive"
+ ],
+ "portal_app.api.academic.structure.list_structure_options": [],
+ "portal_app.api.academic.structure.propose_maquette": [
+  "program",
+  "academic_term",
+  "items"
+ ],
+ "portal_app.api.academic.structure.return_maquette_to_draft": [
+  "program",
+  "academic_term",
+  "reason",
+  "items"
+ ],
+ "portal_app.api.academic.structure.set_program_active": [
+  "program",
+  "is_active"
+ ],
+ "portal_app.api.academic.structure.update_academic_level": [
+  "academic_level",
+  "values"
+ ],
+ "portal_app.api.academic.structure.update_academic_term": [
+  "name",
+  "values"
+ ],
+ "portal_app.api.academic.structure.update_academic_year": [
+  "name",
+  "values"
+ ],
+ "portal_app.api.academic.structure.update_mhc": [
+  "mhc",
+  "values"
+ ],
+ "portal_app.api.academic.structure.update_module": [
+  "course",
+  "values"
+ ],
+ "portal_app.api.academic.structure.update_parcours": [
+  "parcours",
+  "values"
+ ],
+ "portal_app.api.academic.structure.update_program": [
+  "name",
+  "values"
+ ],
+ "portal_app.api.academic.structure.update_ue": [
+  "ue",
+  "values"
+ ],
+ "portal_app.api.academic.structure.validate_maquette": [
+  "program",
+  "academic_term",
+  "items"
+ ],
+ "portal_app.api.academic.year_closure.close_academic_year": [
+  "academic_year",
+  "new_current_year",
+  "reason"
+ ],
+ "portal_app.api.academic.year_closure.get_year_status": [
+  "academic_year"
+ ],
+ "portal_app.api.academic.year_closure.reopen_academic_year": [
+  "academic_year",
+  "reason"
+ ],
+ "portal_app.api.identity.role_administration.add_role": [
+  "target_user",
+  "role",
+  "acknowledged_warnings"
+ ],
+ "portal_app.api.identity.role_administration.add_scope": [
+  "target_user",
+  "program",
+  "acknowledged_warnings"
+ ],
+ "portal_app.api.identity.role_administration.apply_profile": [
+  "target_user",
+  "profile",
+  "acknowledged_warnings"
+ ],
+ "portal_app.api.identity.role_administration.get_assignment_journal": [
+  "target_user",
+  "action",
+  "limit"
+ ],
+ "portal_app.api.identity.role_administration.get_user_roles_detail": [
+  "target_user"
+ ],
+ "portal_app.api.identity.role_administration.list_anomalies": [],
+ "portal_app.api.identity.role_administration.list_role_holders": [],
+ "portal_app.api.identity.role_administration.list_role_profiles": [],
+ "portal_app.api.identity.role_administration.list_roles_catalog": [],
+ "portal_app.api.identity.role_administration.remove_role": [
+  "target_user",
+  "role",
+  "reason",
+  "acknowledged_warnings"
+ ],
+ "portal_app.api.identity.role_administration.remove_scope": [
+  "target_user",
+  "program",
+  "reason",
+  "acknowledged_warnings"
+ ],
+ "portal_app.api.identity.role_administration.simulate_assignment": [
+  "target_user",
+  "kind",
+  "value"
+ ],
+ "portal_app.api.identity.session_context.get_session_context": []
+}

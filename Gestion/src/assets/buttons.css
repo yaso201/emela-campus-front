@@ -1,0 +1,25 @@
+/* Boutons et sélecteurs — les trois seules classes de composant du projet.
+   Tout le reste passe par des utilitaires Tailwind. Hauteur minimale 36 px au
+   clavier, 44 px sur toute cible tactile (contrainte d'accessibilité §3). */
+
+@layer components {
+  .ln-btn-primary,
+  .ln-btn-secondary,
+  .ln-btn-danger {
+    @apply inline-flex min-h-[36px] items-center justify-center gap-2 whitespace-nowrap rounded-md-ln px-4 text-body-sm font-semibold;
+  }
+  .ln-btn-primary   { @apply bg-ln-blue-800 text-white hover:bg-ln-blue-900; }
+  .ln-btn-secondary { @apply border border-ln-gray-300 bg-white text-ln-gray-700 hover:border-ln-gray-500 hover:text-ln-gray-900; }
+  .ln-btn-danger    { @apply bg-ln-error text-white; }
+
+  .ln-btn-primary:disabled,
+  .ln-btn-danger:disabled { @apply cursor-not-allowed bg-ln-gray-200 text-ln-gray-400; }
+
+  .ln-ctx-pick {
+    @apply flex h-[30px] items-center gap-2 rounded-sm-ln border border-ln-gray-200 bg-white px-3 font-semibold text-ln-gray-900 hover:border-ln-blue-600;
+  }
+
+  /* Les liens ne doivent jamais tomber sur le bleu par défaut du navigateur. */
+  a { @apply text-ln-blue-600; }
+  a:hover { @apply text-ln-blue-900; }
+}

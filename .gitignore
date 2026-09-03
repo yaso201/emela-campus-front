@@ -1,5 +1,7 @@
 node_modules/
 dist/
+# Gestion : builds jumeaux (dist-mock/, dist-live/…) que `dist/` ne couvre pas
+dist-*/
 .vite/
 test-results/
 .DS_Store

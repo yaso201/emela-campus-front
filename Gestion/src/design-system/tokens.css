@@ -1,0 +1,23 @@
+/* Jetons institutionnels LaNEM — miroir CSS de tailwind.config.js.
+   Utilisés par les rares règles qui ne passent pas par une classe utilitaire
+   (ombres portées composées, dégradés de squelette, masques).
+   Source de vérité : portal_app/design-system/tokens/tokens.css. */
+
+:root{
+  --ln-blue-50:#F4F8FF;--ln-blue-100:#E8F0FE;--ln-blue-200:#C7D8F5;
+  --ln-blue-600:#1E62C4;--ln-blue-700:#104EAC;--ln-blue-800:#0D3B8C;--ln-blue-900:#0A2463;
+  --ln-gray-50:#FAFBFC;--ln-gray-100:#F0F2F5;--ln-gray-200:#E1E4E8;--ln-gray-300:#D1D5DB;
+  --ln-gray-400:#9CA3AF;--ln-gray-500:#6B7280;--ln-gray-600:#4B5563;--ln-gray-700:#374151;--ln-gray-900:#111827;
+  --ln-success:#047857;--ln-success-bg:#ECFDF5;
+  --ln-warning:#B45309;--ln-warning-bg:#FFFBEB;
+  --ln-error:#B91C1C;--ln-error-bg:#FEF2F2;
+  --ln-row-compact:36px;--ln-row-default:44px;--ln-row-comfort:52px;--ln-touch:44px;
+}
+
+/* Chiffres alignés — exigence de densité du lot 1 §5. */
+.tabular{font-variant-numeric:tabular-nums}
+
+/* Squelette de chargement — la seule animation du système. */
+@keyframes ln-shimmer{to{background-position:-200% 0}}
+.ln-skeleton{background:linear-gradient(90deg,var(--ln-gray-100) 0%,var(--ln-gray-50) 50%,var(--ln-gray-100) 100%);background-size:200% 100%;animation:ln-shimmer 1.4s linear infinite}
+@media (prefers-reduced-motion:reduce){.ln-skeleton{animation:none}}

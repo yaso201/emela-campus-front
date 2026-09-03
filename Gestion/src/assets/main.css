@@ -1,0 +1,26 @@
+/* Feuille d'entrée — à importer une seule fois, par la coquille.
+   L'ordre compte : les jetons AVANT Tailwind, pour que les valeurs arbitraires
+   qui référencent var(--ln-*) résolvent (colonnes ancrées, liseré du fil de
+   procédure, squelette de chargement). */
+@import './../design-system/tokens.css';
+/* buttons.css est importé ICI, avant les directives : un @import placé après une
+   autre règle est du CSS invalide, et postcss-import ne le traite pas de façon
+   fiable. Ses règles vivent dans @layer components — c'est Tailwind qui décide
+   de leur place dans la cascade, pas l'ordre de l'import. */
+@import './buttons.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Police auto-hébergée — aucun appel réseau externe (contrainte §3).
+   MÊME FICHIER que le self-service (DEC-149) — CORRECTION mandat branchement
+   (à reverser) : le chemin PARTAGÉ servi est /assets/portal_app/emela/fonts/inter/ ;
+   « /fonts/inter/ » n'existe pas sur le serveur. Pour que les
+   deux applications servent les mêmes fichiers.
+   ⚠️ Les .woff2 ne sont PAS dans le dépôt du self-service — il les référence
+   sans les porter. À récupérer à la source et déposer dans les deux projets. */
+@font-face { font-family:'Inter'; src:url('/assets/portal_app/emela/fonts/inter/Inter-Regular.woff2') format('woff2');  font-weight:400; font-display:swap; }
+@font-face { font-family:'Inter'; src:url('/assets/portal_app/emela/fonts/inter/Inter-Medium.woff2') format('woff2');   font-weight:500; font-display:swap; }
+@font-face { font-family:'Inter'; src:url('/assets/portal_app/emela/fonts/inter/Inter-SemiBold.woff2') format('woff2'); font-weight:600; font-display:swap; }
+@font-face { font-family:'Inter'; src:url('/assets/portal_app/emela/fonts/inter/Inter-Bold.woff2') format('woff2');     font-weight:700; font-display:swap; }
