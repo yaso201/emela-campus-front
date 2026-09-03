@@ -16,9 +16,13 @@ npm ci                       # une fois — dépendances verrouillées (package-
 npm run dev                  # travailler en simulacre, aucun serveur requis
 npm run audit                # AVANT tout build : le harnais de gardes (audit.mjs)
 
-npm run build -- --outDir dist-mock                     # paquet simulacre
-VITE_API_MODE=live npm run build -- --outDir dist-live  # paquet branché serveur
+npm run build -- --outDir dist-mock                        # paquet simulacre
+VITE_API_MODE=server npm run build -- --outDir dist-server # paquet branché serveur
 ```
+
+Toute valeur ≠ `mock` donne le mode branché (le code ne teste que `=== "mock"`), mais la
+valeur est inlinée dans le bundle : c'est `server` qui reproduit **à l'octet** les
+releases en service (prouvé le 04/09 sur `ce9415e8ecc1` et `dfeb99f54dd9`).
 
 Déployer (en natif, depuis `Campus/Backs/` — jamais depuis un montage) :
 
