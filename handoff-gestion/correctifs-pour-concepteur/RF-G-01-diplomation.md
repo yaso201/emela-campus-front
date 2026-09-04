@@ -1,0 +1,2 @@
+# RF-G-01 — écran Diplomation (`src/api/graduation.js`)
+**Quoi** : les 9 actes portaient des clés nues 🟡 (carte P-06) — le module serveur `graduation.py` existe avec LES MÊMES NOMS ; préfixe posé (const GR). Selects serveur : decision {Diplômé, Ajourné, Non-attribué} · doc_type {attestation_reussite, diplome} · sièges Art. 46. Cliqué : create 200 ; present/decide/issue → 417 RÉDIGÉS (Art. 45-47) tant que le moteur n'a pas de Semester Results (seed moteur demandé, S-6) — tes gardes de conception sont codées serveur, ordre des actes compris.

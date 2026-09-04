@@ -300,11 +300,14 @@ const groupCandidates = computed(() => {
     .map((s) => ({ ...s, already_registered: ids.has(s.student) ? 1 : 0 }));
 });
 const alreadyCount = computed(() => groupCandidates.value.filter((s) => s.already_registered).length);
-const SOURCE_GROUP = 'SG-L2GL-PROMO';
+// RF-G-01 C1 — le groupe source n'est PLUS une constante ('SG-L2GL-PROMO' en dur
+// partait dans l'acte de masse) : il est LU de l'épreuve sélectionnée, qui porte
+// son student_group côté serveur (planning_mgmt, champ des lectures d'épreuve).
+const sourceGroup = computed(() => exam.value?.student_group || null);
 
 async function runPopulate() {
   report.value = await populateExamStudentsFromGroup({
-    exam_schedule: selectedId.value, student_group: SOURCE_GROUP,
+    exam_schedule: selectedId.value, student_group: sourceGroup.value,
   });
 }
 function closePopulate() {
@@ -326,5 +329,7 @@ watch(params, reload);
 watch(exams, (e) => { if (e.length && !selectedId.value) selectedId.value = e[0].name; });
 watch(selectedId, loadExam);
 // Le groupe source n'est lu qu'à l'ouverture du peuplement : inutile avant.
-watch(populateOpen, (open) => { if (open) groupRes.load({ name: SOURCE_GROUP }); });
+watch(populateOpen, (open) => {
+  if (open && sourceGroup.value) groupRes.load({ name: sourceGroup.value });
+});
 </script>

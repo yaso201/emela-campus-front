@@ -61,6 +61,18 @@ export const getStructureTree = async (p) => {
     const rows = (programs && programs.items) || programs || [];
     program = rows[0] && (rows[0].name || rows[0].id);
   }
+  // RF-G-01 (AN-03) : pour un porteur SANS portée, la liste des filières revient
+  // VIDE (cloisonnement fail-closed) et le repli « première filière » ne résout
+  // rien — l'appel partait sans `program` et le serveur tombait en 500 TypeError
+  // (paramètre requis absent). On n'appelle pas sans filière : on explique.
+  // (Le durcissement serveur — 4xx rédigé — est remonté : S-5, BACK-G-01.)
+  if (!program) {
+    throw Object.assign(
+      new Error('Aucune filière dans votre portée — la structure s\'ouvre par '
+        + 'filière. Si une filière doit vous être liée, voyez l\'administration '
+        + 'des rôles.'),
+      { code: 'EMPTY_SCOPE', details: null, status: 0 });
+  }
   // F3-FORMES : la SIGNATURE fait foi — (program, academic_year) seuls ;
   // `term` ne part plus (l'arbre montre tous les semestres).
   const d = await call(ST + 'get_structure_tree',

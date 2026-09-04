@@ -60,28 +60,40 @@ export const listRoleGrants = async (p) => {
   return { count: items.length, items,
            profiles: (profiles || []).map((x) => x.profile || x) };
 };
-/** 🔴 chemin nu — surface T5 existante à apparier (formes à confronter). */
-export const getRoleGrant = (person) => call('get_role_grant', { person });   // à créer
-/** 🔴 chemin nu — surface T5 existante à apparier (formes à confronter). */
-export const listRoleProfiles = () => call('list_role_profiles');             // à créer
-/** 🔴 chemin nu — surface T5 existante à apparier (formes à confronter). */
-export const listAssignableRoles = () => call('list_assignable_roles');       // à créer
+/* ── Traduits RF-G-01 (B1) — la surface T5 EXISTE : `role_administration`, garde SM.
+ * Adaptations de forme : `person` → `target_user` ; catalogue et profils sous d'autres
+ * noms ; la simulation est UN changement par appel (arbitrage A5 : l'écran enchaîne N
+ * simulations, agrège les avertissements, et n'écrit qu'avec TOUS les accusés).
+ * Cliqués C1 : simulate/add_role/remove_role/add_scope 200, journal RAL-*. */
+const RA = 'portal_app.api.identity.role_administration.';
+/** 🟢 `get_user_roles_detail(target_user)` — détail d'un porteur (+ liaisons dormantes). */
+export const getRoleGrant = (person) => call(RA + 'get_user_roles_detail', { target_user: person });
+/** 🟢 `list_role_profiles()` — {sod_rule, profiles[{profile, roles[]}]}. */
+export const listRoleProfiles = () => call(RA + 'list_role_profiles');
+/** 🟢 `list_roles_catalog()` — {roles[{role, opens, decision_bearer, scoped, bypass}],
+ *  forbidden[{role, why}]} : l'interdit est rendu AVEC sa raison (expliqué, pas masqué). */
+export const listAssignableRoles = () => call(RA + 'list_roles_catalog');
 
 /** Le point d'entrée qui décide de tous les autres : sans lui, l'écran
  *  réimplémente la matrice de rôles dans un navigateur. */
-/** 🔴 chemin nu — surface T5 existante à apparier (formes à confronter). */
-export const previewGrantEffect = (p) => call('preview_grant_effect', p);     // à créer
+/** 🟢 `simulate_assignment(target_user, kind, value)` — kind ∈ {profil_applique,
+ *  role_ajoute, role_retire, portee_armee, portee_retiree}. Rend {before, after, opens[]
+ *  (phrases SERVEUR), warnings[{code W-*, message}], acknowledgement_contract}. */
+export const previewGrantEffect = (p) => call(RA + 'simulate_assignment', p);
 
-/** 🔴 chemin nu — surface T5 existante à apparier (formes à confronter). */
-export const assignRoleProfile = (p) => call('assign_role_profile', p);       // à créer
-/** 🔴 chemin nu — surface T5 existante à apparier (formes à confronter). */
-export const addRole = (p) => call('add_role', p);                            // à créer
-/** 🔴 chemin nu — surface T5 existante à apparier (formes à confronter). */
-export const removeRole = (p) => call('remove_role', p);                      // à créer
-/** 🔴 chemin nu — surface T5 existante à apparier (formes à confronter). */
-export const setRoleScope = (p) => call('set_role_scope', p);                 // à créer
-/** 🔴 chemin nu — surface T5 existante à apparier (formes à confronter). */
-export const clearRoleScope = (p) => call('clear_role_scope', p);             // à créer
+/** 🟢 `apply_profile(target_user, profile, acknowledged_warnings)` — accusés EXACTS exigés. */
+export const assignRoleProfile = (p) => call(RA + 'apply_profile', p);
+/** 🟢 `add_role(target_user, role, acknowledged_warnings)`. */
+export const addRole = (p) => call(RA + 'add_role', p);
+/** 🟢 `remove_role(target_user, role, reason, acknowledged_warnings)` — motif OBLIGATOIRE
+ *  (throw serveur si vide ; libre tant que la MOA n'impose pas de catalogue — VOCAB §2). */
+export const removeRole = (p) => call(RA + 'remove_role', p);
+/** 🟢 `add_scope(target_user, program, acknowledged_warnings)` — armer une portée.
+ *  Les 4 `scope.kind` de T5 sont RENDUS en lecture (scope_report.origin) ; l'écriture
+ *  est par programme. */
+export const setRoleScope = (p) => call(RA + 'add_scope', p);
+/** 🟢 `remove_scope(target_user, program, reason, acknowledged_warnings)` — motivé. */
+export const clearRoleScope = (p) => call(RA + 'remove_scope', p);
 /**
  * ⚠️ FORMES — la forme serveur est GROUPÉE PAR PORTEUR ({count,
  * holders_with_anomalies[].anomalies[]}) : aplatie ici ; les libellés de

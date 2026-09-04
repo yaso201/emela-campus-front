@@ -394,22 +394,29 @@ export const getServiceProgress = async (p) => {
   };
 };
 
-/** 🔴 acte en clé nue — le réel vit dans service_allocation (upsert/propose/validate/return/carry_over_service_lines), formes à confronter avant branchement. */
-export const createServiceLine = (p) => call('create_service_line', p);
-/** 🔴 acte en clé nue — le réel vit dans service_allocation (upsert/propose/validate/return/carry_over_service_lines), formes à confronter avant branchement. */
-export const updateServiceLine = (p) => call('update_service_line', p);
-/** 🔴 acte en clé nue — le réel vit dans service_allocation (upsert/propose/validate/return/carry_over_service_lines), formes à confronter avant branchement. */
-export const deleteServiceLine = (p) => call('delete_service_line', p);
-/** 🔴 acte en clé nue — le réel vit dans service_allocation (upsert/propose/validate/return/carry_over_service_lines), formes à confronter avant branchement. */
-export const proposeServicePlan = (p) => call('propose_service_plan', p);
-/** 🔴 acte en clé nue — le réel vit dans service_allocation (upsert/propose/validate/return/carry_over_service_lines), formes à confronter avant branchement. */
-export const validateServicePlan = (p) => call('validate_service_plan', p);
-/** 🔴 acte en clé nue — le réel vit dans service_allocation (upsert/propose/validate/return/carry_over_service_lines), formes à confronter avant branchement. */
-export const returnServicePlan = (p) => call('return_service_plan', p);
+/* ── Actes — traduits RF-G-01 (B1), cliqués au protocole réel (C1 : SRV-2026-00001/2).
+ * Le serveur travaille en LIGNES, jamais en « plan » : créer/modifier passent par le
+ * même upsert (values{} + name), proposer opère le couple programme×année (RAPPORT DE
+ * MASSE {total, succeeded[], failed[], retry_ids[]}), valider prend les lignes COCHÉES
+ * (names[]), renvoyer est unitaire et motivé. Gardes : RF (écrire, proposer — portée
+ * armée exigée) · DE (valider, renvoyer). */
+/** 🟢 `upsert_service_line(values)` — création. Rend {name, validation_status, applied, ignored_fields}. */
+export const createServiceLine = (p) => call(SA + 'upsert_service_line', { values: p });
+/** 🟢 `upsert_service_line(values, name)` — modification : même geste serveur que la création. */
+export const updateServiceLine = ({ name, ...fields }) =>
+  call(SA + 'upsert_service_line', { name, values: fields });
+/** 🟢 `delete_service_line(name)` — Brouillon seul (on_trash). Rend {deleted}. */
+export const deleteServiceLine = (p) => call(SA + 'delete_service_line', p);
+/** 🟢 `propose_service_lines(program, academic_year)` — rapport de masse, jamais un booléen. */
+export const proposeServicePlan = (p) => call(SA + 'propose_service_lines', p);
+/** 🟢 `validate_service_lines(names[], derogation_reason?)` — les lignes cochées, pas « le plan ». */
+export const validateServicePlan = (p) => call(SA + 'validate_service_lines', p);
+/** 🟢 `return_service_line(name, return_reason)` — unitaire, motif obligatoire et persisté. */
+export const returnServicePlan = (p) => call(SA + 'return_service_line', p);
 
 /**
- * Reconduction annuelle. 🔴 L'un des neuf ajustements : sans reprise, juillet
- * est une re-saisie intégrale. Reprend les lignes validées de N-1 en brouillon.
+ * Reconduction annuelle. Sans reprise, juillet est une re-saisie intégrale.
+ * 🟢 `carry_over_service_lines(program, from_year, to_year)` — rapport de masse,
+ * échec motivé ligne à ligne (cliqué C1 : motif « année cible absente » rendu).
  */
-/** 🔴 acte en clé nue — le réel vit dans service_allocation (upsert/propose/validate/return/carry_over_service_lines), formes à confronter avant branchement. */
-export const carryOverServicePlan = (p) => call('carry_over_service_plan', p);
+export const carryOverServicePlan = (p) => call(SA + 'carry_over_service_lines', p);

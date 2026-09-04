@@ -1,0 +1,2 @@
+# RF-G-01 — écran Clôture (`src/api/closure.js`)
+**Quoi** : `close_academic_year`/`reopen_academic_year` traduits (year_closure, garde Director). **Écart de conception constaté** : le serveur prend UN `reason` global (pas un motif par anomalie — question MOA) et exige `new_current_year`, absent de ta conception — l'écran devra le faire choisir (années postérieures à la courante). Le front exigera le motif dès qu'une anomalie est ouverte (règle 2, bouton inerte).

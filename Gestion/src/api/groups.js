@@ -190,4 +190,7 @@ export const createProgramEnrollment = (p) =>
  * Ce qu'il faut : lire un `Integration Log` par son nom — étapes, statut, motif —
  * sans rien exécuter.
  */
-export const getEnrollmentLog = (p) => call('get_enrollment_log', p);
+export const getEnrollmentLog = (p) => call(ENROLL + 'get_enrollment_log', p);
+// 🟢 RF-G-01 : le MANQUE ACCORDÉ est construit — enrollment_mgmt.get_enrollment_log
+// (integration_log). Garde de périmètre : seuls les journaux d'INSCRIPTION sont servis
+// (417 rédigé sinon — cliqué C1).

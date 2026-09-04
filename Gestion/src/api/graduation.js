@@ -32,6 +32,14 @@
  */
 import { call } from './client.js';
 
+// RF-G-01 — les neuf actes portaient des clés nues (🟡 carte P-06) : le module
+// serveur `graduation.py` existe avec LES MÊMES NOMS, gardés (EM|GA instruire,
+// Direction décider/émettre) et Selects serveur : decision ∈ {Diplômé, Ajourné,
+// Non-attribué}, doc_type ∈ {attestation_reussite, diplome}, sièges Art. 46.
+// Cliqués C1 : create 200 (GRAD-2026-00001) ; present/decide/issue → 417 rédigés
+// (Art. 45-47) tant que le moteur n'a pas de Semester Results (S-6).
+const GR = 'portal_app.api.academic.graduation.';
+
 /* ─── Lectures ─────────────────────────────────────────────────────────── */
 
 /** 🟡 `list_graduation_dossiers(...)` — staff. La file, le jury, les issues. */
@@ -41,18 +49,18 @@ export const listGraduationDossiers = (p) =>
     { status: p && p.status });
 
 /** 🟡 `get_graduation_dossier(name)` — les conditions, le constat, les documents. */
-export const getGraduationDossier = (p) => call('get_graduation_dossier', p);
+export const getGraduationDossier = (p) => call(GR + 'get_graduation_dossier', p);
 
 /* ─── Instruction ──────────────────────────────────────────────────────── */
 
 /** 🟡 `create_graduation_dossier(student)` — EM · GA. */
-export const createGraduationDossier = (p) => call('create_graduation_dossier', p);
+export const createGraduationDossier = (p) => call(GR + 'create_graduation_dossier', p);
 
 /** 🟡 `attest_national_exam(dossier, ...)` — un INPUT tracé, jamais un calcul. */
-export const attestNationalExam = (p) => call('attest_national_exam', p);
+export const attestNationalExam = (p) => call(GR + 'attest_national_exam', p);
 
 /** 🟡 `present_eligibility(dossier)` — EM. Présenter n'est pas décider (Art. 45). */
-export const presentEligibility = (p) => call('present_eligibility', p);
+export const presentEligibility = (p) => call(GR + 'present_eligibility', p);
 
 /* ─── Jury et décision ─────────────────────────────────────────────────── */
 
@@ -63,7 +71,7 @@ export const presentEligibility = (p) => call('present_eligibility', p);
  * ⚠️ Le quorum est vérifié au SERVEUR. Un écran qui le recompterait dupliquerait la
  * règle et divergerait d'elle au premier amendement du règlement.
  */
-export const openGraduationJury = (p) => call('open_graduation_jury', p);
+export const openGraduationJury = (p) => call(GR + 'open_graduation_jury', p);
 
 /**
  * 🟡 `decide_graduation(dossier, decision, reason?, delay?)` — DIR, souverain.
@@ -71,10 +79,10 @@ export const openGraduationJury = (p) => call('open_graduation_jury', p);
  * Trois issues : Diplômé (indulgence motivée si non éligible) · Ajourné (motif et
  * délai) · Non attribué (motif). Le constat est RECALCULÉ au moment de l'acte.
  */
-export const decideGraduation = (p) => call('decide_graduation', p);
+export const decideGraduation = (p) => call(GR + 'decide_graduation', p);
 
 /** 🟡 `reopen_after_adjournment(dossier)` — la nouvelle présentation. */
-export const reopenAfterAdjournment = (p) => call('reopen_after_adjournment', p);
+export const reopenAfterAdjournment = (p) => call(GR + 'reopen_after_adjournment', p);
 
 /**
  * 🟡 `award_felicitations(dossier)` — DIR. Un ACTE (49.1), jamais un calcul.
@@ -83,7 +91,7 @@ export const reopenAfterAdjournment = (p) => call('reopen_after_adjournment', p)
  * sait pas. Présenter les félicitations comme un seuil atteint ferait du jury un
  * enregistreur.
  */
-export const awardFelicitations = (p) => call('award_felicitations', p);
+export const awardFelicitations = (p) => call(GR + 'award_felicitations', p);
 
 /**
  * 🟡 `issue_graduation_document(dossier, kind)` — DIR.
@@ -91,4 +99,4 @@ export const awardFelicitations = (p) => call('award_felicitations', p);
  * Attestation sous 15 jours, PUIS diplôme sous 3 mois. Le numéro au registre n'est
  * jamais réattribué.
  */
-export const issueGraduationDocument = (p) => call('issue_graduation_document', p);
+export const issueGraduationDocument = (p) => call(GR + 'issue_graduation_document', p);

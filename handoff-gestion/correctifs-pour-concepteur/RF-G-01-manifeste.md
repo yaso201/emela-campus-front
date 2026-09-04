@@ -1,0 +1,2 @@
+# RF-G-01 — ton manifeste des appels : 45 mentions 🔴 à rafraîchir
+L'audit échoue désormais (à raison) sur « tout chemin 🔴 du manifeste porte son marqueur dans src/api/ » : le code a été traduit, ton manifeste ne le sait pas. Les chemins réels sont dans les correctifs ci-dessus et dans `specifications/campus/gestion-contruction/RF-G-01-B1.csv` (41 lignes). À ta prochaine livraison, régénère le manifeste depuis ces sources — nous n'avons pas touché à tes relevés.

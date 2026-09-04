@@ -1,0 +1,4 @@
+# RF-G-01 — écrans Répartition + Valider les répartitions (`src/api/service.js`)
+**Quoi** : les 7 actes traduits vers `service_allocation` réel — `upsert_service_line` (create ET update, `values{}` + `name`), `delete_service_line`, `propose_service_lines(program, academic_year)`, `validate_service_lines(names[], derogation_reason)`, `return_service_line(name, return_reason)`, `carry_over_service_lines(program, from_year, to_year)`.
+**Pourquoi** : le serveur travaille en LIGNES, jamais en « plan » ; propose/validate/carry rendent des RAPPORTS DE MASSE `{total, succeeded[], failed[], retry_ids[]}` — l'écran devra les consommer ligne à ligne. Cliqué au protocole réel : SRV-2026-00032 créé→modifié→proposé→validé→renvoyé motivé (effets en base vérifiés).
+**Gardes** : RF écrit/propose (portée armée EXIGÉE — un RF sans portée voit des listes vides) ; DE valide/renvoie.

@@ -77,28 +77,55 @@ export const listAbsenceThresholds = (p) =>
   call('portal_app.api.academic.early_warning.list_absence_threshold_signals',
     { academic_term: p && (p.term || p.academic_term) });
 
-/* ─── Actes — déclarés, non branchés ───────────────────────────────────── */
+/* ─── Actes — traduits RF-G-01 (B1) ; le câblage des boutons reste RF-G-02 ─── */
 
 /**
- * ⚠️ AUCUN DE CES ACTES N'EST BRANCHÉ, et les boutons le disent.
- *
- * La raison est la même qu'à la grappe 7 : chaque acte demande un vocabulaire
- * réglementaire dont je n'ai aucune source lue — les types de préconisation sont
- * déduits de la maquette, pas d'une énumération serveur. Inventer un motif est pire
- * qu'inventer un chemin : un chemin faux ne résout pas, un motif faux s'enregistre.
+ * Les vocabulaires que la livraison n'avait « aucune source lue » EXISTENT depuis :
+ * `kind` et `finding` sont des Select SERVEUR (VOCABULAIRES §5) — on les consomme,
+ * on ne les réinvente pas. Le cycle serveur d'une séance est create → convoke → hold.
+ * Gardes : EM (créer, examiner) · DE (préconiser, constater, tenir).
  */
-export const prepareCouncilSession = (p) => call('prepare_council_session', p);
-export const retainForCouncil = (p) => call('retain_for_council', p);
-export const examineCouncilStudent = (p) => call('examine_council_student', p);
-export const addCouncilPreconisation = (p) => call('add_council_preconisation', p);
-export const postPreconisationFinding = (p) => call('post_preconisation_finding', p);
-export const closeCouncilSession = (p) => call('close_council_session', p);
+/** 🟢 `create_cps_session(academic_term, session_date, prefill_candidates)` — EM.
+ *  Arbitrage A1 (RF-G-01) : la RÉTENTION d'un candidat = son inclusion à la création
+ *  (préremplissage calculé) ; il n'existe pas d'acte unitaire « retenir » au serveur.
+ *  L'écran garde distincts les candidats PROPOSÉS par le signal et les cas RETENUS
+ *  par l'humain (règle 1) — l'export retain_for_council est retiré en conséquence. */
+export const prepareCouncilSession = (p) =>
+  call('portal_app.api.academic.early_warning.create_cps_session', p);
+/** 🟢 `update_cps_examined(name, examined[{student, criteria_snapshot, notes}])` — EM.
+ *  Le serveur travaille en LOT (la liste des examinés de la séance), pas à l'unité. */
+export const examineCouncilStudent = (p) =>
+  call('portal_app.api.academic.early_warning.update_cps_examined', p);
+/** 🟢 `add_preconisation(student, kind, academic_term, details, …)` — DE (pas EM :
+ *  la garde serveur donne l'acte au directeur des études). `kind` ∈ Select serveur. */
+export const addCouncilPreconisation = (p) =>
+  call('portal_app.api.academic.early_warning.add_preconisation', p);
+/** 🟢 `record_contract_finding(name, finding)` — DE. `finding` ∈ Select serveur
+ *  (« Atteints · Partiellement atteints · Non atteints », au PLURIEL). */
+export const postPreconisationFinding = (p) =>
+  call('portal_app.api.academic.early_warning.record_contract_finding', p);
+/** 🟢 `hold_cps_session(name, attendance?)` — DE. Arbitrage A2 : TENIR la séance EST
+ *  l'acte terminal (aucun état « clôturée » distinct au serveur) ; le libellé reflète
+ *  l'état serveur (« Tenue »), pas un état inventé. Rend les absences injustifiées. */
+export const closeCouncilSession = (p) =>
+  call('portal_app.api.academic.early_warning.hold_cps_session', p);
 
 /**
- * 🔴 `pronounce_absence_warning(student, term)`.
+ * 🟢 Prononcer un avertissement d'absences — traduit : l'acte serveur EST
+ * `add_preconisation` avec `kind` imposé « Avertissement d'absences » (c'est le
+ * `human_act` que rend le signal de seuil). Garde DE.
  *
  * ⚠️ PRONONCER, jamais déclencher. Franchir un seuil ne produit ni avertissement,
  * ni convocation, ni inscription au dossier : le système compte et affiche, l'acte
- * appartient à quelqu'un.
+ * appartient à quelqu'un. (La question « l'avertissement subsiste-t-il après
+ * justification tardive ? » reste MOA — VOCABULAIRES §4 ; aucun retrait n'existe.)
  */
-export const pronounceAbsenceWarning = (p) => call('pronounce_absence_warning', p);
+export const pronounceAbsenceWarning = (p) =>
+  call('portal_app.api.academic.early_warning.add_preconisation', {
+    kind: "Avertissement d'absences",
+    student: p && p.student,
+    // l'écran parle en « term » ; la signature serveur dit academic_term —
+    // l'adaptation est ICI, sinon le paramètre partirait dans le vide.
+    academic_term: p && (p.academic_term || p.term),
+    details: p && p.details,
+  });

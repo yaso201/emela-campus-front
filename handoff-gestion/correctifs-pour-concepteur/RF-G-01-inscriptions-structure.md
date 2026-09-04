@@ -1,0 +1,3 @@
+# RF-G-01 — écrans Inscriptions + Structure (`src/api/groups.js`, `src/api/structure.js`)
+**Quoi** : `get_enrollment_log` traduit (le MANQUE ACCORDÉ est construit : `enrollment_mgmt.get_enrollment_log(integration_log)` — garde de périmètre : seuls les journaux d'INSCRIPTION sont servis, 417 rédigé sinon). `getStructureTree` : garde d'appel ajoutée — un porteur SANS portée reçoit une liste de filières VIDE et le repli « première filière » envoyait `program: undefined` → 500 TypeError serveur ; on n'appelle plus sans filière, on explique (durcissement serveur demandé, S-5).
+**Simulacre** : `get_enrollment_log` et `get_graduation_dossier` ré-appariés aux chemins réels ; `get_dossier`/`get_document_request` restent nus (S-1/S-2 back).

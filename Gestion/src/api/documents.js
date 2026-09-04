@@ -34,17 +34,27 @@ export const listDocumentRequests = (p) =>
   call('portal_app.api.academic.document_requests.list_document_requests',
     { status: p && p.status });
 
-/** 🔴 `get_document_request(name)` — la demande, ses vérifications, son aperçu. */
+/** 🔴 M (RF-G-01 S-1, ACCEPTÉ pour BACK-G-01) — la lecture unitaire staff d'une
+ *  demande n'existe pas au serveur (seules la liste et la vue étudiante existent).
+ *  Clé nue conservée à dessein : le simulacre la sert, le branchement attendra
+ *  la fonction. */
 export const getDocumentRequest = (p) => call('get_document_request', p);
 
 /**
- * 🔴 `emit_document(request)` — l'acte. Il produit le code de vérification, dépose
- * le document dans l'espace de l'étudiant, et trace date et agent.
+ * 🟢 Traduit RF-G-01 : l'acte serveur est `fulfill_document_request(name)` — EM.
+ * Rend {request, status: 'Émise', issued_document}. ⚠️ Arbitrage A3 : le code de
+ * vérification NAÎT de l'émission et MANQUE au retour (S-3 accepté, BACK-G-01) —
+ * l'écran affiche le code s'il est présent, sinon « code de vérification non
+ * disponible », jamais un champ vide silencieux.
  */
-export const emitDocument = (p) => call('emit_document', p);
+export const emitDocument = (p) =>
+  call('portal_app.api.academic.document_requests.fulfill_document_request', p);
 
 /**
- * 🔴 `refuse_document_request(request, category, detail)`.
+ * 🔴 V (RF-G-01, VOCABULAIRES §1 — EN ATTENTE MOA) : le serveur expose
+ * `refuse_document_request(name, refusal_reason)` en TEXTE LIBRE ; les deux
+ * catégories de la conception n'ont aucune source serveur. Tant que la MOA n'a
+ * pas tranché, l'acte reste non branché avec son bandeau — aucune valeur posée.
  *
  * ⚠️ DEUX CATÉGORIES, et la distinction se voyage jusqu'au serveur : « prématurée »
  * dit à l'étudiant qu'il pourra reformuler, « irrecevable » dit que non. Les

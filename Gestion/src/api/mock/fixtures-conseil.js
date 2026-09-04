@@ -216,7 +216,7 @@ const PRECONISATIONS = [
   { name: 'PRE-2027-001', kind: 'contrat', student_name: 'Fabrice Ahodékon', student: 'ETU-24-0188',
     rendered_on: '22 janvier', due_on: '30 juin', days_left: 26, owner: 'M. Dossou',
     body: 'Rattrapage des travaux pratiques et présence en cours magistral.',
-    finding: { verdict: 'Partiellement atteint', posted_on: '2 juin', posted_by: 'M. Dossou',
+    finding: { verdict: 'Partiellement atteints', posted_on: '2 juin', posted_by: 'M. Dossou',
       text: 'Les travaux pratiques ont été rattrapés ; la présence en cours magistral reste irrégulière.' },
     status: 'valide', status_label: 'Clos · partiellement atteint' },
   { name: 'PRE-2027-002', kind: 'avertissement', student_name: 'Fabrice Ahodékon', student: 'ETU-24-0188',

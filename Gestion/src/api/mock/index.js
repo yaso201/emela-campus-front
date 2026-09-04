@@ -74,7 +74,8 @@ const HANDLERS = {
   [EN + 'list_incomplete_enrollments']: (p) => G.enrollmentReplayQueue(p),
   [EN + 'list_moodle_orphans']: (p) => G.moodleOrphans(p),
   // La LECTURE du journal — c'est elle que l'écran du rapport consomme.
-  get_enrollment_log: (p) => G.enrollmentLog(p),
+  // 🟢 RF-G-01 — apparié au chemin réel (le point d'appel est traduit).
+  'portal_app.api.academic.enrollment_mgmt.get_enrollment_log': (p) => G.enrollmentLog(p),
 
   // ─── Grappe 5 · planning et examens ─────────────────────────────────────
   [PL + 'list_schedules']: (p) => P.schedules(p),
@@ -124,10 +125,9 @@ const HANDLERS = {
   'portal_app.api.academic.year_closure.get_year_status': (p) => Z.yearClosure(p),
 
   // ─── Grappe 10 · diplomation ────────────────────────────────────────────
-  // 🟡 Les fonctions sont annoncées existantes (carte P-06) ; leur chemin
-  // d'exposition est inconnu, donc les noms sont portés nus.
+  // 🟢 RF-G-01 — chemins réels confrontés et posés (graduation.py, mêmes noms).
   'portal_app.api.academic.graduation.list_graduation_dossiers': (p) => Z.graduationDossiers(p),
-  get_graduation_dossier: (p) => Z.graduationDossier(p),
+  'portal_app.api.academic.graduation.get_graduation_dossier': (p) => Z.graduationDossier(p),
 
   // ─── Grappe 11 · attribution des rôles ──────────────────────────────────
   // 🔴 Le trou T5 : les rôles existent depuis F3-V0, rien ne permet de les

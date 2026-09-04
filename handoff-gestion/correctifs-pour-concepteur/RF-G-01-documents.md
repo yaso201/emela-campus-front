@@ -1,0 +1,3 @@
+# RF-G-01 — écran Documents (`src/api/documents.js`)
+**Quoi** : `emit_document` traduit → `fulfill_document_request(name)` (rend {request, status, issued_document}). `get_document_request` reste NU (S-1 accepté : lecture unitaire à construire côté back). `refuse_document_request` reste NU (V : catégories « prématurée/irrecevable » sans source serveur — `refusal_reason` est un texte LIBRE ; MOA saisie, rien posé).
+**A3** : le code de vérification MANQUE au retour d'émission (S-3 accepté back) — en attendant, afficher le code s'il est présent, sinon « code de vérification non disponible », jamais un champ vide.

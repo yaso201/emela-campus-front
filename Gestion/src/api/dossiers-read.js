@@ -48,7 +48,9 @@ import { call } from './client.js';
  */
 export const listDossiers = (p) => call('portal_app.api.academic.dossiers_read.list_dossiers', p);
 
-/** 🔴 supposé, même famille. Le détail d'un dossier, toutes procédures. */
+/** 🔴 M (RF-G-01 S-2, ACCEPTÉ pour BACK-G-01) — le détail transversal n'existe pas
+ *  au serveur (list_dossiers, lui, est construit et branché). Clé nue conservée :
+ *  le simulacre la sert, le branchement attendra la fonction. */
 export const getDossier = (p) => call('get_dossier', p);
 
 /* ─── Lectures RÉELLES, par procédure ──────────────────────────────────── */

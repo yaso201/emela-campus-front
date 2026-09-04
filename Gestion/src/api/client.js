@@ -41,6 +41,23 @@ function stripDebugFlags(params) {
   return clean;
 }
 
+/**
+ * RF-G-01 — la phrase serveur d'une réponse d'erreur Frappe, sans HTML.
+ * Ordre de lecture : `message` (enveloppes propres) → `_server_messages`
+ * (frappe.throw) → `exception` (après « Class: »). Jamais de phrase inventée.
+ */
+function serverText(payload) {
+  if (payload.message && typeof payload.message === 'string') return payload.message;
+  try {
+    const msgs = JSON.parse(payload._server_messages || '[]')
+      .map((x) => { try { return JSON.parse(x).message; } catch { return String(x); } })
+      .join(' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    if (msgs) return msgs;
+  } catch { /* on tombe sur exception */ }
+  const exc = String(payload.exception || '');
+  return exc.includes(': ') ? exc.slice(exc.indexOf(': ') + 2).trim() : '';
+}
+
 export async function call(method, params = {}, { signal } = {}) {
   if (isMock) {
     loadMock = loadMock || import('./mock/index.js');
@@ -64,7 +81,13 @@ export async function call(method, params = {}, { signal } = {}) {
   if (!res.ok) {
     // Le message est rédigé côté serveur et affichable tel quel : aucun écran
     // ne fabrique de phrase à partir d'un code.
-    throw Object.assign(new Error(payload.message || 'Erreur serveur'), {
+    //
+    // RF-G-01 (règle 5, un seul point) : un refus Frappe ne porte PAS de champ
+    // `message` — la phrase rédigée vit dans `_server_messages` (liste JSON de
+    // {message}) ou, à défaut, dans `exception` après le nom de la classe.
+    // Sans cette extraction, l'écran de refus titrait juste « Erreur serveur »
+    // (constaté au navigateur, rejeu A1 ×7 rôles, AN-02 requalifiée).
+    throw Object.assign(new Error(serverText(payload) || 'Erreur serveur'), {
       code: res.status === 403 ? 'PERMISSION_DENIED' : payload.code || 'SERVER_ERROR',
       details: payload.details || null,
       status: res.status,
