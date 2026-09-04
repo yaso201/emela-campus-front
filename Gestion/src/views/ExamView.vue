@@ -153,6 +153,17 @@
                        footnote="Un étudiant déjà inscrit compte comme un succès : la liste est dans l'état voulu, et c'est ce qui importe." />
         </div>
 
+        <div v-else-if="!sourceGroup" class="px-5 py-4">
+          <!-- RF-G-01 C1 (condition d'acceptation) : pas de groupe → AUCUN repli,
+               aucun défaut — un message qui dit pourquoi, et le bouton reste inerte. -->
+          <p class="text-body-sm leading-relaxed text-ln-gray-700">
+            Cette épreuve n'est rattachée à <b class="font-semibold">aucun groupe</b> —
+            le peuplement lit le groupe porté par l'épreuve, il n'en choisit pas un à sa
+            place. Rattachez le groupe à l'épreuve (planning), puis rouvrez ce panneau.
+            Rien n'a été envoyé.
+          </p>
+        </div>
+
         <div v-else class="px-5 py-4">
           <!-- ⚠️ Les déjà-inscrits sont marqués, non retirés : masquer les
                doublons laisse croire que tout le monde sera ajouté, et le rapport
@@ -178,7 +189,8 @@
           </span>
           <span class="ml-auto flex gap-2">
             <button type="button" class="ln-btn-secondary" @click="closePopulate">Fermer</button>
-            <button v-if="!report" type="button" class="ln-btn-primary" @click="runPopulate">Ajouter</button>
+            <button v-if="!report" type="button" class="ln-btn-primary"
+                    :disabled="!sourceGroup" @click="runPopulate">Ajouter</button>
           </span>
         </footer>
       </section>
@@ -306,6 +318,7 @@ const alreadyCount = computed(() => groupCandidates.value.filter((s) => s.alread
 const sourceGroup = computed(() => exam.value?.student_group || null);
 
 async function runPopulate() {
+  if (!sourceGroup.value) return; // défense en profondeur — le bouton est déjà inerte
   report.value = await populateExamStudentsFromGroup({
     exam_schedule: selectedId.value, student_group: sourceGroup.value,
   });
