@@ -153,18 +153,22 @@
                        footnote="Un étudiant déjà inscrit compte comme un succès : la liste est dans l'état voulu, et c'est ce qui importe." />
         </div>
 
-        <div v-else-if="!sourceGroup" class="px-5 py-4">
-          <!-- RF-G-01 C1 (condition d'acceptation) : pas de groupe → AUCUN repli,
-               aucun défaut — un message qui dit pourquoi, et le bouton reste inerte. -->
-          <p class="text-body-sm leading-relaxed text-ln-gray-700">
-            Cette épreuve n'est rattachée à <b class="font-semibold">aucun groupe</b> —
-            le peuplement lit le groupe porté par l'épreuve, il n'en choisit pas un à sa
-            place. Rattachez le groupe à l'épreuve (planning), puis rouvrez ce panneau.
-            Rien n'a été envoyé.
-          </p>
-        </div>
-
         <div v-else class="px-5 py-4">
+          <!-- M0 (arbitrage C1) : le groupe se CHOISIT — aucune valeur par défaut,
+               aucun identifiant en dur ; bouton inerte tant que rien n'est choisi. -->
+          <label class="mb-3 block text-body-sm text-ln-gray-700">
+            Groupe source (filière {{ exam?.program || '—' }})
+            <select v-model="selectedGroup"
+                    class="mt-1 block w-full rounded-md-ln border border-ln-gray-300 px-3 py-2 text-body-sm">
+              <option value="" disabled>— choisir un groupe —</option>
+              <option v-for="g in groupOptions" :key="g" :value="g">{{ g }}</option>
+            </select>
+          </label>
+          <p v-if="!selectedGroup" class="text-body-sm leading-relaxed text-ln-gray-500">
+            Aucun groupe choisi — rien ne sera envoyé tant que vous n'avez pas désigné
+            le groupe dont les étudiants rejoindront la liste.
+          </p>
+          <template v-else>
           <!-- ⚠️ Les déjà-inscrits sont marqués, non retirés : masquer les
                doublons laisse croire que tout le monde sera ajouté, et le rapport
                ligne à ligne surprend ensuite. -->
@@ -181,6 +185,7 @@
               <StatusPill v-else class="ml-auto" status="propose" label="Sera ajouté" />
             </p>
           </div>
+          </template>
         </div>
 
         <footer class="flex items-center gap-3 border-t border-ln-gray-200 bg-ln-gray-50 px-5 py-3">
@@ -230,7 +235,7 @@ import { useResource } from '../composables/useResource.js';
 import {
   listExamSchedules, getExamSchedule, populateExamStudentsFromGroup,
 } from '../api/planning.js';
-import { getGroup } from '../api/groups.js';
+import { getGroup, listGroups } from '../api/groups.js';
 
 const { can } = useSession();
 const { params } = useAcademicContext();
@@ -312,10 +317,19 @@ const groupCandidates = computed(() => {
     .map((s) => ({ ...s, already_registered: ids.has(s.student) ? 1 : 0 }));
 });
 const alreadyCount = computed(() => groupCandidates.value.filter((s) => s.already_registered).length);
-// RF-G-01 C1 — le groupe source n'est PLUS une constante ('SG-L2GL-PROMO' en dur
-// partait dans l'acte de masse) : il est LU de l'épreuve sélectionnée, qui porte
-// son student_group côté serveur (planning_mgmt, champ des lectures d'épreuve).
-const sourceGroup = computed(() => exam.value?.student_group || null);
+// M0 (arbitrage C1) — SÉLECTION À L'ÉCRAN : `Exam Schedule` ne porte aucun groupe
+// (ni table ni lecture — V-LEARN-M0-01 : un champ présent au simulacre et absent du
+// schéma n'existe pas). Le groupe se CHOISIT parmi ceux de la filière de l'épreuve,
+// sans valeur par défaut ; la garde serveur (cohérence programme↔groupe) tranche.
+const groupOptions = ref([]);
+const selectedGroup = ref('');
+const sourceGroup = computed(() => selectedGroup.value || null);
+async function loadGroupOptions() {
+  groupOptions.value = [];
+  selectedGroup.value = '';
+  const rows = await listGroups({ program: exam.value?.program });
+  groupOptions.value = (rows?.items || rows || []).map((g) => g.name || g.id);
+}
 
 async function runPopulate() {
   if (!sourceGroup.value) return; // défense en profondeur — le bouton est déjà inerte
@@ -342,7 +356,6 @@ watch(params, reload);
 watch(exams, (e) => { if (e.length && !selectedId.value) selectedId.value = e[0].name; });
 watch(selectedId, loadExam);
 // Le groupe source n'est lu qu'à l'ouverture du peuplement : inutile avant.
-watch(populateOpen, (open) => {
-  if (open && sourceGroup.value) groupRes.load({ name: sourceGroup.value });
-});
+watch(populateOpen, (open) => { if (open) loadGroupOptions(); });
+watch(selectedGroup, (g) => { if (g) groupRes.load({ name: g }); });
 </script>
