@@ -27,15 +27,6 @@
       <router-link :to="{ name: 'awaiting-decider' }" class="font-semibold">Revenir à la liste</router-link>
     </StateBanner>
 
-    <!-- ⚠️ L'ÉCRAN DONT LE SERVEUR N'EXISTE PAS. Il faut le dire ici, en tête, et
-         non seulement dans un bandeau d'acte au clic. -->
-    <StateBanner variant="error" lead="Aucun de ces points d’entrée n’existe encore.">
-      Les rôles existent depuis F3-V0 ; rien ne permet de les donner. Douze points d'entrée sont
-      spécifiés — dont <b class="font-mono text-[12px] font-semibold">preview_grant_effect</b>, qui
-      décide de tous les autres : sans lui, cet écran réimplémenterait la matrice des rôles dans un
-      navigateur, et divergerait d'elle au premier changement. Ce qui suit est donc une lecture
-      simulée, et aucun acte n'est branché.
-    </StateBanner>
 
     <BlockState v-if="state !== 'ready'" :state="state === 'denied' ? 'loading' : state"
                 title="Personne n’est dotée"
@@ -206,6 +197,8 @@
     </template>
 
     <StateBanner v-if="pending" variant="warning" lead="Acte non disponible." :text="pending" class="mt-4" />
+
+    <GrantPanel v-if="panelOpen" :options="grantOptions" @cancel="panelOpen = false" @done="onGranted" />
   </div>
 </template>
 
@@ -236,8 +229,10 @@ import { computed, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { StateBanner, StatusPill, headTh, bodyTd } from '../components/index.js';
 import BlockState from '../components/internal/BlockState.vue';
+import GrantPanel from './administration/GrantPanel.vue';
 import { useResource } from '../composables/useResource.js';
-import { listRoleGrants, listGrantAnomalies, listGrantJournal } from '../api/roles.js';
+import { listRoleGrants, listGrantAnomalies, listGrantJournal, listAssignableRoles } from '../api/roles.js';
+import { listStructureOptions } from '../api/structure.js';
 
 const route = useRoute();
 const res = useResource(listRoleGrants, { isEmpty: (d) => !d?.items?.length });
@@ -246,6 +241,9 @@ const journalRes = useResource(listGrantJournal, { isEmpty: (d) => !d?.items?.le
 const state = res.state;
 const pending = ref('');
 const filter = ref(null);
+const panelOpen = ref(false);
+const catalog = ref([]);      // rôles attribuables (listAssignableRoles)
+const programs = ref([]);     // filières (listStructureOptions)
 
 const data = computed(() => res.data.value || {});
 const items = computed(() => data.value.items || []);
@@ -301,17 +299,33 @@ function setFilter(key) {
   reload();
 }
 
-function grant() {
-  pending.value = 'Doter une personne demande `preview_grant_effect` — le point d’entrée qui décide '
-    + 'de tous les autres, et qui n’existe pas. Sans lui, le panneau devrait rédiger lui-même « ce '
-    + 'que ce rôle ouvre » et « ce cumul annule le cloisonnement » : ce serait une seconde matrice '
-    + 'des rôles, dans un navigateur. Il n’est donc pas produit.';
-}
+/**
+ * Options du panneau de dotation — toutes LUES (aucun identifiant inventé) :
+ * les personnes dotées (avec leurs rôles et portées, pour le retrait), les
+ * profils, le catalogue de rôles attribuables, les filières.
+ */
+const grantOptions = computed(() => ({
+  targets: items.value.map((p) => ({
+    user: p.person, name: p.name, roles: p.roles,
+    scope: { programsList: p.scope?.programsList || [] },
+  })),
+  profiles: data.value.profiles || [],
+  roles: catalog.value,
+  programs: programs.value,
+}));
+
+function grant() { pending.value = ''; panelOpen.value = true; }
+function onGranted() { panelOpen.value = false; reload(); }
 
 function reload() {
   res.load({ filter: filter.value });
   anomaliesRes.load({});
   journalRes.load({});
 }
-onMounted(reload);
+onMounted(async () => {
+  reload();
+  // catalogue de rôles + filières pour le panneau (lectures, tolérantes à l'échec)
+  try { const c = await listAssignableRoles(); catalog.value = (c && c.roles) || []; } catch { catalog.value = []; }
+  try { const s = await listStructureOptions(); programs.value = (s?.programs || []).map((p) => p.name || p); } catch { programs.value = []; }
+});
 </script>

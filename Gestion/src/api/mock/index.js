@@ -147,8 +147,51 @@ const HANDLERS = {
   'portal_app.api.identity.role_administration.list_role_profiles': () => Z.roleProfiles(),
   'portal_app.api.identity.role_administration.list_anomalies': (p) => Z.grantAnomalies(p),
   'portal_app.api.identity.role_administration.get_assignment_journal': (p) => Z.grantJournal(p),
+  // Actes M2 g11 — forme serveur inline (simulate + 5 écritures). Non stateful.
+  'portal_app.api.identity.role_administration.list_roles_catalog': () => raCatalog(),
+  'portal_app.api.identity.role_administration.simulate_assignment': (p) => raSimulate(p),
+  'portal_app.api.identity.role_administration.apply_profile': (p) => raApplied(p),
+  'portal_app.api.identity.role_administration.add_role': (p) => raApplied(p),
+  'portal_app.api.identity.role_administration.remove_role': (p) => raApplied(p),
+  'portal_app.api.identity.role_administration.add_scope': (p) => raApplied(p),
+  'portal_app.api.identity.role_administration.remove_scope': (p) => raApplied(p),
 
 };
+
+/* ── Actes d'administration des rôles (M2 g11) — forme serveur, non stateful ── */
+function raCatalog() {
+  return {
+    roles: [
+      { role: 'Responsable de formation', opens: 'Maquette pédagogique de sa filière.', scoped: true, bypass: false, decision_bearer: false },
+      { role: 'Directeur des Études', opens: 'Autorité académique : valide les maquettes, prononce.', scoped: false, bypass: true, decision_bearer: true },
+      { role: 'Gestionnaire académique', opens: 'Charpente structurelle et scolarité.', scoped: false, bypass: true, decision_bearer: false },
+    ],
+    forbidden: [{ role: 'System Manager', why: 'administration technique — hors surface métier' }],
+  };
+}
+function raSimulate(p = {}) {
+  const before = { roles: ['Responsable de formation'], scopes: ['LIS'] };
+  const after = { roles: ['Responsable de formation'], scopes: ['LIS'] };
+  if (p.kind === 'role_ajoute') after.roles = [...new Set([...before.roles, p.value])];
+  else if (p.kind === 'role_retire') after.roles = before.roles.filter((r) => r !== p.value);
+  else if (p.kind === 'portee_armee') after.scopes = [...new Set([...before.scopes, p.value])];
+  else if (p.kind === 'portee_retiree') after.scopes = before.scopes.filter((s) => s !== p.value);
+  const warnings = (p.kind === 'role_ajoute' && (p.value === 'Directeur des Études' || p.value === 'Gestionnaire académique'))
+    ? [{ code: 'W-CLOISONNEMENT', message: 'CE CUMUL ANNULE LE CLOISONNEMENT : la personne verra toutes les filières.' }]
+    : [];
+  return {
+    target_user: p.target_user, change: { kind: p.kind, value: p.value },
+    before, after, would_be_noop: JSON.stringify(before) === JSON.stringify(after),
+    opens: p.kind === 'role_ajoute' ? [{ role: p.value, opens: 'Ce que ce rôle ouvre (rédigé au serveur).' }] : [],
+    scope_report: { note: 'Portée effective calculée au serveur.' },
+    warnings,
+    acknowledgement_contract: 'L’attribution exige l’accusé de ces codes, exactement.',
+  };
+}
+function raApplied(p = {}) {
+  return { status: 'appliqué', target_user: p.target_user, state: { roles: [], scopes: [] },
+    warnings: [], journal: 'RAL-MOCK-0001' };
+}
 
 /* ── Actes de répartition (M2 g3) — helpers locaux, forme serveur ──────────── */
 const SVC_ALLOWED = ['instructor', 'course', 'activity_type', 'program',

@@ -50,6 +50,9 @@ export const listRoleGrants = async (p) => {
     scope: {
       kind: SCOPE_KIND[(h.scope_report || {}).origin] || (h.scope_report || {}).origin,
       program: (((h.scope_report || {}).programs) || []).join(', ') || null,
+      // La LISTE (pas la chaîne jointe) — le panneau de dotation en a besoin
+      // pour proposer les portées à retirer.
+      programsList: ((h.scope_report || {}).programs) || [],
       reason: (h.scope_report || {}).note,
     },
     granted_on: h.granted_on, granted_by: h.granted_by,
