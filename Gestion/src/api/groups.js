@@ -83,8 +83,10 @@ export const getCohortOverview = (p) => call(GROUPS + 'get_cohort_overview', p);
 
 /* ─── Groupes · écriture [GA (+SM)] ──────────────────────────────────────── */
 
-/** 🟢 `groups.py:57` — `create_group(values)`. */
-export const createGroup = (p) => call(GROUPS + 'create_group', p);
+/** 🟢 `groups.py:57` — `create_group(values)`. Le serveur attend un paramètre
+ * `values` (dict) : envelopper les champs (M2 g4 — sans quoi `values` arrive
+ * vide et le serveur lève « Student Group Name is required »). */
+export const createGroup = (values) => call(GROUPS + 'create_group', { values });
 
 /** 🟢 `groups.py:63` — `update_group(name, values)`. */
 export const updateGroup = (p) => call(GROUPS + 'update_group', p);
