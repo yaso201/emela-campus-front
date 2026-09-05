@@ -98,8 +98,19 @@ export const setGroupDisabled = (p) => call(GROUPS + 'set_group_disabled', p);
  *
  * ⚠️ Rend un rapport ligne à ligne : c'est un acte de masse, et le succès
  * partiel y est un cas courant, pas une exception.
+ *
+ * FORMES (M2 g4) : le contrat `batch_report` serveur (succeeded_count/failed_count/
+ * succeeded[]/failed[]) → contrat du composant BatchReport ({total, ok, ko, lines}).
+ * Chaque ligne préserve `student`/`student_name` et son motif d'échec.
  */
-export const addStudentsToGroup = (p) => call(GROUPS + 'add_students_to_group', p);
+export const addStudentsToGroup = (p) =>
+  call(GROUPS + 'add_students_to_group', p).then((d) => d && {
+    total: d.total, ok: d.succeeded_count, ko: d.failed_count, retry_ids: d.retry_ids || [],
+    lines: [
+      ...(d.succeeded || []).map((l) => ({ id: l.student, label: l.student_name || l.student, status: 'ok', detail: l.status })),
+      ...(d.failed || []).map((l) => ({ id: l.student, label: l.student_name || l.student, status: 'ko', reason: l.message || l.reason })),
+    ],
+  });
 
 /**
  * 🟢 `groups.py:81` — `deactivate_students_in_group(group, students)`.

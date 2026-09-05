@@ -78,6 +78,10 @@ const HANDLERS = {
   [GR + 'list_group_candidates']: (p) => G.groupCandidates(p),
   [GR + 'get_cohort_overview']: (p) => G.cohortOverview(p),
   [GR + 'get_student_groups']: (p) => G.studentGroupsOf(p),
+  // Actes M2 g4 — forme serveur inline (create + batch peuplement + désactivation).
+  [GR + 'create_group']: (p) => ({ name: 'SG-MOCK-0001', student_group_name: (p.values || {}).student_group_name }),
+  [GR + 'add_students_to_group']: (p) => grpAddReport(p),
+  [GR + 'deactivate_students_in_group']: (p) => ({ deactivated: (p.students || []) }),
   // L'ACTE d'écriture — appelé sur un geste, jamais au chargement d'un écran.
   'emela_core.academic_core.api.enrollment.create_student_from_applicant': (p) => G.enrollmentReport(p),
   [EN + 'replay_enrollment']: (p) => G.enrollmentReport(p),
@@ -157,6 +161,15 @@ const HANDLERS = {
   'portal_app.api.identity.role_administration.remove_scope': (p) => raApplied(p),
 
 };
+
+/* ── Acte de peuplement de groupe (M2 g4) — rapport de masse, forme serveur ── */
+function grpAddReport(p = {}) {
+  const students = p.students || [];
+  const ok = students.slice(0, Math.max(1, students.length - 1)).map((s) => ({ student: s, student_name: s, status: 'added' }));
+  const ko = students.slice(Math.max(1, students.length - 1)).map((s) => ({ student: s, student_name: s, status: 'error', message: 'Inscription au programme hors filière éligible.' }));
+  return { total: students.length, succeeded_count: ok.length, failed_count: ko.length,
+    succeeded: ok, failed: ko, retry_ids: [] };
+}
 
 /* ── Actes d'administration des rôles (M2 g11) — forme serveur, non stateful ── */
 function raCatalog() {

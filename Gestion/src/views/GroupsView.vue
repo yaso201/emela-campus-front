@@ -9,13 +9,24 @@
       <div class="flex flex-wrap items-center gap-2">
         <ProgramPicker />
         <router-link :to="{ name: 'enrollment' }" class="ln-btn-secondary">Inscriptions</router-link>
-        <button v-if="can('write:groups')" type="button" class="ln-btn-primary" @click="notBuilt('Création d’un groupe')">
+        <button v-if="can('write:groups')" type="button" class="ln-btn-primary" @click="openCreate">
           + Créer un groupe
         </button>
       </div>
     </header>
 
     <StateBanner v-if="pending" variant="warning" lead="Acte non disponible." :text="pending" />
+    <StateBanner v-if="actError" variant="error" lead="L'acte a échoué." :text="actError" />
+
+    <div v-if="report" class="mb-4">
+      <BatchReport title="Peuplement du groupe" :report="report"
+                   ok-label="ajoutés" ko-label="non ajoutés" failures-first :retryable="false"
+                   footnote="Un étudiant déjà membre compte réussi (idempotent) ; un inéligible échoue, motivé." />
+      <button type="button" class="ln-btn-secondary mt-2" @click="report = null">Fermer le rapport</button>
+    </div>
+
+    <GroupForm v-if="createOpen" :program="program" :year-label="year?.label || ''"
+               :error="createError" :busy="busy" @cancel="createOpen = false" @submit="submitGroup" />
 
     <div class="grid items-start gap-5 xl:grid-cols-[352px_1fr]">
       <WorkQueue title="Groupes de la filière" :items="queueItems" :selected-id="selectedId"
@@ -58,6 +69,7 @@
               <th :class="headTh" class="!text-left">Étudiant</th>
               <th :class="headTh" class="!text-left">Matricule</th>
               <th :class="headTh" class="!text-left">État</th>
+              <th :class="headTh"></th>
             </tr>
           </template>
           <template #body>
@@ -67,6 +79,13 @@
               <td :class="bodyTd" class="!text-left font-mono text-[11.5px] text-ln-gray-500">{{ s.student }}</td>
               <td :class="bodyTd" class="!text-left">
                 <StatusPill :status="s.active ? 'valide' : 'brouillon'" :label="s.active ? 'Actif' : 'Désactivé'" />
+              </td>
+              <td :class="bodyTd">
+                <!-- « Retirer du groupe » désactive (l'étudiant RESTE membre, historique) —
+                     jamais « effacer ». Offert sur un membre actif seulement. -->
+                <button v-if="can('write:groups') && s.active" type="button"
+                        class="h-[26px] rounded-sm-ln border border-ln-gray-300 px-2 text-caption font-semibold text-ln-gray-700"
+                        @click="deactivateMember(s)">Retirer</button>
               </td>
             </tr>
           </template>
@@ -92,9 +111,12 @@
             {{ i.instructor_name }}
             <span class="font-mono text-[11px] text-ln-gray-500">{{ i.instructor }}</span>
           </span>
+          <!-- ⏸ M2 : l'affectation existe côté serveur (assign_instructor) mais AUCUNE
+               lecture ne rend la liste des enseignants assignables — sans source, pas
+               d'identifiant à envoyer (rapport M2 §4, demande serveur). -->
           <button v-if="can('write:groups')" type="button"
                   class="inline-flex items-center rounded-sm-ln border border-dashed border-ln-gray-300 px-3 py-1.5 text-caption font-semibold text-ln-blue-600"
-                  @click="notBuilt('Affectation d’un enseignant')">+ Affecter</button>
+                  @click="notBuilt('Affectation d’un enseignant — en attente d’une lecture serveur des enseignants assignables (demande M2)')">+ Affecter</button>
         </div>
 
         <!-- Le peuplement : éligibles à gauche du geste, rapport ligne à ligne
@@ -108,8 +130,9 @@
               </p>
             </div>
             <button v-if="can('write:groups')" type="button" class="ln-btn-primary ml-auto"
-                    @click="notBuilt('Peuplement du groupe')">
-              Peupler · {{ eligible.length }} candidats
+                    :disabled="!selectedStudents.length || busy"
+                    @click="populate">
+              Peupler · {{ selectedStudents.length || eligible.length }} candidats
             </button>
           </header>
           <BlockState v-if="eligibleState !== 'ready'" :state="eligibleState === 'denied' ? 'loading' : eligibleState"
@@ -118,14 +141,18 @@
                       :rows="4" :skeleton-widths="[240, 140, 110]" :row-height="36" class="m-4"
                       @retry="loadEligible" />
           <div v-else class="px-4 py-3">
-            <p v-for="s in eligible" :key="s.student"
-               class="flex items-center gap-3 border-b border-ln-gray-100 py-2 text-caption last:border-0">
+            <label v-for="s in eligible" :key="s.student"
+                   class="flex cursor-pointer items-center gap-3 border-b border-ln-gray-100 py-2 text-caption last:border-0">
+              <input type="checkbox" class="h-4 w-4 accent-ln-blue-800"
+                     :value="s.student" :checked="picked.has(s.student)"
+                     :disabled="memberIds.has(s.student)"
+                     @change="togglePick(s.student, $event.target.checked)" />
               <span class="text-ln-gray-900">{{ s.student_name }}</span>
               <span class="font-mono text-[11px] text-ln-gray-500">{{ s.student }}</span>
               <StatusPill class="ml-auto" :status="s.active ? 'valide' : 'brouillon'"
                           :label="s.active ? 'Actif' : 'Désactivé'" />
               <StatusPill v-if="memberIds.has(s.student)" status="propose" label="Déjà membre" />
-            </p>
+            </label>
           </div>
         </div>
       </section>
@@ -157,14 +184,16 @@
  *   — un groupe sans enseignant le dit en ambre : les séances se planifient quand
  *     même, aucune feuille de présence n'a de titulaire.
  */
-import { computed, onMounted, ref, watch } from 'vue';
-import { WorkQueue, DenseTable, StatusPill, StateBanner, headTh, bodyTd } from '../components/index.js';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { WorkQueue, DenseTable, StatusPill, StateBanner, BatchReport, headTh, bodyTd } from '../components/index.js';
 import BlockState from '../components/internal/BlockState.vue';
+import GroupForm from './groupes/GroupForm.vue';
 import { useSession } from '../composables/useSession.js';
 import { useAcademicContext } from '../composables/useAcademicContext.js';
 import { useResource } from '../composables/useResource.js';
 import {
   listGroups, getGroup, listGroupCandidates,
+  createGroup, addStudentsToGroup, deactivateStudentsInGroup,
 } from '../api/groups.js';
 import { useProgramScope } from '../composables/useProgramScope.js';
 import ProgramPicker from './planning/ProgramPicker.vue';
@@ -172,6 +201,11 @@ import ProgramPicker from './planning/ProgramPicker.vue';
 const { can } = useSession();
 const { params, year } = useAcademicContext();
 const pending = ref('');
+const actError = ref('');
+const busy = ref(false);
+const report = ref(null);
+const createOpen = ref(false);
+const picked = reactive(new Set());
 const selectedId = ref(null);
 
 /**
@@ -243,6 +277,50 @@ const totals = computed(() => {
 });
 
 function notBuilt(what) { pending.value = what + " — cet acte n'est pas encore branché au serveur. Rien n'a été enregistré."; }
+
+/* ── Actes BRANCHÉS (M2 g4) — création, peuplement, retrait de membre. ── */
+const selectedStudents = computed(() => [...picked]);
+function togglePick(student, on) { if (on) picked.add(student); else picked.delete(student); }
+const createError = ref('');
+function openCreate() { pending.value = ''; actError.value = ''; createError.value = ''; createOpen.value = true; }
+/**
+ * La vue-parente AJOUTE les clés de contexte (`program`, `academic_year`) aux
+ * champs émis par le formulaire — le formulaire ne fabrique aucune clé de contexte.
+ */
+async function submitGroup(values) {
+  createError.value = '';
+  try {
+    busy.value = true;
+    await createGroup({ ...values, program: program.value, academic_year: params.value.academic_year });
+    createOpen.value = false;
+    loadGroups();
+  } catch (e) { createError.value = e.message || 'Création refusée.'; }
+  finally { busy.value = false; }
+}
+
+async function populate() {
+  actError.value = ''; pending.value = '';
+  const students = selectedStudents.value;
+  if (!students.length) { pending.value = 'Cochez au moins un candidat à ajouter.'; return; }
+  try {
+    busy.value = true;
+    report.value = await addStudentsToGroup({ group: selectedId.value, students });
+    picked.clear();
+    loadDetail(); loadEligible();
+  } catch (e) { actError.value = e.message || 'Peuplement refusé.'; }
+  finally { busy.value = false; }
+}
+
+async function deactivateMember(s) {
+  actError.value = ''; pending.value = '';
+  try {
+    busy.value = true;
+    await deactivateStudentsInGroup({ group: selectedId.value, students: [s.student] });
+    loadDetail();
+  } catch (e) { actError.value = e.message || 'Retrait refusé.'; }
+  finally { busy.value = false; }
+}
+
 function loadGroups() { groupsRes.load({ ...params.value, program: program.value }); }
 /**
  * ⚠️ `include_inactive: 1` : un membre désactivé RESTE au groupe, avec son rang.
