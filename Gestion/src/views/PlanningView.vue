@@ -103,9 +103,12 @@
             </div>
 
             <div v-if="can('write:planning')" class="mt-4 flex flex-wrap gap-2">
-              <button type="button" class="ln-btn-secondary" @click="notBuilt('Modification de la séance')">Modifier…</button>
+              <!-- ⏸ M2 : modifier une séance suppose la liste des salles et des créneaux
+                   valides (aucune lecture serveur ne les rend) — demande S-9. -->
+              <button type="button" class="ln-btn-secondary"
+                      @click="notBuilt('Modification de la séance — en attente d’une lecture serveur des salles et créneaux (demande M2)')">Modifier…</button>
               <button v-if="detail.custom_status !== 'Annulé'" type="button" class="ln-btn-secondary"
-                      @click="notBuilt('Annulation de la séance')">Annuler la séance…</button>
+                      @click="openCancel(detail)">Annuler la séance…</button>
             </div>
           </div>
         </section>
@@ -153,6 +156,24 @@
       </div>
     </div>
 
+    <StateBanner v-if="actError" variant="error" lead="L'acte a échoué." :text="actError" class="mt-4" />
+
+    <!-- Annuler une séance — motif EXIGÉ À L'ÉCRAN (règle d'interface, pas serveur :
+         le motif est facultatif côté serveur ; l'écran l'impose pour l'annulation). -->
+    <div v-if="cancelOpen" class="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/30 p-6">
+      <ReasonStep class="w-full max-w-xl" name="cancel-schedule"
+                  title="Annuler la séance"
+                  subtitle="Annuler ne dépublie pas : la séance reste visible, marquée annulée. Le motif est exigé par cet écran — il n'est pas imposé par le serveur."
+                  reason-label="Motif de l'annulation"
+                  :reason-groups="cancelReasons"
+                  detail-label="Précision"
+                  detail-hint="Le motif est tracé sur la séance."
+                  confirm-label="Annuler la séance"
+                  confirm-kind="danger"
+                  footnote="Une séance annulée reste publiée — les étudiants la voient barrée, jamais disparue."
+                  @cancel="cancelOpen = false" @submit="submitCancel" />
+    </div>
+
     <!-- La publication, et sa dérogation par séance -->
     <div v-if="publishOpen" class="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/30 p-6">
       <section class="w-full max-w-3xl overflow-hidden rounded-lg-ln border border-ln-gray-300 bg-white shadow-elevated"
@@ -187,12 +208,13 @@
               </template>
             </p>
             <div v-if="can('derogate:planning')" class="mt-3">
-              <div class="min-h-[60px] rounded-sm-ln border border-ln-gray-300 bg-white p-2.5 text-body-sm text-ln-gray-400">
-                Ce qui justifie de publier cette épreuve à moins de sept jours…
-              </div>
+              <textarea v-model="overrideReason" rows="3"
+                        class="min-h-[60px] w-full rounded-sm-ln border border-ln-gray-300 bg-white p-2.5 text-body-sm text-ln-gray-900 outline-none focus:border-ln-blue-600"
+                        placeholder="Ce qui justifie de publier cette épreuve à moins de sept jours…" />
               <div class="mt-3 flex justify-end gap-2">
                 <button type="button" class="ln-btn-secondary" @click="derogationOpen = false">Renoncer</button>
-                <button type="button" class="ln-btn-primary" @click="notBuilt('Publication avec dérogation')">Publier avec dérogation</button>
+                <button type="button" class="ln-btn-primary" :disabled="!overrideReason.trim() || busy"
+                        @click="runPublishDerogation">Publier avec dérogation</button>
               </div>
             </div>
           </div>
@@ -240,7 +262,7 @@
  */
 import { computed, onMounted, ref, watch } from 'vue';
 import {
-  TimeGrid, StatusPill, StateBanner, BatchReport,
+  TimeGrid, StatusPill, StateBanner, BatchReport, ReasonStep,
 } from '../components/index.js';
 import BlockState from '../components/internal/BlockState.vue';
 import ProgramPicker from './planning/ProgramPicker.vue';
@@ -248,7 +270,7 @@ import { useSession } from '../composables/useSession.js';
 import { useAcademicContext } from '../composables/useAcademicContext.js';
 import { useProgramScope } from '../composables/useProgramScope.js';
 import { useResource } from '../composables/useResource.js';
-import { listSchedules, listExamSchedules, publishSchedules } from '../api/planning.js';
+import { listSchedules, listExamSchedules, publishSchedules, setScheduleStatus } from '../api/planning.js';
 
 const { can } = useSession();
 const { params } = useAcademicContext();
@@ -264,6 +286,21 @@ const publishOpen = ref(false);
 const derogationOpen = ref(false);
 const report = ref(null);
 const pending = ref('');
+const actError = ref('');
+const busy = ref(false);
+const cancelOpen = ref(false);
+const cancelTarget = ref(null);
+const overrideReason = ref('');
+
+const cancelReasons = [{
+  key: 'main',
+  options: [
+    { value: 'indisponibilite', label: 'Indisponibilité de l’enseignant' },
+    { value: 'salle', label: 'Salle indisponible' },
+    { value: 'ferie', label: 'Jour férié ou fermeture' },
+    { value: 'autre', label: 'Autre — à préciser' },
+  ],
+}];
 
 const DAYS = [
   { key: 'mon', label: 'Lundi', dayNumber: 14 },
@@ -393,11 +430,47 @@ function notBuilt(what) {
  * vie. Le rapport qu'elle rend est celui du serveur — l'écran ne le fabrique pas.
  */
 async function runPublish() {
+  actError.value = '';
   const names = sessions.value
     .filter((s) => s.custom_planning_status === 'Brouillon')
     .map((s) => s.name);
-  report.value = await publishSchedules({ schedules: names });
+  try {
+    busy.value = true;
+    report.value = await publishSchedules({ schedules: names });
+    reload();
+  } catch (e) { actError.value = e.message || 'Publication refusée.'; }
+  finally { busy.value = false; }
 }
+
+/* ── Dérogation au préavis — republier les rejouables AVEC un motif (DE seul). ── */
+async function runPublishDerogation() {
+  actError.value = '';
+  const names = (report.value && report.value.retry_ids) || [];
+  if (!names.length || !overrideReason.value.trim()) return;
+  try {
+    busy.value = true;
+    report.value = await publishSchedules({ schedules: names, override_reason: overrideReason.value.trim() });
+    derogationOpen.value = false;
+    overrideReason.value = '';
+    reload();
+  } catch (e) { actError.value = e.message || 'Dérogation refusée.'; }
+  finally { busy.value = false; }
+}
+
+/* ── Annulation d'une séance — motif exigé À L'ÉCRAN (règle d'interface). ── */
+function openCancel(s) { actError.value = ''; pending.value = ''; cancelTarget.value = s; cancelOpen.value = true; }
+async function submitCancel({ reason, detail }) {
+  cancelOpen.value = false;
+  actError.value = '';
+  const motif = [reason, detail].filter(Boolean).join(' — ');
+  try {
+    busy.value = true;
+    await setScheduleStatus({ name: cancelTarget.value.name, status: 'Annulé', reason: motif });
+    reload();
+  } catch (e) { actError.value = e.message || 'Annulation refusée.'; }
+  finally { busy.value = false; }
+}
+
 function closePublish() {
   publishOpen.value = false;
   derogationOpen.value = false;

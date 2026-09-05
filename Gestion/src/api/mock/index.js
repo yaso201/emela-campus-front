@@ -97,6 +97,8 @@ const HANDLERS = {
   [PL + 'get_module_planning_summary']: (p) => P.modulePlanningSummary(p),
   [PL + 'check_schedule_conflicts']: (p) => P.scheduleConflicts(p),
   [PL + 'publish_schedules']: (p) => P.publishReport(p),
+  // Acte M2 g5 — changement de statut (dont annulation). Forme serveur inline.
+  [PL + 'set_schedule_status']: (p) => ({ name: p && p.name, custom_status: p && p.status }),
   [PL + 'get_instructor_day_load']: (p) => P.instructorDayLoad(p),
   [PL + 'list_tp_requalification_candidates']: (p) => P.tpRequalification(p),
   [EX + 'list_exam_schedules']: (p) => P.examSchedules(p),
