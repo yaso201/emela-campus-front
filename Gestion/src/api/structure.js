@@ -129,6 +129,9 @@ function adaptTree(d) {
     program_label: (d.program || {}).program_name, // FORMES : program.program_name serveur → program_label écran
     ects,
     ects_cap: d.ects_cap,                          // FORMES : la constante de la GARDE, rendue par le serveur (V-LEARN-F3-13)
+    // FORMES (M2 g2) : les niveaux du programme, pour le formulaire d'unité
+    // (academic_level est obligatoire à la création). {name, level_name} serveur.
+    levels: (d.levels || []).map((l) => ({ id: l.name, label: l.level_name || l.name })),
     maquette: { state, proposed_by, proposed_on, validated_on },
   };
 }

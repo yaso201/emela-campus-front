@@ -16,7 +16,8 @@
     <StateBanner v-if="pending" variant="warning" lead="Acte non disponible." :text="pending" />
     <StateBanner v-if="actError" variant="error" lead="L'acte a échoué." :text="actError" />
 
-    <UeForm v-if="createOpen" :program="program" :term-label="termLabel" :error="createError" :busy="busy"
+    <UeForm v-if="createOpen" :program="program" :term-label="termLabel"
+            :options="{ levels: tree.data.value?.levels || [] }" :error="createError" :busy="busy"
             @cancel="createOpen = false" @submit="submitUe" />
 
     <StateBanner v-if="maquetteState === 'valide'" variant="info"
