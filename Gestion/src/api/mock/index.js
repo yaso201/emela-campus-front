@@ -37,6 +37,8 @@ const EW = 'portal_app.api.academic.early_warning.';
 const SA = 'portal_app.api.academic.service_allocation.';
 
 const HANDLERS = {
+  // AN-09 (M3) : fermeture de session — cœur Frappe, no-op en simulacre.
+  logout: (p) => ({}),
   // ─── Grappe 1 · châssis ─────────────────────────────────────────────────
   'portal_app.api.identity.session_context.get_session_context': () => F.session,
   'portal_app.api.academic.chassis.get_academic_context': () => F.academicContext,

@@ -6,7 +6,9 @@
     <p v-if="attribution" class="mr-auto basis-full text-caption text-ln-gray-500 sm:basis-auto">
       <span v-html="attribution"></span>
     </p>
-    <button v-for="a in visibleActions" :key="a.key" type="button"
+    <!-- AN-10 : l'explication (hint) du geste vient des DONNÉES de l'écran —
+         v-tip la rend au survol et au focus ; le libellé reste le texte visible. -->
+    <button v-for="a in visibleActions" :key="a.key" type="button" v-tip="a.hint || ''"
             :class="['min-h-[36px]', btnClass(a)]"
             :disabled="a.disabled"
             @click="emit('act', a.key)">
@@ -20,7 +22,7 @@
 /**
  * 8 · Barre d'acte — les actions possibles sur l'objet ouvert.
  * Réf : lot 2 (contrôle des notes), lot 3 (prononcé, appel).
- * Props : actions[] = { key, label, kind: 'primary'|'secondary'|'danger', visible, disabled }
+ * Props : actions[] = { key, label, kind: 'primary'|'secondary'|'danger', visible, disabled, hint }
  *         attribution (HTML court : « Contrôlé par … ») · hint
  * Événement : act(key)
  *

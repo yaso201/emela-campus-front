@@ -2,7 +2,7 @@
   <AppShell :nav-groups="navGroups" :bottom-items="bottomItems" :current="current"
             :user="person" :roles="roles" :has-personal-space="spaces.personal"
             :unread="counts.overdue > 0" :rail="rail" :compact="compact"
-            @navigate="go" @switch-space="switchSpace" @search="search" @toggle-nav="compactNavOpen = !compactNavOpen">
+            @navigate="go" @switch-space="switchSpace" @search="search" @logout="logout" @toggle-nav="compactNavOpen = !compactNavOpen">
     <template #context>
       <ContextBar :year="year" :term="term" :note="note" :loading="!ctxReady" @pick="pick" />
     </template>
@@ -32,6 +32,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { AppShell, ContextBar, AccessDenied, StateBanner } from './components/index.js';
 import { NAV, BOTTOM_KEYS } from './nav.js';
 import { useSession } from './composables/useSession.js';
+import { closeSession } from './api/session.js';
 import { useAcademicContext } from './composables/useAcademicContext.js';
 import { denial, clearDenial } from './composables/useResource.js';
 import { workQueueCounts } from './api/queues.js';
@@ -146,6 +147,17 @@ function pick(which) {
  */
 function search() {
   pending.value = "La recherche transversale n'est pas encore branchée — aucun point d'entrée ne la sert.";
+}
+
+/**
+ * AN-09 — la déconnexion est un acte SERVEUR : la session Frappe est invalidée
+ * (`/api/method/logout`), puis rechargement de /gestion — le serveur, ne voyant
+ * plus de session, redirige vers la connexion. Le shell étant servi
+ * `Cache-Control: no-store`, le retour-arrière ne rend aucun contenu.
+ */
+async function logout() {
+  try { await closeSession(); } catch { /* la session peut déjà être morte — on sort quand même */ }
+  window.location.assign('/gestion');
 }
 
 const d = computed(() => denial.value?.details || {});

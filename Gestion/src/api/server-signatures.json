@@ -113,6 +113,9 @@
  "portal_app.api.academic.document_requests.fulfill_document_request": [
   "name"
  ],
+ "portal_app.api.academic.document_requests.get_document_request": [
+  "name"
+ ],
  "portal_app.api.academic.document_requests.get_my_document_requests": [
   "student_id"
  ],
@@ -121,7 +124,11 @@
  ],
  "portal_app.api.academic.document_requests.refuse_document_request": [
   "name",
+  "refusal_category",
   "refusal_reason"
+ ],
+ "portal_app.api.academic.dossiers_read.get_dossier": [
+  "name"
  ],
  "portal_app.api.academic.dossiers_read.list_dossiers": [
   "kind",

@@ -64,3 +64,10 @@ function adaptContext(c) {
 }
 export const academicContext = () =>
   call('portal_app.api.academic.chassis.get_academic_context').then(adaptContext);
+
+/**
+ * AN-09 (M3) — fermer la session AU SERVEUR. `logout` est le point d'entrée
+ * cœur de Frappe (guest-safe) : la session est invalidée côté serveur, pas
+ * seulement oubliée par le navigateur.
+ */
+export const closeSession = () => call('logout');

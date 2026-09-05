@@ -50,6 +50,9 @@ export const PERMISSIONS = [
   // la version 02 : l'arbitrage d'un congé appartient au Director, la décision
   // d'appel disciplinaire à la Direction. Deux actes, deux acteurs, deux clés.
   'read:dossiers', 'instruct:dossiers', 'decide:dossiers',
+  // AN-06 (M1) : clé DÉDIÉE de la file « sans décideur » — porteurs matrice :
+  // DE, Direction, Director (STALLED_DOSSIERS_BEARERS, permission_matrix.py).
+  'read:stalled_dossiers',
   'arbitrate:leave', 'decide:appeal',
 
   // Conseil pédagogique — préparer n'est pas tenir.

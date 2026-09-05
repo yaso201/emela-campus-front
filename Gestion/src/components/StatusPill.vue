@@ -1,5 +1,5 @@
 <template>
-  <span class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-sm-ln px-2 py-0.5 text-caption font-semibold" :class="tone.wrap" role="status">
+  <span v-tip="hint || ''" :tabindex="hint ? 0 : undefined" class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-sm-ln px-2 py-0.5 text-caption font-semibold" :class="tone.wrap" role="status">
     <span class="h-1.5 w-1.5 flex-shrink-0 rounded-full" :class="tone.dot" aria-hidden="true"></span>
     {{ displayLabel }}
     <span v-if="code" class="font-mono text-[10px] tracking-wide opacity-70">{{ code }}</span>
@@ -18,6 +18,9 @@ import { computed } from 'vue';
 const props = defineProps({
   status: { type: String, required: true },
   label: { type: String, default: null },
+  // AN-10 : explication optionnelle rendue par v-tip (survol + focus) — le
+  // libellé, lui, est TOUJOURS visible (jamais dupliqué dans l'infobulle).
+  hint: { type: String, default: '' },
   code: { type: String, default: null },
 });
 

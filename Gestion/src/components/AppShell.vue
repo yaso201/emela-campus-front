@@ -18,16 +18,25 @@
         <!-- La bascule ne s'affiche que si la personne A un espace personnel.
              Exposition D-01 : sans elle, le bouton mène parfois nulle part. -->
         <button v-if="hasPersonalSpace" type="button"
+                v-tip="'Basculer vers mon espace personnel'"
                 class="flex h-8 items-center gap-2 rounded-sm-ln border border-white/25 px-3 text-body-sm font-medium text-white hover:bg-white/10"
                 @click="emit('switch-space')">
           <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h13l-3-3M20 16H7l3 3" /></svg>
           <span v-if="!compact">Mon espace</span>
         </button>
-        <button type="button" class="relative grid h-8 w-8 place-items-center rounded-sm-ln" :aria-label="notificationLabel" @click="emit('navigate', 'notifications')">
+        <button type="button" v-tip="notificationLabel" class="relative grid h-8 w-8 place-items-center rounded-sm-ln" :aria-label="notificationLabel" @click="emit('navigate', 'notifications')">
           <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 1 1 12 0c0 4 1.5 5.5 1.5 5.5H4.5S6 13 6 9Z" /><path d="M10 18.5a2 2 0 0 0 4 0" /></svg>
           <span v-if="unread" class="absolute right-1.5 top-1.5 h-[7px] w-[7px] rounded-full border-[1.5px] border-ln-blue-900 bg-[#F59E0B]"></span>
         </button>
-        <span class="grid h-[30px] w-[30px] place-items-center rounded-full bg-ln-blue-600 text-caption font-bold text-white">{{ user.initials }}</span>
+        <span v-tip="identityLabel" tabindex="0"
+              class="grid h-[30px] w-[30px] place-items-center rounded-full bg-ln-blue-600 text-caption font-bold text-white">{{ user.initials }}</span>
+        <!-- AN-09 : la déconnexion vit dans la zone d'identité de TOUS les écrans.
+             Le composant émet ; la coquille invalide la session AU SERVEUR. -->
+        <button type="button" v-tip="'Se déconnecter — la session serveur est fermée'"
+                class="grid h-8 w-8 place-items-center rounded-sm-ln border border-white/25 text-white hover:bg-white/10"
+                aria-label="Se déconnecter" @click="emit('logout')">
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="m16 17 5-5-5-5" /><path d="M21 12H9" /></svg>
+        </button>
       </div>
     </header>
 
@@ -39,7 +48,11 @@
       <nav v-if="!compact" class="flex flex-col gap-5 border-r border-ln-gray-200 bg-white" :class="rail ? 'items-center px-2 py-4' : 'gap-5 px-3 py-4'" aria-label="Navigation principale">
         <div v-for="group in navGroups" :key="group.key" class="flex w-full flex-col gap-0.5" :class="group.key === 'bottom' ? 'mt-auto border-t border-ln-gray-200 pt-3' : ''">
           <p v-if="group.title && !rail" class="px-3 pb-2 text-micro font-semibold uppercase tracking-wider text-ln-gray-500">{{ group.title }}</p>
+          <!-- AN-10 : le LIBELLÉ EXISTANT alimente l'infobulle (v-tip) — zéro texte
+               dupliqué. En nav dépliée, l'infobulle porte l'explication (hint) si le
+               relevé en donne une ; en rail, elle porte le libellé (sinon invisible). -->
           <a v-for="item in group.items" :key="item.key" href="#"
+             v-tip="rail ? item.label : (item.hint || '')"
              class="relative flex items-center gap-3 rounded-sm-ln text-body-sm font-medium no-underline"
              :class="itemClass(item)"
              :aria-current="item.key === current ? 'page' : undefined"
@@ -91,8 +104,8 @@
 import { computed } from 'vue';
 
 const props = defineProps({
-  navGroups: { type: Array, default: () => [] },  // [{ key, title, items: [{ key, label, path, icon, count, overdue }] }]
-  bottomItems: { type: Array, default: () => [] },  // [{ key, label, icon, count, overdue }]
+  navGroups: { type: Array, default: () => [] },  // [{ key, title, items: [{ key, label, path, icon, count, overdue, hint }] }]
+  bottomItems: { type: Array, default: () => [] },  // [{ key, label, icon, count, overdue, hint }]
   current: { type: String, default: '' },
   user: { type: Object, required: true },
   roles: { type: Array, default: () => [] },
@@ -101,7 +114,10 @@ const props = defineProps({
   rail: { type: Boolean, default: false },
   compact: { type: Boolean, default: false },
 });
-const emit = defineEmits(['navigate', 'switch-space', 'search', 'toggle-nav']);
+const emit = defineEmits(['navigate', 'switch-space', 'search', 'toggle-nav', 'logout']);
+
+const identityLabel = computed(() =>
+  [props.user.name, rolesLabel.value].filter(Boolean).join(' — '));
 
 const shellColumns = computed(() => {
   if (props.compact) return { gridTemplateColumns: '1fr' };
