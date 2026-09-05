@@ -60,8 +60,13 @@ export const listRoleGrants = async (p) => {
     warnings: [],
   }));
   if (p && p.filter === 'anomalies') items = items.filter((r) => r.status === 'anomalie');
+  // FORMES (M2-AN-05) : `list_role_profiles` rend un OBJET serveur
+  // `{sod_rule, profiles:[{profile,roles}]}` (le simulacre rendait un tableau) —
+  // extraire `.profiles`. Sans cela, `.map` sur l'objet levait et `listRoleGrants`
+  // rejetait ENTIÈREMENT : la table des personnes restait vide en branché.
+  const profileList = Array.isArray(profiles) ? profiles : ((profiles && profiles.profiles) || []);
   return { count: items.length, items,
-           profiles: (profiles || []).map((x) => x.profile || x) };
+           profiles: profileList.map((x) => x.profile || x) };
 };
 /* ── Traduits RF-G-01 (B1) — la surface T5 EXISTE : `role_administration`, garde SM.
  * Adaptations de forme : `person` → `target_user` ; catalogue et profils sous d'autres

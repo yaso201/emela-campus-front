@@ -146,7 +146,8 @@ const reason = ref('');
 const error = ref('');
 const busy = ref(false);
 
-const currentTarget = computed(() => props.options.targets.find((t) => t.user === target.value) || null);
+const targets = computed(() => props.options.targets || []);
+const currentTarget = computed(() => targets.value.find((t) => t.user === target.value) || null);
 const needsReason = computed(() => kind.value === 'role_retire' || kind.value === 'portee_retiree');
 const warnings = computed(() => (sim.value && sim.value.warnings) || []);
 
