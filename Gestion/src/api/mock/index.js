@@ -50,6 +50,12 @@ const HANDLERS = {
   [ST + 'get_ue']: (p) => F.ueDetail(p),
   [ST + 'list_structure_options']: () => F.structureOptions,
   [ST + 'list_programs']: (p) => F.programs(p),
+  // Actes M2 g2 — forme serveur inline (UE + cycle de maquette).
+  [ST + 'create_ue']: (p) => ({ name: 'UE-MOCK-0001', ue_name: (p.values || {}).ue_name }),
+  [ST + 'update_ue']: (p) => ({ name: p && p.ue, ue_name: (p.values || {}).ue_name }),
+  [ST + 'propose_maquette']: () => ({ proposed: ['UE-MOCK-0001'], count: 1 }),
+  [ST + 'validate_maquette']: () => ({ validated: ['UE-MOCK-0001'], count: 1 }),
+  [ST + 'return_maquette_to_draft']: () => ({ returned: ['UE-MOCK-0001'], count: 1 }),
   // 🟢 F3-COR S1 : l'usage aval vit AU CHÂSSIS — la clé nue a disparu.
   'portal_app.api.academic.chassis.get_unit_usage': (p) => F.ueDownstreamUsage(p),
 

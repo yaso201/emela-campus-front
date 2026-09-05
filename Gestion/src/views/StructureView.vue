@@ -7,12 +7,17 @@
         <p class="mt-1 text-body-sm text-ln-gray-500">{{ subtitle }}</p>
       </div>
       <div class="flex flex-wrap items-center gap-2">
+        <ProgramPicker />
         <button type="button" class="ln-btn-secondary" @click="openHistory">Historique</button>
-        <button v-if="can('write:structure')" type="button" class="ln-btn-primary" :disabled="!dirty" @click="save">Enregistrer</button>
+        <button v-if="can('write:structure')" type="button" class="ln-btn-primary" :disabled="!dirty || busy" @click="save">Enregistrer</button>
       </div>
     </header>
 
     <StateBanner v-if="pending" variant="warning" lead="Acte non disponible." :text="pending" />
+    <StateBanner v-if="actError" variant="error" lead="L'acte a échoué." :text="actError" />
+
+    <UeForm v-if="createOpen" :program="program" :term-label="termLabel" :error="createError" :busy="busy"
+            @cancel="createOpen = false" @submit="submitUe" />
 
     <StateBanner v-if="maquetteState === 'valide'" variant="info"
                  lead="Maquette validée le 2 juillet 2026."
@@ -186,11 +191,19 @@ import {
 } from '../components/index.js';
 import { useSession } from '../composables/useSession.js';
 import { useAcademicContext } from '../composables/useAcademicContext.js';
+import { useProgramScope } from '../composables/useProgramScope.js';
 import { useResource } from '../composables/useResource.js';
-import { getStructureTree, getUe, getUeDownstreamUsage } from '../api/structure.js';
+import {
+  getStructureTree, getUe, getUeDownstreamUsage,
+  createUe, updateUe, proposeMaquette, validateMaquette, returnMaquetteToDraft,
+} from '../api/structure.js';
+import ProgramPicker from './planning/ProgramPicker.vue';
+import UeForm from './structure/UeForm.vue';
 
 const { can } = useSession();
-const { params } = useAcademicContext();
+const { params, term } = useAcademicContext();
+const { program, load: loadProgram } = useProgramScope();
+const termLabel = computed(() => term.value?.label || params.value.term || '');
 
 const ACTIVITIES = [
   { key: 'cm', label: 'CM' }, { key: 'td', label: 'TD' },
@@ -365,30 +378,72 @@ function expandAll() { Object.keys(collapsed).forEach((k) => { collapsed[k] = fa
  * l'utilisateur croit avoir agi. » Elle est maintenant gardée par l'audit.
  */
 const pending = ref('');
+const actError = ref('');
+const busy = ref(false);
+const createOpen = ref(false);
+const createError = ref('');
 function notBuilt(what) {
   pending.value = what + " — cet acte n'est pas encore branché au serveur. Rien n'a été enregistré.";
 }
 
-function add() { notBuilt('Création d’une unité'); }
-function act(key) {
+/* ── Actes BRANCHÉS (M2 g2) — création/édition d'UE + cycle de maquette. ── */
+function add() { pending.value = ''; actError.value = ''; createError.value = ''; createOpen.value = true; }
+/** La vue AJOUTE les clés de contexte (program, academic_term) — le formulaire n'en fabrique aucune. */
+async function submitUe(values) {
+  createError.value = '';
+  try {
+    busy.value = true;
+    await createUe({ values: { ...values, program: program.value, academic_term: params.value.term } });
+    createOpen.value = false;
+    loadTree();
+  } catch (e) { createError.value = e.message || 'Création refusée.'; }
+  finally { busy.value = false; }
+}
+
+async function save() {
+  actError.value = ''; pending.value = '';
+  if (!selectedUeId.value) return;
+  try {
+    busy.value = true;
+    await updateUe({ ue: selectedUeId.value, values: { ue_name: form.label } });
+    loadTree();
+  } catch (e) { actError.value = e.message || 'Enregistrement refusé.'; }
+  finally { busy.value = false; }
+}
+
+async function act(key) {
   if (key === 'draft') { reasonOpen.value = true; return; }
-  // Toute autre clé d'ActionBar : nommée, jamais avalée.
-  notBuilt('Action « ' + key + ' »');
+  actError.value = ''; pending.value = '';
+  const base = { program: program.value, academic_term: params.value.term };
+  try {
+    busy.value = true;
+    if (key === 'propose') await proposeMaquette(base);
+    else if (key === 'validate') await validateMaquette(base);
+    loadTree();
+  } catch (e) { actError.value = e.message || 'Transition refusée.'; }
+  finally { busy.value = false; }
 }
-function submitDraft() {
+
+async function submitDraft({ reason, detail }) {
   reasonOpen.value = false;
-  notBuilt('Renvoi au brouillon');
+  actError.value = '';
+  const motif = [reason, detail].filter(Boolean).join(' — ');
+  try {
+    busy.value = true;
+    await returnMaquetteToDraft({ program: program.value, academic_term: params.value.term, reason: motif });
+    loadTree();
+  } catch (e) { actError.value = e.message || 'Renvoi refusé.'; }
+  finally { busy.value = false; }
 }
-function save() { notBuilt('Enregistrement de la maquette'); }
 function openHistory() { notBuilt('Historique de l’unité'); }
 
 const addActions = [{ key: 'ue', label: 'Ajouter une unité' }];
 
-function loadTree() { tree.load(params.value); }
+function loadTree() { if (program.value) tree.load({ ...params.value, program: program.value }); }
 function loadUsage() { if (selectedUeId.value) usage.load({ ue: selectedUeId.value }); }
 
-onMounted(loadTree);
-watch(params, loadTree);
+onMounted(async () => { await loadProgram(); loadTree(); });
+watch([params, program], loadTree);
 watch(() => tree.data.value, (d) => {
   if (d?.nodes?.length && !selectedId.value) {
     selectedId.value = (d.nodes.find((n) => n.level === 2) || d.nodes[0]).id;
