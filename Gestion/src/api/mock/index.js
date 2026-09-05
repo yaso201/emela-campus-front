@@ -61,6 +61,16 @@ const HANDLERS = {
   [SA + 'get_instructor_service_summary']: (p) => F.teacherLoad(p),
   [SA + 'list_service_signals']: (p) => F.serviceSignals(p),
   // (get_service_progress : l'adaptateur compose list_service_lines + reconciliation)
+  // Actes M2 g3 — mock + point d'appel ENSEMBLE. Réponses en FORME SERVEUR
+  // (upsert : écho `applied`/`ignored_fields` ; propose/validate/carry :
+  // contrat `batch_report`). Non stateful — le simulacre fait tourner l'écran,
+  // il ne persiste rien. Inlinés ici (pas des fixtures exportées : rien à sonder).
+  [SA + 'upsert_service_line']: (p) => svcUpsert(p),
+  [SA + 'delete_service_line']: (p) => ({ deleted: p && p.name }),
+  [SA + 'propose_service_lines']: () => svcProposeReport(),
+  [SA + 'validate_service_lines']: (p) => svcValidateReport(p),
+  [SA + 'return_service_line']: (p) => ({ name: p && p.name, validation_status: 'Brouillon' }),
+  [SA + 'carry_over_service_lines']: () => svcCarryReport(),
 
   // ─── Grappe 4 · groupes et inscriptions ─────────────────────────────────
   [GR + 'list_groups']: (p) => G.groups(p),
@@ -139,6 +149,46 @@ const HANDLERS = {
   'portal_app.api.identity.role_administration.get_assignment_journal': (p) => Z.grantJournal(p),
 
 };
+
+/* ── Actes de répartition (M2 g3) — helpers locaux, forme serveur ──────────── */
+const SVC_ALLOWED = ['instructor', 'course', 'activity_type', 'program',
+  'student_group', 'academic_year', 'hours'];
+function svcUpsert(params = {}) {
+  const values = params.values || {};
+  const applied = {};
+  for (const f of SVC_ALLOWED) applied[f] = values[f] ?? null;
+  return {
+    name: params.name || 'SRV-MOCK-0001',
+    validation_status: 'Brouillon',
+    applied,
+    ignored_fields: Object.keys(values).filter((k) => !SVC_ALLOWED.includes(k)).sort(),
+  };
+}
+function svcProposeReport() {
+  const ok = [
+    { line: 'SRV-MOCK-0002', course: 'Algèbre linéaire', status: 'proposed' },
+    { line: 'SRV-MOCK-0003', course: 'Introduction à la programmation Python', status: 'proposed' },
+  ];
+  const ko = [{ line: 'SRV-MOCK-0001', course: 'Expression écrite et orale', status: 'error',
+    message: 'Ligne sans enseignant — le titulaire est exigé à la proposition.' }];
+  return { total: ok.length + ko.length, succeeded_count: ok.length, failed_count: ko.length,
+    succeeded: ok, failed: ko, retry_ids: ko.map((l) => l.line),
+    proposed: ok.map((l) => l.line), count: ok.length };
+}
+function svcValidateReport(params = {}) {
+  const names = params.names || [];
+  const ok = names.map((n) => ({ line: n, status: 'validated' }));
+  return { total: ok.length, succeeded_count: ok.length, failed_count: 0,
+    succeeded: ok, failed: [], retry_ids: [], validated: names };
+}
+function svcCarryReport() {
+  const ok = [
+    { source: 'SRV-2025-0001', course: 'Algèbre linéaire', status: 'reconduite', name: 'SRV-MOCK-0010' },
+    { source: 'SRV-2025-0002', course: 'Architecture matérielle', status: 'déjà présente', name: 'SRV-MOCK-0011' },
+  ];
+  return { total: ok.length, succeeded_count: ok.length, failed_count: 0,
+    succeeded: ok, failed: [], retry_ids: [] };
+}
 
 export async function mockCall(method, params = {}) {
   await new Promise((r) => setTimeout(r, LATENCY));

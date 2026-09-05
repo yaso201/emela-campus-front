@@ -394,23 +394,57 @@ export const getServiceProgress = async (p) => {
   };
 };
 
-/* ── Actes — traduits RF-G-01 (B1), cliqués au protocole réel (C1 : SRV-2026-00001/2).
+/* ── Actes — traduits RF-G-01 (B1), cliqués au protocole réel (C1 : SRV-2026-00001/2),
+ * BRANCHÉS M2 g3 (create/update/propose/validate/return/carry ; delete = ⏸ documenté).
  * Le serveur travaille en LIGNES, jamais en « plan » : créer/modifier passent par le
  * même upsert (values{} + name), proposer opère le couple programme×année (RAPPORT DE
- * MASSE {total, succeeded[], failed[], retry_ids[]}), valider prend les lignes COCHÉES
- * (names[]), renvoyer est unitaire et motivé. Gardes : RF (écrire, proposer — portée
- * armée exigée) · DE (valider, renvoyer). */
-/** 🟢 `upsert_service_line(values)` — création. Rend {name, validation_status, applied, ignored_fields}. */
+ * MASSE `batch_report` : {total, succeeded_count, failed_count, succeeded[], failed[],
+ * retry_ids[]}), valider prend les lignes COCHÉES (names[]), renvoyer est unitaire et
+ * motivé. Gardes : RF (écrire, proposer — portée armée exigée) · DE (valider, renvoyer). */
+
+/** FORMES : le contrat de masse serveur (`batch_report`) → contrat du composant
+ * BatchReport ({total, ok, ko, lines[{id,label,status:'ok'|'ko',reason,detail}], retry_ids}).
+ * `idOf`/`labelOf`/`detailOf` extraient les clés PAR LIGNE que chaque acte préserve
+ * (le contrat les conserve à l'intérieur — `line` pour service, `course`/`instructor`…). */
+function batchToReport(d, { idKey = 'line', labelKey, detailKey } = {}) {
+  if (!d) return d;
+  const line = (l, status) => ({
+    id: l[idKey] || l.line || l.source || l.name,
+    label: (labelKey && l[labelKey]) || l[idKey] || l.line || l.source || l.name,
+    status,
+    reason: status === 'ko' ? (l.message || l.reason || 'Échec non motivé') : undefined,
+    detail: detailKey ? l[detailKey] : (l.status_label || l.note || undefined),
+  });
+  return {
+    total: d.total,
+    ok: d.succeeded_count,
+    ko: d.failed_count,
+    retry_ids: d.retry_ids || [],
+    lines: [
+      ...(d.succeeded || []).map((l) => line(l, 'ok')),
+      ...(d.failed || []).map((l) => line(l, 'ko')),
+    ],
+  };
+}
+
+/** 🟢 `upsert_service_line(values)` — création. Rend {name, validation_status, applied, ignored_fields}.
+ * Le client compare l'envoyé au déclaré : `ignored_fields` NON VIDE = un champ hors
+ * contrat, à remonter à l'écran, jamais avalé (V-LEARN-F3-14). */
 export const createServiceLine = (p) => call(SA + 'upsert_service_line', { values: p });
 /** 🟢 `upsert_service_line(values, name)` — modification : même geste serveur que la création. */
 export const updateServiceLine = ({ name, ...fields }) =>
   call(SA + 'upsert_service_line', { name, values: fields });
-/** 🟢 `delete_service_line(name)` — Brouillon seul (on_trash). Rend {deleted}. */
+/** 🟢 `delete_service_line(name)` — Brouillon seul (on_trash). Rend {deleted}. ⏸ M2 : aucun
+ * bouton dessiné, aucune intention au relevé — laissé nu (rapport M2 §4). */
 export const deleteServiceLine = (p) => call(SA + 'delete_service_line', p);
-/** 🟢 `propose_service_lines(program, academic_year)` — rapport de masse, jamais un booléen. */
-export const proposeServicePlan = (p) => call(SA + 'propose_service_lines', p);
-/** 🟢 `validate_service_lines(names[], derogation_reason?)` — les lignes cochées, pas « le plan ». */
-export const validateServicePlan = (p) => call(SA + 'validate_service_lines', p);
+/** 🟢 `propose_service_lines(program, academic_year)` — rapport de masse, jamais un booléen.
+ * La ligne SANS enseignant échoue MOTIVÉE (rejouable) sans invalider le lot. */
+export const proposeServicePlan = (p) =>
+  call(SA + 'propose_service_lines', p).then((d) => batchToReport(d, { labelKey: 'course' }));
+/** 🟢 `validate_service_lines(names[], derogation_reason?)` — les lignes cochées, pas « le plan ».
+ * Le motif de dérogation n'est posé QUE sur les lignes qui franchissent la norme. */
+export const validateServicePlan = (p) =>
+  call(SA + 'validate_service_lines', p).then((d) => batchToReport(d, { labelKey: 'line' }));
 /** 🟢 `return_service_line(name, return_reason)` — unitaire, motif obligatoire et persisté. */
 export const returnServicePlan = (p) => call(SA + 'return_service_line', p);
 
@@ -419,4 +453,5 @@ export const returnServicePlan = (p) => call(SA + 'return_service_line', p);
  * 🟢 `carry_over_service_lines(program, from_year, to_year)` — rapport de masse,
  * échec motivé ligne à ligne (cliqué C1 : motif « année cible absente » rendu).
  */
-export const carryOverServicePlan = (p) => call(SA + 'carry_over_service_lines', p);
+export const carryOverServicePlan = (p) =>
+  call(SA + 'carry_over_service_lines', p).then((d) => batchToReport(d, { idKey: 'source', labelKey: 'course' }));

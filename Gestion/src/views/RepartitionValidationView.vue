@@ -7,14 +7,22 @@
         <p class="mt-1 text-body-sm text-ln-gray-500">{{ subtitle }}</p>
       </div>
       <div class="flex flex-wrap items-center gap-2">
-        <button v-if="can('validate:service')" type="button" class="ln-btn-secondary" @click="returnOpen = true">Renvoyer au responsable…</button>
-        <button v-if="can('validate:service')" type="button" class="ln-btn-primary" :disabled="blockedByReason" @click="validateAll">
+        <button v-if="can('validate:service')" type="button" class="ln-btn-secondary" :disabled="busy" @click="returnOpen = true">Renvoyer au responsable…</button>
+        <button v-if="can('validate:service')" type="button" class="ln-btn-primary" :disabled="blockedByReason || busy" @click="validateAll">
           Valider les {{ current.line_count || 0 }} lignes
         </button>
       </div>
     </header>
 
-    <StateBanner v-if="pending" variant="warning" lead="Acte non disponible." :text="pending" />
+    <StateBanner v-if="pending" variant="info" lead="Répartition" :text="pending" />
+    <StateBanner v-if="actError" variant="error" lead="L'acte a échoué." :text="actError" />
+
+    <div v-if="report" class="mb-4">
+      <BatchReport title="Validation des lignes" :report="report"
+                   ok-label="validées" ko-label="en échec" failures-first :retryable="false"
+                   footnote="Une ligne au-delà de la norme sans motif est refusée ; elle se rejoue après motivation." />
+      <button type="button" class="ln-btn-secondary mt-2" @click="report = null">Fermer le rapport</button>
+    </div>
 
     <div class="grid items-start gap-5 xl:grid-cols-[368px_1fr]">
       <WorkQueue title="Répartitions proposées" :items="queueItems" :selected-id="selectedId"
@@ -124,13 +132,15 @@
  */
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import {
-  WorkQueue, DenseTable, StatusPill, StateBanner, ReasonStep, headTh, bodyTd,
+  WorkQueue, DenseTable, StatusPill, StateBanner, ReasonStep, BatchReport, headTh, bodyTd,
 } from '../components/index.js';
 import ActivityTag from './repartition/ActivityTag.vue';
 import { useSession } from '../composables/useSession.js';
 import { useAcademicContext } from '../composables/useAcademicContext.js';
 import { useResource } from '../composables/useResource.js';
-import { listServiceProposals, getServiceProposal } from '../api/service.js';
+import {
+  listServiceProposals, getServiceProposal, validateServicePlan, returnServicePlan,
+} from '../api/service.js';
 
 const { can } = useSession();
 const { params } = useAcademicContext();
@@ -165,21 +175,20 @@ const subtitle = computed(() => {
 });
 
 /**
- * La première dérogation non motivée et non écartée. Une seule à la fois :
- * traiter deux dépassements dans le même panneau reviendrait à demander un
- * motif générique — c'est-à-dire pas de motif.
+ * La première ligne au-delà de la norme non encore motivée. Le serveur ne rend
+ * PAS de dérogation agrégée (FORMES : `derogations: []`) — la dérogation se
+ * DÉRIVE des lignes `needs_reason`, une à la fois : traiter deux dépassements
+ * dans le même panneau reviendrait à un motif générique, c'est-à-dire pas de motif.
  */
-function isMotivated(d) { return d.motivated || motivated[d.module_id] === true; }
 const activeDerogation = computed(() =>
-  (current.value.derogations || []).find((d) => !isMotivated(d)) || null);
-const blockedByReason = computed(() =>
-  (current.value.derogations || []).some((d) => !isMotivated(d)));
+  (current.value.lines || []).find((l) => l.needs_reason && motivated[l.module_id] !== true) || null);
+const blockedByReason = computed(() => !!activeDerogation.value);
 
 const derogationSubtitle = computed(() => {
   const d = activeDerogation.value;
   if (!d) return '';
-  return d.engaged + ' h engagées pour ' + d.norm_hours + ' h de norme, dont ' + d.hours_elsewhere +
-    ' h hors de cette filière. Les ' + d.line_count + ' lignes de ce module sont couvertes par un seul motif.';
+  return d.teacher + ' — ' + d.engaged + ' h engagées, au-delà de la norme. '
+    + 'Le motif couvre les lignes de ce module pour cet enseignant.';
 });
 
 const derogationReasons = [{
@@ -213,42 +222,75 @@ const returnReasons = [{
  * l'effet est vrai à l'écran, la persistance viendra du rechargement.
  */
 const motivated = reactive({});
+/**
+ * Le motif de dérogation capturé — passé à `validate_service_lines` comme
+ * `derogation_reason` (le serveur ne le pose QUE sur les lignes au-delà de la
+ * norme ; sous la norme, un motif décoratif est refusé — pièce d'audit).
+ */
+const derogationReason = ref('');
 
-function submitDerogation() {
+function submitDerogation({ reason, detail }) {
   const d = activeDerogation.value;
   if (!d) return;
   motivated[d.module_id] = true;
-  // La motivation a un effet VRAI à l'écran — elle lève needs_reason — mais elle
-  // n'est pas persistée : validate_service_plan n'existe pas encore.
-  notBuilt('Motivation de la dérogation');
+  derogationReason.value = [reason, detail].filter(Boolean).join(' — ');
+  // La motivation lève needs_reason à l'écran ; elle sera PERSISTÉE à la
+  // validation (derogation_reason porté par l'appel).
 }
 function preferReturn() { returnOpen.value = true; }
-/**
- * ⚠️ AUCUN DE CES TROIS ACTES N'EST BRANCHÉ, ET ILS LE DISENT.
- *
- * `validateAll` était un corps VIDE derrière le bouton principal de l'écran —
- * « Valider les 23 lignes » — sans le moindre retour au clic. J'avais posé
- * `notBuilt()` dans `RepartitionView` pour ce motif exact — « un bouton muet est pire
- * qu'un bouton absent : l'utilisateur croit avoir agi » — et laissé le CTA le plus
- * visible de la grappe sans rien.
- *
- * `submitReturn` était pire en un sens : il **refermait l'interface**, ce qui
- * ressemble à un succès.
- */
+
+/* ── Actes BRANCHÉS (M2 g3) — validation de masse et renvoi unitaire. ── */
 const pending = ref('');
-function notBuilt(what) {
-  pending.value = what + " — cet acte n'est pas encore branché au serveur. Rien n'a été enregistré.";
+const actError = ref('');
+const busy = ref(false);
+const report = ref(null);
+
+/** Les lignes à valider : cochées ET non bloquées par un motif manquant. */
+const checkedNames = computed(() =>
+  lines.value.filter((l) => !l.needs_reason && checked[l.id] !== false).map((l) => l.id));
+
+async function validateAll() {
+  actError.value = ''; pending.value = '';
+  const names = checkedNames.value;
+  if (!names.length) { pending.value = 'Aucune ligne cochée à valider.'; return; }
+  try {
+    busy.value = true;
+    report.value = await validateServicePlan({
+      names,
+      ...(derogationReason.value ? { derogation_reason: derogationReason.value } : {}),
+    });
+    loadQueue();
+    if (selectedId.value) loadDetail();
+  } catch (e) {
+    actError.value = e.message || 'Validation refusée.';
+  } finally { busy.value = false; }
 }
 
-function submitReturn() {
+/**
+ * Renvoyer la proposition : le serveur ne connaît qu'un renvoi UNITAIRE
+ * (`return_service_line(name, return_reason)`) — l'écran renvoie donc chaque
+ * ligne de la proposition avec le même motif (F : lot front ↔ unitaire serveur).
+ */
+async function submitReturn({ reason, detail }) {
   returnOpen.value = false;
-  notBuilt('Renvoi au responsable');
+  actError.value = ''; pending.value = '';
+  const motif = [reason, detail].filter(Boolean).join(' — ');
+  const names = (current.value.lines || []).map((l) => l.id);
+  try {
+    busy.value = true;
+    await Promise.all(names.map((name) => returnServicePlan({ name, return_reason: motif })));
+    pending.value = names.length + ' ligne(s) renvoyée(s) au responsable.';
+    loadQueue();
+  } catch (e) {
+    actError.value = e.message || 'Renvoi refusé.';
+  } finally { busy.value = false; }
 }
-function validateAll() { notBuilt('Validation des lignes'); }
 
 function loadQueue() { queueRes.load(params.value); }
 function loadDetail() {
   Object.keys(motivated).forEach((k) => delete motivated[k]);
+  derogationReason.value = '';
+  report.value = null;
   if (selectedId.value) detailRes.load({ proposal: selectedId.value });
 }
 

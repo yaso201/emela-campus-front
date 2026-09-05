@@ -7,22 +7,36 @@
         <p class="mt-1 text-body-sm text-ln-gray-500">{{ subtitle }}</p>
       </div>
       <div class="flex flex-wrap items-center gap-2">
+        <ProgramPicker />
         <router-link :to="{ name: 'service-signals' }" class="ln-btn-secondary">Signaux</router-link>
         <router-link :to="{ name: 'service-progress' }" class="ln-btn-secondary">Prévu / réalisé</router-link>
         <!-- La reconduction est l'un des neuf ajustements : le bouton n'est
              rendu que si le serveur l'annonce possible. Il ne se grise pas,
              il n'existe pas. -->
-        <button v-if="can('write:service') && plan.can_carry_over" type="button" class="ln-btn-secondary" @click="carry">
+        <button v-if="can('write:service') && plan.can_carry_over" type="button" class="ln-btn-secondary" :disabled="busy" @click="carry">
           Reprendre {{ plan.previous_year_label }}…
         </button>
         <button v-if="can('write:service')" type="button" class="ln-btn-secondary" @click="addLine">+ Ajouter une ligne</button>
-        <button v-if="can('write:service')" type="button" class="ln-btn-primary" :disabled="!draftCount" @click="propose">
+        <button v-if="can('write:service')" type="button" class="ln-btn-primary" :disabled="!draftCount || busy" @click="propose">
           Proposer à la validation<span v-if="draftCount"> · {{ draftCount }} lignes</span>
         </button>
       </div>
     </header>
 
     <StateBanner v-if="pending" variant="warning" lead="Acte non disponible." :text="pending" />
+    <StateBanner v-if="actError" variant="error" lead="L'acte a échoué." :text="actError" />
+
+    <!-- Rapport de masse (proposition, reconduction) — ligne à ligne, échec motivé. -->
+    <div v-if="report" class="mb-4">
+      <BatchReport :title="reportTitle" :report="report"
+                   ok-label="passées" ko-label="en échec" failures-first
+                   :retryable="false"
+                   footnote="Une ligne sans enseignant se rejoue une fois le titulaire posé — corriger la ligne, puis reproposer." />
+      <button type="button" class="ln-btn-secondary mt-2" @click="report = null">Fermer le rapport</button>
+    </div>
+
+    <ServiceLineForm v-if="formOpen" :line="editLine" :options="formOptions"
+                     @cancel="closeForm" @submit="submitLine" />
 
     <StateBanner variant="info" lead="Un module se partage.">
       Le cours magistral à l'un, les travaux dirigés à l'autre : plusieurs lignes par module sont la
@@ -103,8 +117,12 @@
                     <span v-else class="text-ln-gray-400">—</span>
                   </td>
                   <td :class="bodyTd">
-                    <button type="button" class="h-[26px] rounded-sm-ln border border-ln-gray-300 px-2 text-caption font-semibold text-ln-gray-700"
-                            aria-label="Actions sur la ligne" @click="notBuilt('Actions sur la ligne')">···</button>
+                    <!-- Le serveur ne connaît qu'un `upsert` : « Modifier » rouvre le
+                         formulaire de ligne pré-rempli. L'édition n'est offerte que sur
+                         un Brouillon (une ligne proposée/validée ne se modifie plus ici). -->
+                    <button v-if="can('write:service') && line.status === 'brouillon'" type="button"
+                            class="h-[26px] rounded-sm-ln border border-ln-gray-300 px-2 text-caption font-semibold text-ln-gray-700"
+                            aria-label="Modifier la ligne" @click="editServiceLine(line, mod.code)">Modifier</button>
                   </td>
                 </tr>
 
@@ -196,17 +214,29 @@
  */
 import { computed, onMounted, ref, watch } from 'vue';
 import {
-  DenseTable, StatusPill, StateBanner, stuckTh, stuckTd, headTh, bodyTd,
+  DenseTable, StatusPill, StateBanner, BatchReport, stuckTh, stuckTd, headTh, bodyTd,
 } from '../components/index.js';
 import ActivityTag from './repartition/ActivityTag.vue';
 import CoveragePanel from './repartition/CoveragePanel.vue';
+import ServiceLineForm from './repartition/ServiceLineForm.vue';
+import ProgramPicker from './planning/ProgramPicker.vue';
 import { useSession } from '../composables/useSession.js';
 import { useAcademicContext } from '../composables/useAcademicContext.js';
+import { useProgramScope } from '../composables/useProgramScope.js';
 import { useResource } from '../composables/useResource.js';
-import { getServicePlan, getServiceCoverage } from '../api/service.js';
+import {
+  getServicePlan, getServiceCoverage,
+  createServiceLine, updateServiceLine, proposeServicePlan, carryOverServicePlan,
+} from '../api/service.js';
 
 const { can } = useSession();
 const { params } = useAcademicContext();
+/**
+ * LA RÉSOLUTION DE FILIÈRE MANQUAIT (RF-G-01 AN-03 : un appel sans `program`
+ * levait un 500). `useProgramScope` la porte comme aux écrans Groupes/Planning :
+ * portée verrouillée du RF (libellé), sélecteur pour un rôle global.
+ */
+const { program, load: loadProgram } = useProgramScope();
 
 const planRes = useResource(getServicePlan, { isEmpty: (d) => !d?.groups?.length });
 const coverageRes = useResource(getServiceCoverage, { isEmpty: (d) => !d?.modules?.length });
@@ -272,23 +302,90 @@ const stateNote = computed(() =>
     ? "Aucune ligne n'est encore proposée — tout est modifiable."
     : plan.value.state_note || '');
 
-/**
- * Ces trois actes ne sont pas branchés. Tant qu'ils ne le sont pas, ils le
- * DISENT : un bouton qui ne fait rien au clic est pire qu'un bouton absent —
- * l'utilisateur croit avoir agi. Le bandeau tombe au prochain chargement.
- */
+/* ── Actes BRANCHÉS (M2 g3) — create/update (formulaire), propose et carry
+ * (rapports de masse). Le motif de chaque acte est le contrat serveur de
+ * `service_allocation.py`. `delete` reste ⏸ (aucun bouton, rapport M2 §4). ── */
 const pending = ref('');
+const actError = ref('');
+const busy = ref(false);
+const report = ref(null);
+const reportTitle = ref('');
+const formOpen = ref(false);
+const editLine = ref(null);
+
+// Options des listes du formulaire — LUES du plan (aucun identifiant inventé).
+const formOptions = computed(() => {
+  const courseSet = new Set();
+  for (const ue of groups.value) for (const m of (ue.modules || [])) courseSet.add(m.code);
+  const groupSet = new Set();
+  for (const l of allLines.value) if (l.group) groupSet.add(l.group);
+  return {
+    courses: [...courseSet],
+    teachers: teachers.value.map((t) => ({ id: t.id, name: t.name })),
+    groups: [...groupSet],
+  };
+});
+
 function notBuilt(what) {
   pending.value = what + " — cet acte n'est pas encore branché au serveur. Rien n'a été enregistré.";
 }
-function addLine() { notBuilt('Ajout d’une ligne'); }
-function propose() { notBuilt('Proposition à la validation'); }
-function carry() { notBuilt('Reconduction de la répartition'); }
+function addLine() { pending.value = ''; actError.value = ''; editLine.value = null; formOpen.value = true; }
+function editServiceLine(line, courseCode) {
+  pending.value = ''; actError.value = '';
+  editLine.value = { id: line.id, course: courseCode, activity: line.activity,
+    hours: line.hours, teacher_id: line.teacher, group: line.group };
+  formOpen.value = true;
+}
+function closeForm() { formOpen.value = false; editLine.value = null; }
 
-function loadPlan() { planRes.load(params.value); }
-function loadCoverage() { coverageRes.load(params.value); }
-function loadAll() { loadPlan(); loadCoverage(); }
+async function submitLine(values) {
+  actError.value = '';
+  const payload = { ...values, program: program.value, academic_year: params.value.academic_year };
+  try {
+    busy.value = true;
+    if (editLine.value) await updateServiceLine({ name: editLine.value.id, ...payload });
+    else await createServiceLine(payload);
+    closeForm();
+    loadAll();
+  } catch (e) {
+    actError.value = e.message || 'Enregistrement refusé.';
+  } finally { busy.value = false; }
+}
 
-onMounted(() => { if (params.value.academic_year) loadAll(); });  // pas d'appel sans contexte (§5)
-watch(params, loadAll);
+async function propose() {
+  actError.value = ''; pending.value = '';
+  try {
+    busy.value = true;
+    report.value = await proposeServicePlan({ program: program.value, academic_year: params.value.academic_year });
+    reportTitle.value = 'Proposition à la validation';
+    loadAll();
+  } catch (e) {
+    actError.value = e.message || 'Proposition refusée.';
+  } finally { busy.value = false; }
+}
+
+async function carry() {
+  actError.value = ''; pending.value = '';
+  const from = plan.value.previous_year_label;
+  try {
+    busy.value = true;
+    report.value = await carryOverServicePlan({
+      program: program.value, from_year: from, to_year: params.value.academic_year,
+    });
+    reportTitle.value = 'Reconduction depuis ' + from;
+    loadAll();
+  } catch (e) {
+    actError.value = e.message || 'Reconduction refusée.';
+  } finally { busy.value = false; }
+}
+
+function loadPlan() { planRes.load({ ...params.value, program: program.value }); }
+function loadCoverage() { coverageRes.load({ ...params.value, program: program.value }); }
+function loadAll() { if (program.value) { loadPlan(); loadCoverage(); } }
+
+onMounted(async () => {
+  await loadProgram();
+  if (params.value.academic_year) loadAll();   // pas d'appel sans contexte NI sans filière (§5, AN-03)
+});
+watch([params, program], loadAll);
 </script>
