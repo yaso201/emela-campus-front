@@ -65,6 +65,12 @@ export const session = {
    *
    * Ce fichier décrit un lecteur possible, pas une politique de droits : la
    * matrice réelle vient du serveur, et ce sont les GARDES qui y font foi.
+   *
+   * FORMES (M2-AN-03) : la forme SERVEUR est une LISTE de clés
+   * (`resolve_permissions` → `list[str]`) ; l'adaptateur `openSession` accepte
+   * liste ET dict et normalise en dict pour `can()`. Le simulacre garde le DICT
+   * — c'est la forme que le harnais d'audit éprouve (vocabulaire des clés) ;
+   * l'adaptateur est prouvé en BRANCHÉ, où la liste serveur arrive vraiment.
    */
   permissions: Object.fromEntries(PERMISSIONS.map((k) => [k, !DENIED.has(k)])),
 };

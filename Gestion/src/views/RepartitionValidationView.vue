@@ -291,7 +291,11 @@ function loadDetail() {
   Object.keys(motivated).forEach((k) => delete motivated[k]);
   derogationReason.value = '';
   report.value = null;
-  if (selectedId.value) detailRes.load({ proposal: selectedId.value });
+  // ⚠️ `academic_year` est OBLIGATOIRE pour `list_service_lines` (500 sinon) —
+  // le simulacre l'ignorait, le serveur l'exige. Le passer avec la proposition.
+  if (selectedId.value) {
+    detailRes.load({ proposal: selectedId.value, academic_year: params.value.academic_year });
+  }
 }
 
 onMounted(() => { if (params.value.academic_year) loadQueue(); });  // pas d'appel sans contexte (§5)
