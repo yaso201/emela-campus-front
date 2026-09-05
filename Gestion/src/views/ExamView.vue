@@ -24,6 +24,7 @@
     </header>
 
     <StateBanner v-if="pending" variant="warning" lead="Acte non disponible." :text="pending" />
+    <StateBanner v-if="actError" variant="error" lead="L'acte a échoué." :text="actError" />
 
     <!-- LA PHRASE CENTRALE DE CET ÉCRAN -->
     <StateBanner variant="info" lead="Inscrire n'est pas convoquer.">
@@ -107,7 +108,7 @@
               <td :class="bodyTd" class="!text-left">
                 <button v-if="can('write:exams')" type="button"
                         class="text-caption font-semibold text-ln-blue-600"
-                        @click="notBuilt('Retrait d’un candidat')">Retirer</button>
+                        @click="removeCandidate(s)">Retirer</button>
               </td>
             </tr>
           </template>
@@ -233,7 +234,7 @@ import { useSession } from '../composables/useSession.js';
 import { useAcademicContext } from '../composables/useAcademicContext.js';
 import { useResource } from '../composables/useResource.js';
 import {
-  listExamSchedules, getExamSchedule, populateExamStudentsFromGroup,
+  listExamSchedules, getExamSchedule, populateExamStudentsFromGroup, removeExamStudents,
 } from '../api/planning.js';
 import { getGroup, listGroups } from '../api/groups.js';
 
@@ -340,9 +341,26 @@ async function runPopulate() {
 function closePopulate() {
   populateOpen.value = false;
   report.value = null;
+  // Le peuplement a modifié la liste : la recharger, sinon le tableau des
+  // candidats resterait sur son compte d'avant l'ajout (règle 6 — un seul état).
+  loadExam();
 }
 
 function plural(n, w) { const v = Number(n) || 0; return v + ' ' + w + (v > 1 ? 's' : ''); }
+/* ── Acte BRANCHÉ (M3 g6) — retrait d'un candidat. Retirer ne décommande pas
+ * un convoqué : la convocation naît de la publication, l'écran le dit déjà. ── */
+const actError = ref('');
+const busy = ref(false);
+async function removeCandidate(row) {
+  actError.value = ''; pending.value = '';
+  try {
+    busy.value = true;
+    await removeExamStudents({ exam_schedule: selectedId.value, students: JSON.stringify([row.student]) });
+    loadExam();
+  } catch (e) { actError.value = e.message || 'Retrait refusé.'; }
+  finally { busy.value = false; }
+}
+
 function notBuilt(what) {
   pending.value = what + " — cet acte n'est pas encore branché au serveur. Rien n'a été enregistré.";
   populateOpen.value = false;

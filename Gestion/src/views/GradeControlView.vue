@@ -11,17 +11,25 @@
         <p class="mt-1 text-body-sm text-ln-gray-500">{{ subtitle }}</p>
       </div>
       <div v-if="current" class="flex flex-wrap items-center gap-2">
-        <button v-if="can('control:grades')" type="button" class="ln-btn-secondary" @click="returnOpen = true">
+        <!-- M3 g6 : le CTA suit la MACHINE serveur (Reçue → En traitement →
+             Intégrée/Rejetée) — le renvoi n'est possible qu'en traitement. -->
+        <button v-if="can('control:grades') && current.status === 'En traitement'" type="button"
+                class="ln-btn-secondary" :disabled="busy" @click="returnOpen = true">
           Renvoyer…
         </button>
-        <button v-if="can('control:grades')" type="button" class="ln-btn-primary"
-                :disabled="current.status !== 'Reçue'" @click="notBuilt('Intégration de la soumission')">
+        <button v-if="can('control:grades') && current.status === 'Reçue'" type="button"
+                class="ln-btn-primary" :disabled="busy" @click="runProcess">
+          Prendre en traitement
+        </button>
+        <button v-if="can('control:grades') && current.status === 'En traitement'" type="button"
+                class="ln-btn-primary" :disabled="busy" @click="runIntegrate">
           Intégrer {{ plural(current.student_count, 'note') }}
         </button>
       </div>
     </header>
 
     <StateBanner v-if="pending" variant="warning" lead="Acte non disponible." :text="pending" />
+    <StateBanner v-if="actError" variant="error" lead="L'acte a échoué." :text="actError" />
 
     <div class="grid items-start gap-5 xl:grid-cols-[368px_1fr]">
       <WorkQueue title="Soumissions en attente" :items="queueItems" :selected-id="selectedId"
@@ -104,7 +112,7 @@
                     confirm-label="Renvoyer"
                     :modal="false"
                     footnote="Renvoyer et rejeter sont le même acte serveur : un point d'entrée, un motif obligatoire."
-                    @cancel="returnOpen = false" @submit="notBuilt('Renvoi de la soumission')" />
+                    @cancel="returnOpen = false" @submit="submitReturn" />
       </section>
 
       <section v-else class="rounded-md-ln border border-dashed border-ln-gray-300 px-6 py-8 text-center">
@@ -144,7 +152,7 @@ import {
 import { useSession } from '../composables/useSession.js';
 import { useAcademicContext } from '../composables/useAcademicContext.js';
 import { useResource } from '../composables/useResource.js';
-import { listSubmissionsForControl } from '../api/grades.js';
+import { listSubmissionsForControl, processSubmission, integrateSubmission, rejectSubmission } from '../api/grades.js';
 
 const { can } = useSession();
 const { params } = useAcademicContext();
@@ -247,6 +255,39 @@ const returnReasons = [{
 }];
 
 function plural(n, w) { const v = Number(n) || 0; return v + ' ' + w + (v > 1 ? 's' : ''); }
+/* ── Actes BRANCHÉS (M3 g6) — intégration et renvoi motivé. ── */
+const actError = ref('');
+const busy = ref(false);
+async function runProcess() {
+  actError.value = ''; pending.value = '';
+  try {
+    busy.value = true;
+    await processSubmission({ name: current.value.name });
+    reload();
+  } catch (e) { actError.value = e.message || 'Prise en traitement refusée.'; }
+  finally { busy.value = false; }
+}
+async function runIntegrate() {
+  actError.value = ''; pending.value = '';
+  try {
+    busy.value = true;
+    await integrateSubmission({ name: current.value.name });
+    reload();
+  } catch (e) { actError.value = e.message || 'Intégration refusée.'; }
+  finally { busy.value = false; }
+}
+async function submitReturn({ reason, detail }) {
+  returnOpen.value = false;
+  actError.value = ''; pending.value = '';
+  const motif = [reason, detail].filter(Boolean).join(' — ');
+  try {
+    busy.value = true;
+    await rejectSubmission({ name: current.value.name, reason: motif });
+    reload();
+  } catch (e) { actError.value = e.message || 'Renvoi refusé.'; }
+  finally { busy.value = false; }
+}
+
 function notBuilt(what) {
   pending.value = what + " — cet acte n'est pas encore branché au serveur. Rien n'a été enregistré.";
   returnOpen.value = false;

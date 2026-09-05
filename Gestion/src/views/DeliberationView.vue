@@ -30,6 +30,9 @@
          montre aucune délibération arbitraire (un lien qui ressemble à un
          succès est pire qu'un lien mort — la leçon du bilan de charge). -->
     <template v-if="!subject">
+      <div v-if="can('deliberate')" class="mb-4">
+        <button type="button" class="ln-btn-primary" @click="openOpenPanel">Ouvrir une délibération…</button>
+      </div>
       <StateBanner variant="info" lead="Aucune délibération sélectionnée.">
         Cet écran s'ouvre sur UNE délibération, désignée dans l'adresse.
         Choisissez un jury ci-dessous — la liste ne porte que l'identification
@@ -218,11 +221,14 @@
                   <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4.5 4.5L19 7" /></svg>
                   {{ r.new_academic_status }}
                 </span>
-                <span v-else class="flex gap-1.5">
+                <span v-else-if="can('deliberate')" class="flex gap-1.5">
+                  <!-- « Suivre » pré-remplit depuis la PROPOSITION serveur si elle existe ;
+                       sans proposition, les deux boutons ouvrent le même formulaire vide
+                       (jamais un défaut inventé). -->
                   <button type="button" class="inline-flex h-[26px] items-center rounded-sm-ln border border-ln-gray-300 px-2 text-caption font-semibold text-ln-gray-700"
-                          @click="notBuilt('Instruction d’une décision')">Suivre</button>
+                          @click="openDecision(r, true)">Suivre</button>
                   <button type="button" class="inline-flex h-[26px] items-center rounded-sm-ln border border-ln-gray-300 px-2 text-caption font-semibold text-ln-gray-700"
-                          @click="notBuilt('Instruction d’une décision')">Autre…</button>
+                          @click="openDecision(r, false)">Autre…</button>
                 </span>
               </td>
             </tr>
@@ -270,6 +276,36 @@
         <p v-if="panel.floorNote" class="mt-4 rounded-sm-ln bg-ln-error-bg p-3 text-caption leading-snug text-[#7A2020]">
           {{ panel.floorNote }}
         </p>
+        <!-- Décision de jury SUR L'UNITÉ (M3 g6) — distincte de la décision sur
+             l'étudiant. Deux natures serveur : rattrapage confirmé / validée par
+             le jury. Le fondement est obligatoire → bouton inerte sans lui. -->
+        <div v-if="can('deliberate') && panel.ueResultId" class="mt-4 rounded-md-ln border border-ln-gray-200 p-3.5">
+          <p class="text-body-sm font-semibold text-ln-gray-900">Décision de jury sur l'unité</p>
+          <div class="mt-2 flex flex-col gap-2">
+            <label v-for="k in UE_KINDS" :key="k.value"
+                   class="flex min-h-[36px] cursor-pointer items-center gap-3 rounded-sm-ln border px-3 text-body-sm"
+                   :class="k.value === ueKind ? 'border-ln-blue-800 bg-ln-blue-50 font-semibold text-ln-blue-900' : 'border-ln-gray-300 text-ln-gray-700'">
+              <input v-model="ueKind" type="radio" :value="k.value" name="ue-kind" class="h-4 w-4 accent-ln-blue-800" />
+              {{ k.label }}
+            </label>
+          </div>
+          <!-- Le fondement est un VOCABULAIRE serveur (Select ue_result.jury_validation_basis),
+               pas du texte libre — et il ne concerne QUE la validation par le jury. Un rattrapage
+               confirmé n'a pas de fondement : la loi (Art. 29.2) le pose, pas l'indulgence. -->
+          <div v-if="ueKind === 'jury_validated'" class="mt-3">
+            <label class="text-caption font-semibold text-ln-gray-700">Fondement (Art. 33.2 / 30.1)</label>
+            <select v-model="ueBasis"
+                    class="mt-1 w-full rounded-sm-ln border border-ln-gray-300 bg-white p-2.5 text-body-sm text-ln-gray-900 outline-none focus:border-ln-blue-600">
+              <option value="" disabled>— choisir le fondement —</option>
+              <option v-for="b in UE_BASES" :key="b" :value="b">{{ b }}</option>
+            </select>
+          </div>
+          <div class="mt-3 flex justify-end">
+            <button type="button" class="ln-btn-primary"
+                    :disabled="!ueKind || (ueKind === 'jury_validated' && !ueBasis) || busy"
+                    @click="submitUeDecision">Appliquer au procès-verbal</button>
+          </div>
+        </div>
       </div>
 
       <div v-else class="px-5 py-4">
@@ -351,12 +387,23 @@
           <span class="text-caption text-ln-gray-500">{{ instructed }} décisions seront propagées.</span>
           <span class="ml-auto flex gap-2">
             <button type="button" class="ln-btn-secondary" @click="closeOpen = false">Annuler</button>
-            <button type="button" class="ln-btn-primary" @click="notBuilt('Clôture de la délibération')">Clore</button>
+            <button type="button" class="ln-btn-primary" :disabled="busy" @click="runClose">Clore</button>
           </span>
         </footer>
       </section>
     </div>
+
+    <StateBanner v-if="actError" variant="error" lead="L'acte a échoué." :text="actError" class="mt-4" />
+
+    <DecisionForm v-if="decisionRow" :row="decisionRow" :initial="decisionInitial"
+                  :error="decisionError" :busy="busy"
+                  @cancel="decisionRow = null" @submit="submitDecision" />
     </template>
+
+    <DeliberationOpenPanel v-if="openPanelShown" :options="openOptions"
+                           :year-label="params.academic_year || ''" :term-label="params.term || ''"
+                           :error="openError" :busy="busy"
+                           @cancel="openPanelShown = false" @program="loadOpenLevels" @submit="submitOpen" />
   </div>
 </template>
 
@@ -395,8 +442,14 @@ import { useRoute, useRouter } from 'vue-router';
 import { useSession } from '../composables/useSession.js';
 import { useAcademicContext } from '../composables/useAcademicContext.js';
 import { useResource } from '../composables/useResource.js';
-import { getDeliberationDashboard } from '../api/grades.js';
+import {
+  getDeliberationDashboard, createDeliberation, addJuryMember, startDeliberation,
+  addDecision, applyJuryUeDecision, closeDeliberation,
+} from '../api/grades.js';
 import { listDeliberationRoster, listDeliberations } from '../api/deliberation.js';
+import { listStructureOptions, getStructureTree } from '../api/structure.js';
+import DecisionForm from './notes/DecisionForm.vue';
+import DeliberationOpenPanel from './notes/DeliberationOpenPanel.vue';
 
 const { can } = useSession();
 const { params } = useAcademicContext();
@@ -427,7 +480,7 @@ const tableState = rosterRes.state;
 const tab = ref('synth');
 const selectedId = ref(null);
 const panel = ref(null);
-const closeOpen = ref(false);
+const closeOpen = ref(false);  // M3 g6 close wiring v2
 const pending = ref('');
 
 const TABS = [
@@ -609,6 +662,8 @@ function openUe(r, code) {
   panel.value = {
     kind: 'ue', title: code + (u.ue_label ? ' — ' + u.ue_label : ''),
     student_name: r.student_name, rows: rowsOut,
+    // M3 g6 : l'identifiant du UE Result serveur — nécessaire à la décision de jury.
+    ueResultId: u.name || null,
     floorNote: u.has_floor_violation
       ? 'La moyenne est sous le plancher de 6 / 20. Le plancher EMPÊCHE la compensation : cette '
         + 'unité ne peut pas être rattrapée par la moyenne du semestre, même si celle-ci atteint 10. '
@@ -620,6 +675,120 @@ function openUe(r, code) {
 function notBuilt(what) {
   pending.value = what + " — cet acte n'est pas encore branché au serveur. Rien n'a été enregistré.";
   closeOpen.value = false;
+}
+
+/* ── Actes BRANCHÉS (M3 g6) ─────────────────────────────────────────────── */
+const actError = ref('');
+const busy = ref(false);
+
+// Instruction d'une décision (DecisionForm)
+const decisionRow = ref(null);
+const decisionInitial = ref(null);
+const decisionError = ref('');
+function openDecision(r, follow) {
+  actError.value = ''; decisionError.value = '';
+  decisionRow.value = r;
+  // « Suivre » = la PROPOSITION serveur si elle existe (r.decision = proposition
+  // instruite ? non — r.decision absent ici) ; proposition = r.proposed_decision
+  // si le serveur la rend, sinon formulaire vierge (jamais un défaut inventé).
+  decisionInitial.value = follow && r.proposed_decision
+    ? { decision: r.proposed_decision, new_academic_status: r.proposed_status || '' }
+    : null;
+}
+async function submitDecision(payload) {
+  decisionError.value = '';
+  const r = decisionRow.value;
+  try {
+    busy.value = true;
+    await addDecision({
+      deliberation: subject.value,
+      student: r.student,
+      semester_result: r.semester_result?.name || r.semester_result_name,
+      ...payload,
+    });
+    decisionRow.value = null;
+    reloadAll();
+  } catch (e) { decisionError.value = e.message || 'Instruction refusée.'; }
+  finally { busy.value = false; }
+}
+
+// Décision de jury sur l'unité (panneau UE)
+const UE_KINDS = [
+  { value: 'jury_validated', label: 'Validée par le jury' },
+  { value: 'retake_confirmed', label: 'Rattrapage confirmé' },
+];
+/** Fondement = Select serveur (ue_result.jury_validation_basis) — jamais du texte libre. */
+const UE_BASES = ['Indulgence (Art. 33.2)', 'Travail compensatoire (Art. 30.1/33.3)'];
+const ueKind = ref('');
+const ueBasis = ref('');
+async function submitUeDecision() {
+  actError.value = '';
+  try {
+    busy.value = true;
+    await applyJuryUeDecision({
+      deliberation: subject.value, ue_result: panel.value.ueResultId,
+      kind: ueKind.value, basis: ueBasis.value.trim(),
+    });
+    panel.value = null; ueKind.value = ''; ueBasis.value = '';
+    reloadAll();
+  } catch (e) { actError.value = e.message || 'Décision refusée.'; }
+  finally { busy.value = false; }
+}
+
+// Clôture — gèle le PV (annonce dans la modale ; conditions au serveur).
+async function runClose() {
+  actError.value = '';
+  try {
+    busy.value = true;
+    await closeDeliberation({ name: subject.value });
+    closeOpen.value = false;
+    reloadAll();
+  } catch (e) { closeOpen.value = false; actError.value = e.message || 'Clôture refusée.'; }
+  finally { busy.value = false; }
+}
+
+// Ouverture (create → add_jury_member → start) — arbitrage 2.
+const openPanelShown = ref(false);
+const openError = ref('');
+const openPrograms = ref([]);
+const openLevels = ref([]);
+const openOptions = computed(() => ({ programs: openPrograms.value, levels: openLevels.value }));
+async function openOpenPanel() {
+  pending.value = ''; openError.value = ''; openPanelShown.value = true;
+  try { const s = await listStructureOptions(); openPrograms.value = (s?.programs || []).map((p) => p.name || p); }
+  catch { openPrograms.value = []; }
+}
+async function loadOpenLevels(program) {
+  try { const t = await getStructureTree({ program, academic_year: params.value.academic_year }); openLevels.value = t?.levels || []; }
+  catch { openLevels.value = []; }
+}
+async function submitOpen({ program, academic_level, deliberation_date, president, members }) {
+  openError.value = '';
+  try {
+    busy.value = true;
+    // create AVEC le président et tous les membres sauf le dernier ; le dernier
+    // passe par add_jury_member — les DEUX actes sont ainsi exercés.
+    const head = members.slice(0, -1);
+    const tail = members[members.length - 1];
+    const d = await createDeliberation({
+      program, academic_level,
+      academic_year: params.value.academic_year, academic_term: params.value.term,
+      deliberation_date, president,
+      jury_members: JSON.stringify(head),
+    });
+    if (tail) await addJuryMember({ deliberation: d.name, member_role: tail.member_role, user: tail.user });
+    await startDeliberation({ name: d.name });
+    openPanelShown.value = false;
+    openDeliberation(d.name);
+  } catch (e) { openError.value = e.message || 'Ouverture refusée.'; }
+  finally { busy.value = false; }
+}
+
+function reloadAll() {
+  if (subject.value) {
+    dashRes.load({ name: subject.value });
+    rosterRes.load({ ...params.value, deliberation: subject.value });
+  }
 }
 
 function reload() {

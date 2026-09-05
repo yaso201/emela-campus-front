@@ -115,6 +115,18 @@ const HANDLERS = {
 
   // ─── Grappe 6 · notes et délibération ───────────────────────────────────
   [GC + 'list_submissions_for_control']: (p) => N.submissionsForControl(p),
+  // Actes M3 g6 — forme serveur inline.
+  [GC + 'process_submission']: (p) => ({ name: p && p.name, status: 'En traitement' }),
+  [GC + 'integrate_submission']: (p) => ({ name: p && p.name, status: 'Intégrée' }),
+  [GC + 'reject_submission']: (p) => ({ name: p && p.name, status: 'Renvoyée' }),
+  [DL + 'create_deliberation']: (p) => ({ name: 'DELIB-MOCK-0001', status: 'Brouillon' }),
+  [DL + 'add_jury_member']: (p) => ({ name: p && p.deliberation, jury_members: 3 }),
+  [DL + 'start_deliberation']: (p) => ({ name: p && p.name, status: 'En cours' }),
+  [DL + 'add_decision']: (p) => ({ name: 'DEC-MOCK-0001', decision: p && p.decision }),
+  [DL + 'apply_jury_ue_decision']: (p) => ({ ue_result: p && p.ue_result, kind: p && p.kind }),
+  [DL + 'close_deliberation']: (p) => ({ name: p && p.name, status: 'Clôturée', pv_attachment: '/mock/pv.md' }),
+  [EX + 'remove_exam_students']: (p) => ({ total: 1, succeeded_count: 1, failed_count: 0, succeeded: [{ student: 'ETU-MOCK' , status: 'removed' }], failed: [], retry_ids: [] }),
+
   [MG + 'list_adjusted_module_averages']: (p) => N.adjustedModuleAverages(p),
   [DL + 'get_deliberation_dashboard']: (p) => N.deliberationDashboard(p),
   [DL + 'list_deliberations']: (p) => N.listDeliberations(p),
