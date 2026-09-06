@@ -8,10 +8,15 @@
         <h1 class="text-h1 tracking-tight text-ln-gray-900">Préconisations de l'année</h1>
         <p class="mt-1 text-body-sm text-ln-gray-500">{{ subtitle }}</p>
       </div>
-      <div class="ml-auto">
+      <div class="ml-auto flex items-center gap-2">
         <button type="button" class="ln-btn-secondary" @click="exportList">Exporter la liste</button>
+        <button v-if="can('hold:council')" type="button" class="ln-btn-primary" @click="addOpen = true">
+          Ajouter une préconisation…
+        </button>
       </div>
     </header>
+
+    <StateBanner v-if="actError" variant="error" lead="L'acte a échoué." :text="actError" class="mb-4" />
 
     <!-- ⚠️ L'AFFICHAGE PERMANENT REMPLACE LA TRANSMISSION, et cela doit être dit :
          un bouton « transmettre au jury » aurait figé une liste, et il en aurait
@@ -81,6 +86,10 @@
               </h3>
               <span class="ml-auto flex items-center gap-2">
                 <StatusPill :status="p.status" :label="p.status_label" />
+                <!-- Clôture motivée (DEC-341) — DE, sur une préconisation Ouverte. -->
+                <button v-if="can('hold:council') && p.status !== 'valide'" type="button"
+                        class="inline-flex h-[26px] items-center rounded-sm-ln border border-ln-gray-300 bg-white px-2.5 text-caption font-semibold text-ln-gray-700"
+                        @click="closeTarget = p">Clôturer…</button>
                 <button type="button" class="inline-flex h-[26px] items-center rounded-sm-ln border border-ln-gray-300 bg-white px-2.5 text-caption font-semibold text-ln-gray-700"
                         @click="open(p)">Ouvrir</button>
               </span>
@@ -130,7 +139,7 @@
           <!-- ⚠️ LE CONSTAT N'EST PAS UNE CASE PARMI D'AUTRES : sans lui, le contrat
                de remédiation n'est qu'une intention morte. Il reste donc en tête du
                panneau tant qu'il manque. -->
-          <section v-if="firstMissing" class="overflow-hidden rounded-md-ln border border-ln-warning">
+          <section v-if="firstMissing && can('hold:council')" class="overflow-hidden rounded-md-ln border border-ln-warning">
             <header class="border-b border-ln-warning-bg bg-ln-warning-bg px-4 py-3">
               <h3 class="text-[15px] font-semibold text-ln-gray-900">Constat de fin de semestre</h3>
               <p class="mt-0.5 text-caption leading-relaxed text-ln-warning">
@@ -194,6 +203,37 @@
     </template>
 
     <StateBanner v-if="pending" variant="warning" lead="Acte non disponible." :text="pending" class="mt-4" />
+
+    <!-- Clôture motivée (DEC-341) — note obligatoire (close_preconisation ne porte
+         qu'une note libre : aucun vocabulaire de motif, donc pas de ReasonStep). -->
+    <div v-if="closeTarget" class="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/30 p-6">
+      <div class="w-full max-w-lg overflow-hidden rounded-lg-ln border border-ln-gray-300 bg-white shadow-elevated"
+           role="dialog" aria-modal="true" aria-label="Clôturer la préconisation">
+        <header class="border-b border-ln-gray-200 p-5">
+          <h3 class="text-[17px] font-semibold text-ln-gray-900">Clôturer la préconisation — {{ closeTarget.student_name }}</h3>
+          <p class="mt-1 text-body-sm leading-normal text-ln-gray-500">
+            La clôture est motivée ; la note reste au dossier. Un contrat ne se clôt qu'après son constat.
+          </p>
+        </header>
+        <div class="p-5">
+          <label for="close-note" class="flex items-center gap-1.5 text-body-sm font-semibold text-ln-gray-900">
+            Note de clôture <span class="font-bold text-ln-error">obligatoire</span>
+          </label>
+          <textarea id="close-note" v-model="closeNote" rows="3"
+                    class="mt-2 w-full rounded-sm-ln border border-ln-gray-300 p-3 text-body-sm text-ln-gray-900 outline-none focus:border-ln-blue-600"
+                    placeholder="Ce qui fonde la clôture…"></textarea>
+        </div>
+        <footer class="flex items-center gap-3 border-t border-ln-gray-200 bg-ln-gray-50 px-5 py-4">
+          <button type="button" class="ln-btn-secondary ml-auto" @click="closeTarget = null; closeNote = ''">Annuler</button>
+          <button type="button" class="ln-btn-primary" :disabled="!closeNote.trim() || busy"
+                  @click="submitClose({ detail: closeNote.trim() })">Clôturer</button>
+        </footer>
+      </div>
+    </div>
+
+    <!-- Ajouter une préconisation (add_preconisation) — kinds = Select serveur. -->
+    <PreconisationForm v-if="addOpen" :error="addError" :busy="busy"
+                       @cancel="addOpen = false" @submit="submitAdd" />
   </div>
 </template>
 
@@ -216,19 +256,34 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { StateBanner, StatusPill } from '../components/index.js';
 import BlockState from '../components/internal/BlockState.vue';
+import PreconisationForm from './council/PreconisationForm.vue';
+import { useSession } from '../composables/useSession.js';
 import { useAcademicContext } from '../composables/useAcademicContext.js';
 import { useResource } from '../composables/useResource.js';
-import { listCouncilPreconisations } from '../api/council.js';
+import {
+  listCouncilPreconisations, postPreconisationFinding, closePreconisation,
+  addCouncilPreconisation, CONTRACT_FINDINGS,
+} from '../api/council.js';
 
-const VERDICTS = ['Atteints', 'Partiellement', 'Non atteints'];
+// ⚠️ Le verdict est le Select SERVEUR (Academic Preconisation.finding, au pluriel) —
+// jamais un libellé de mon choix : « Partiellement » seul faisait un 417.
+const VERDICTS = CONTRACT_FINDINGS;
 
+const { can } = useSession();
 const { params } = useAcademicContext();
 const res = useResource(listCouncilPreconisations, { isEmpty: (d) => !d?.items?.length });
 const state = res.state;
 const pending = ref('');
+const actError = ref('');
+const busy = ref(false);
 const filter = ref(null);
 const verdict = ref(null);
 const appreciation = ref('');
+// Clôture motivée (DEC-341) et ajout de préconisation.
+const closeTarget = ref(null);
+const closeNote = ref('');
+const addOpen = ref(false);
+const addError = ref('');
 
 const data = computed(() => res.data.value || { types: [] });
 const items = computed(() => data.value.items || []);
@@ -268,9 +323,52 @@ function open(p) {
     + 'pas : la liste porte déjà tout ce que le serveur rend. Rien de plus ne s’ouvrira.';
 }
 
-function postFinding() {
-  pending.value = 'Poser le constat appelle `post_preconisation_finding`, dont le point d’entrée '
-    + 'n’est pas tranché. Le verdict et l’appréciation saisis n’ont pas été enregistrés.';
+/* ── Actes BRANCHÉS (M3 g8) ─────────────────────────────────────────────── */
+
+// Poser le constat d'un contrat (Art. 32.3) PUIS le clôturer : le constat EST
+// l'acte terminal du contrat de remédiation. Deux appels serveur, un geste :
+// record_contract_finding (le verdict, immuable) puis close_preconisation
+// (l'appréciation = la note de clôture — sinon elle partirait dans le vide,
+// V-LEARN-F3-14 : record_contract_finding ne porte QUE le finding).
+async function postFinding() {
+  const p = firstMissing.value;
+  if (!p || !complete.value) return;
+  actError.value = '';
+  try {
+    busy.value = true;
+    await postPreconisationFinding({ name: p.name, finding: verdict.value });
+    await closePreconisation({ name: p.name, closure_note: appreciation.value.trim() });
+    verdict.value = null; appreciation.value = '';
+    reload();
+  } catch (e) { actError.value = e.message || 'Le constat a échoué.'; }
+  finally { busy.value = false; }
+}
+
+// Clôture MOTIVÉE d'une préconisation Ouverte (DEC-341) — DE. La note est
+// obligatoire (bouton inerte sans elle).
+async function submitClose({ detail }) {
+  const p = closeTarget.value;
+  closeTarget.value = null; closeNote.value = '';
+  if (!p) return;
+  actError.value = '';
+  try {
+    busy.value = true;
+    await closePreconisation({ name: p.name, closure_note: detail });
+    reload();
+  } catch (e) { actError.value = e.message || 'La clôture a échoué.'; }
+  finally { busy.value = false; }
+}
+
+// Ajouter une préconisation (add_preconisation) — DE. kind ∈ Select serveur.
+async function submitAdd(payload) {
+  addError.value = '';
+  try {
+    busy.value = true;
+    await addCouncilPreconisation({ ...payload, academic_term: params.value.term });
+    addOpen.value = false;
+    reload();
+  } catch (e) { addError.value = e.message || 'L’ajout a échoué.'; }
+  finally { busy.value = false; }
 }
 
 function exportList() {

@@ -63,7 +63,8 @@
               <StatusPill :status="row.status" :label="row.status_label" />
               <!-- Les actes sont DÉRIVÉS de la ligne au simulacre, jamais énumérés
                    ici : c'est ce qui garantit que les deux restent proposés. -->
-              <button v-for="a in row.acts" :key="a" type="button"
+              <button v-for="a in row.acts" :key="a"
+                      v-show="a !== 'avertissement' || can('hold:council')" type="button"
                       class="inline-flex h-[26px] items-center rounded-sm-ln border border-ln-gray-300 bg-white px-2.5 text-caption font-semibold text-ln-gray-700"
                       @click="doAct(row, a)">{{ ACTS[a] }}</button>
             </span>
@@ -71,18 +72,50 @@
         </ul>
       </section>
 
+      <!-- DEC-341 : la mention d'un « retrait par acte motivé » est retirée — aucun
+           acte de retrait d'avertissement n'existe au serveur, et l'affirmer serait
+           promettre ce que le système ne fait pas (la question du retrait reste MOA,
+           VOCABULAIRES §4). L'avertissement prononcé SUBSISTE ; on n'en dit pas plus. -->
       <p class="mt-4 rounded-md-ln border border-ln-gray-200 bg-ln-gray-50 px-4 py-3 text-caption leading-relaxed text-ln-gray-600">
         Le décompte porte les <b class="font-semibold text-ln-gray-900">absences non justifiées</b>,
-        <b class="font-semibold text-ln-gray-900">toutes séances confondues</b>, sur le semestre —
-        arrêté au {{ data.computed_at }}. Un justificatif accepté retire la séance du compte et peut
-        faire repasser un étudiant sous le seuil. Un avertissement déjà prononcé, lui,
-        <b class="font-semibold text-ln-gray-900">subsiste</b> : il se retire par un acte motivé du
-        directeur des études, jamais tout seul. Le nombre de modules concernés est affiché pour la
-        lecture ; il n'entre dans aucun seuil.
+        <b class="font-semibold text-ln-gray-900">toutes séances confondues</b>, sur le semestre.
+        Un justificatif accepté retire la séance du compte et peut faire repasser un étudiant sous le
+        seuil. Un avertissement déjà prononcé, lui,
+        <b class="font-semibold text-ln-gray-900">subsiste</b>. Le nombre de modules concernés est
+        affiché pour la lecture ; il n'entre dans aucun seuil.
       </p>
     </template>
 
+    <StateBanner v-if="actError" variant="error" lead="L'acte a échoué." :text="actError" class="mt-4" />
     <StateBanner v-if="pending" variant="warning" lead="Acte non disponible." :text="pending" class="mt-4" />
+
+    <!-- Prononcer l'avertissement (motif obligatoire) — PRONONCER, jamais déclencher. -->
+    <div v-if="pronounceTarget" class="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/30 p-6">
+      <div class="w-full max-w-lg overflow-hidden rounded-lg-ln border border-ln-gray-300 bg-white shadow-elevated"
+           role="dialog" aria-modal="true" aria-label="Prononcer l’avertissement">
+        <header class="border-b border-ln-gray-200 p-5">
+          <h3 class="text-[17px] font-semibold text-ln-gray-900">Prononcer l'avertissement — {{ pronounceTarget.student_name }}</h3>
+          <p class="mt-1 text-body-sm leading-normal text-ln-gray-500">
+            L'acte appartient au directeur des études : franchir le seuil ne l'a pas produit.
+            Il devient une préconisation, rejoint le dossier et sera lu par le jury.
+          </p>
+        </header>
+        <div class="p-5">
+          <label for="pr-note" class="flex items-center gap-1.5 text-body-sm font-semibold text-ln-gray-900">
+            Motif de l'avertissement <span class="font-bold text-ln-error">obligatoire</span>
+          </label>
+          <textarea id="pr-note" v-model="pronounceNote" rows="3"
+                    class="mt-2 w-full rounded-sm-ln border border-ln-gray-300 p-3 text-body-sm text-ln-gray-900 outline-none focus:border-ln-blue-600"
+                    placeholder="Ce qui fonde l’avertissement…"></textarea>
+        </div>
+        <footer class="flex items-center gap-3 border-t border-ln-gray-200 bg-ln-gray-50 px-5 py-4">
+          <button type="button" class="ln-btn-secondary ml-auto" @click="pronounceTarget = null; pronounceNote = ''">Annuler</button>
+          <button type="button" class="ln-btn-primary" :disabled="!pronounceNote.trim() || busy" @click="submitPronounce">
+            Prononcer
+          </button>
+        </footer>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -110,9 +143,10 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { StateBanner, StatusPill } from '../components/index.js';
 import BlockState from '../components/internal/BlockState.vue';
+import { useSession } from '../composables/useSession.js';
 import { useAcademicContext } from '../composables/useAcademicContext.js';
 import { useResource } from '../composables/useResource.js';
-import { listAbsenceThresholds } from '../api/council.js';
+import { listAbsenceThresholds, pronounceAbsenceWarning } from '../api/council.js';
 
 /** Le libellé de chaque acte dérivé. Une seule table, ici. */
 const ACTS = {
@@ -122,12 +156,18 @@ const ACTS = {
   preconisation: 'Voir la préconisation',
 };
 
+const { can } = useSession();
 const { params } = useAcademicContext();
 const res = useResource(listAbsenceThresholds, {
   isEmpty: (d) => !(d?.blocks || []).some((b) => b.items.length),
 });
 const state = res.state;
 const pending = ref('');
+const actError = ref('');
+const busy = ref(false);
+// Prononcer l'avertissement (motif obligatoire) — DE.
+const pronounceTarget = ref(null);
+const pronounceNote = ref('');
 
 const data = computed(() => res.data.value || {});
 const blocks = computed(() => data.value.blocks || []);
@@ -151,9 +191,32 @@ function doAct(row, key) {
       + 'dont la lecture n’est pas tranchée. Rien n’a été modifié.';
     return;
   }
-  pending.value = 'Cet acte appelle `pronounce_absence_warning`, dont le point d’entrée n’est pas '
-    + 'tranché. La ligne reste dans la liste — c’est exactement ce qu’elle doit faire tant que '
-    + 'personne n’a prononcé.';
+  if (key === 'convocation') {
+    // « Retenir pour la séance » = inclusion à la CRÉATION de la séance (arbitrage A1) :
+    // il n'existe pas d'acte unitaire de rétention au serveur. Depuis l'écran des
+    // candidats, « Préparer la séance » matérialise la rétention.
+    pending.value = 'Retenir pour la séance se fait à la préparation de la séance (écran des '
+      + 'candidats) : il n’existe pas d’acte unitaire de rétention. Rien n’a été modifié ici.';
+    return;
+  }
+  // avertissement → pronounce_absence_warning (add_preconisation, kind imposé) — DE.
+  actError.value = ''; pronounceNote.value = ''; pronounceTarget.value = row;
+}
+
+// Prononcer l'avertissement — PRONONCER, jamais déclencher (le motif est obligatoire).
+async function submitPronounce() {
+  const row = pronounceTarget.value;
+  if (!row || !pronounceNote.value.trim()) return;
+  actError.value = '';
+  try {
+    busy.value = true;
+    await pronounceAbsenceWarning({
+      student: row.student, term: params.value.term, details: pronounceNote.value.trim(),
+    });
+    pronounceTarget.value = null; pronounceNote.value = '';
+    reload();
+  } catch (e) { actError.value = e.message || 'L’avertissement a échoué.'; }
+  finally { busy.value = false; }
 }
 
 function exportList() {

@@ -10,11 +10,14 @@
       </div>
       <div class="ml-auto flex items-center gap-2">
         <button type="button" class="ln-btn-secondary" @click="exportList">Exporter la liste</button>
-        <button type="button" class="ln-btn-primary" @click="prepare">
-          Préparer la séance · {{ data.retained || 0 }} retenus
+        <button v-if="can('prepare:council')" type="button" class="ln-btn-primary"
+                :disabled="!retainedCount" @click="prepareOpen = true">
+          Préparer la séance · {{ retainedCount }} retenus
         </button>
       </div>
     </header>
+
+    <StateBanner v-if="actError" variant="error" lead="L'acte a échoué." :text="actError" class="mb-4" />
 
     <!-- ⚠️ LA THÈSE DE L'ÉCRAN, ET ELLE EST NÉGATIVE. Elle vient en premier
          parce qu'un tableau de chiffres sur des étudiants se lit comme un
@@ -51,7 +54,7 @@
           {{ c.title }} <span class="ml-1 tabular font-semibold">{{ c.count }}</span>
         </button>
         <button type="button" :class="chipClass('retained')" @click="setFilter('retained')">
-          Retenus <span class="ml-1 tabular font-semibold">{{ data.retained }}</span>
+          Retenus <span class="ml-1 tabular font-semibold">{{ retainedCount }}</span>
         </button>
         <p class="ml-auto text-caption text-ln-gray-500">
           Un étudiant peut relever de plusieurs critères — il n'apparaît qu'une fois.
@@ -145,7 +148,34 @@
       </p>
     </template>
 
-    <StateBanner v-if="pending" variant="warning" lead="Acte non disponible." :text="pending" class="mt-4" />
+    <StateBanner v-if="pending" variant="info" lead="Séance préparée." :text="pending" class="mt-4" />
+
+    <!-- Préparer la séance : la rétention humaine devient l'ordre du jour. La date
+         est obligatoire (create_cps_session l'exige). -->
+    <div v-if="prepareOpen" class="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/30 p-6">
+      <div class="w-full max-w-lg overflow-hidden rounded-lg-ln border border-ln-gray-300 bg-white shadow-elevated"
+           role="dialog" aria-modal="true" aria-label="Préparer la séance">
+        <header class="border-b border-ln-gray-200 p-5">
+          <h3 class="text-[17px] font-semibold text-ln-gray-900">Préparer la séance du conseil</h3>
+          <p class="mt-1 text-body-sm leading-normal text-ln-gray-500">
+            {{ retainedCount }} cas retenus deviennent l'ordre du jour. La séance s'ouvre en brouillon —
+            personne n'est convoqué avant que le directeur des études ne la tienne.
+          </p>
+        </header>
+        <div class="p-5">
+          <label for="cps-date" class="flex items-center gap-1.5 text-body-sm font-semibold text-ln-gray-900">
+            Date de la séance <span class="font-bold text-ln-error">obligatoire</span>
+          </label>
+          <input id="cps-date" v-model="sessionDate" type="date"
+                 class="mt-2 h-11 w-full rounded-sm-ln border border-ln-gray-300 px-3 text-body-sm text-ln-gray-900 outline-none focus:border-ln-blue-600" />
+        </div>
+        <footer class="flex items-center gap-3 border-t border-ln-gray-200 bg-ln-gray-50 px-5 py-4">
+          <button type="button" class="ln-btn-secondary ml-auto" @click="prepareOpen = false">Annuler</button>
+          <button type="button" class="ln-btn-primary" :disabled="!sessionDate || !retainedCount || busy"
+                  @click="submitPrepare">Préparer</button>
+        </footer>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -166,18 +196,31 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { StateBanner, headTh, bodyTd } from '../components/index.js';
 import BlockState from '../components/internal/BlockState.vue';
+import { useSession } from '../composables/useSession.js';
 import { useAcademicContext } from '../composables/useAcademicContext.js';
 import { useResource } from '../composables/useResource.js';
-import { listCouncilCandidates } from '../api/council.js';
+import { listCouncilCandidates, prepareCouncilSession, examineCouncilStudent } from '../api/council.js';
 
+const { can } = useSession();
 const { params } = useAcademicContext();
 const res = useResource(listCouncilCandidates, { isEmpty: (d) => !d?.items?.length });
 const state = res.state;
 const pending = ref('');
+const actError = ref('');
+const busy = ref(false);
 const filter = ref(null);
+// La rétention est une SÉLECTION HUMAINE (arbitrage A1) : aucun acte serveur unitaire.
+// Elle vit côté client jusqu'à la préparation, qui la matérialise en une séance.
+const retainedSet = ref(new Set());
+const prepareOpen = ref(false);
+const sessionDate = ref('');
 
 const data = computed(() => res.data.value || { criteria: [] });
-const items = computed(() => data.value.items || []);
+const withRetained = computed(() => (data.value.items || []).map(
+  (r) => ({ ...r, retained: retainedSet.value.has(r.student) })));
+const items = computed(() => (filter.value === 'retained'
+  ? withRetained.value.filter((r) => r.retained) : withRetained.value));
+const retainedCount = computed(() => withRetained.value.filter((r) => r.retained).length);
 
 const subtitle = computed(() => {
   if (state.value !== 'ready') return 'Chargement des candidats';
@@ -203,18 +246,38 @@ function setFilter(key) {
 }
 
 /**
- * ⚠️ RETENIR EST UN ACTE, et il n'est pas branché : la case ne se cochera pas.
- * Un basculement local aurait donné l'illusion d'un enregistrement — la ligne
- * serait revenue à son état au prochain chargement, sans un mot.
+ * Retenir = SÉLECTION HUMAINE (arbitrage A1). Aucun acte serveur unitaire : la
+ * rétention vit côté client jusqu'à la préparation, qui la matérialise. La case
+ * bascule donc bien — mais elle ne prétend rien enregistrer avant « Préparer ».
  */
 function toggleRetained(row) {
-  pending.value = 'Retenir ' + row.student_name + ' pour la séance appelle `retain_for_council`, '
-    + 'dont le point d’entrée n’est pas tranché. Rien n’a été enregistré, et la case n’a pas bougé.';
+  const s = new Set(retainedSet.value);
+  if (s.has(row.student)) s.delete(row.student); else s.add(row.student);
+  retainedSet.value = s;
 }
 
-function prepare() {
-  pending.value = 'Préparer la séance appelle `prepare_council_session`, dont le point d’entrée '
-    + 'n’est pas tranché. La séance déjà ouverte reste consultable.';
+// Préparer la séance (M3 g8) : create_cps_session(prefill=False) PUIS
+// update_cps_examined(retenus) — la rétention humaine devient l'ordre du jour.
+// Deux appels EM, un geste. La date est OBLIGATOIRE (le serveur l'exige).
+async function submitPrepare() {
+  const retained = items.value.filter((r) => r.retained);
+  if (!retained.length || !sessionDate.value) return;
+  actError.value = '';
+  try {
+    busy.value = true;
+    const sess = await prepareCouncilSession({
+      academic_term: params.value.term, session_date: sessionDate.value,
+      prefill_candidates: false,
+    });
+    await examineCouncilStudent({
+      name: sess.name,
+      examined: retained.map((r) => ({ student: r.student, criteria_snapshot: r.criteria_snapshot })),
+    });
+    prepareOpen.value = false; sessionDate.value = '';
+    pending.value = 'Séance ' + sess.name + ' préparée avec ' + retained.length
+      + ' cas retenus. Elle se tient à l’écran de la séance.';
+  } catch (e) { actError.value = e.message || 'La préparation a échoué.'; }
+  finally { busy.value = false; }
 }
 
 function exportList() {
@@ -222,7 +285,11 @@ function exportList() {
     + 'reconstituer le fichier au navigateur produirait un document sans millésime.';
 }
 
-function reload() { res.load({ ...params.value, criterion: filter.value }); }
+// Le filtre « Retenus » est CLIENT (la rétention l'est) ; les critères sont serveur.
+function reload() {
+  const crit = filter.value === 'retained' ? null : filter.value;
+  res.load({ ...params.value, criterion: crit });
+}
 // Le contexte arrive APRÈS le mount en mode serveur (stabilisation §5) :
 // même patron que le planning — on ne part pas sans le semestre, et on
 // recharge quand il arrive. (Les signatures serveur du conseil sont

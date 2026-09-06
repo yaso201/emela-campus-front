@@ -152,6 +152,13 @@ const HANDLERS = {
   [EW + 'get_cps_session']: (p) => C.councilSession(p),
   [EW + 'list_preconisations']: (p) => C.councilPreconisations(p),
   [EW + 'list_absence_threshold_signals']: (p) => C.absenceThresholds(p),
+  // Actes M3 g8 — forme serveur inline (non stateful ; le mode branché fait foi).
+  [EW + 'create_cps_session']: (p) => ({ name: 'PCS-MOCK-1', status: 'Brouillon', examined_count: 0 }),
+  [EW + 'update_cps_examined']: (p) => ({ name: p.name, examined_count: (p.examined || []).length }),
+  [EW + 'add_preconisation']: (p) => ({ name: 'PRECO-MOCK-1', kind: p.kind, status: 'Ouverte', owner_user: null, notification: null }),
+  [EW + 'record_contract_finding']: (p) => ({ name: p.name, finding: p.finding, finding_on: '' }),
+  [EW + 'close_preconisation']: (p) => ({ name: p.name, status: 'Clôturée' }),
+  [EW + 'hold_cps_session']: (p) => ({ name: p.name, status: 'Tenue', unjustified_absences: [] }),
 
   // ─── Grappe 9 · documents et clôture ────────────────────────────────────
   // 🔴 Même statut. Le code de vérification NAÎT de l'émission : la fixture rend
