@@ -96,7 +96,11 @@
               </p>
             </section>
 
-            <!-- Ce que la procédure ajoute au patron -->
+            <!-- Le TRONC : l'acte attendu (instruire / décider), piloté par get_dossier. -->
+            <TrunkActPanel :dossier="current" :error="actError" :busy="busy" class="mb-4"
+                           @instruct="onInstruct" @decide="onDecide" />
+
+            <!-- Ce que la procédure ajoute au patron (dérivations — ⏸ contrat partiel) -->
             <component :is="extraPanel" v-if="extraPanel" :dossier="current" @act="notBuilt" />
           </div>
 
@@ -197,9 +201,14 @@ import ArbitrationPanel from './dossiers/ArbitrationPanel.vue';
 import CommissionPanel from './dossiers/CommissionPanel.vue';
 import ContradictoryPanel from './dossiers/ContradictoryPanel.vue';
 import RetractionPanel from './dossiers/RetractionPanel.vue';
+import TrunkActPanel from './dossiers/TrunkActPanel.vue';
 import { useAcademicContext } from '../composables/useAcademicContext.js';
 import { useResource } from '../composables/useResource.js';
 import { listDossiers } from '../api/dossiers-read.js';
+import {
+  instructCoaRequest, decideCoaRequest,
+  instructLeaveReturnRequest, decideLeaveReturnRequest,
+} from '../api/dossiers.js';
 
 const { params } = useAcademicContext();
 const res = useResource(listDossiers, { isEmpty: (d) => !d?.items?.length });
@@ -227,8 +236,8 @@ const filters = computed(() => {
 const queueItems = computed(() => items.value.map((c) => ({
   id: c.name,
   title: c.student_name + ' · ' + c.kind_label,
-  subtitle: c.name + ' · ouvert le ' + c.opened_on,
-  status: c.suspended_by_appeal ? 'suspendue' : c.status_tone,
+  subtitle: c.name + ' · ouvert le ' + (c.opened_on || c.created || '—'),
+  status: c.suspended_by_appeal ? 'suspendue' : (c.status_tone || 'brouillon'),
   statusLabel: c.suspended_by_appeal ? 'Appel en cours' : c.status,
   // Un dossier sans décideur disponible attend : c'est un retard, pas un état.
   due: c.sole_decider ? 'depuis ' + plural(c.waiting_days, 'jour') : null,
@@ -238,13 +247,15 @@ const queueItems = computed(() => items.value.map((c) => ({
 const identity = computed(() => {
   const c = current.value;
   if (!c) return [];
+  // ⚠️ CONTRAT PARTIEL (get_dossier) : `ground` et `outcomes` ne sont pas rendus
+  // par le détail transversal — on GARDE (jamais un `.join` sur un absent), et on
+  // n'affiche la ligne que si le serveur la porte (dégradation propre, S-19).
   return [
     { k: 'Procédure', v: c.kind_label },
     { k: 'Étudiant', v: c.student_name + ' · ' + c.student },
-    { k: 'Ouvert le', v: c.opened_on },
-    // ⚠️ La CATÉGORIE du motif, jamais les faits : ceux-ci restent au dossier.
-    { k: 'Catégorie', v: c.ground },
-    { k: 'Issues possibles', v: c.outcomes.join(' ou ') },
+    { k: 'Ouvert le', v: c.opened_on || c.created || '—' },
+    ...(c.ground ? [{ k: 'Catégorie', v: c.ground }] : []),
+    ...(c.outcomes?.length ? [{ k: 'Issues possibles', v: c.outcomes.join(' ou ') }] : []),
   ];
 });
 
@@ -302,6 +313,33 @@ function notCarried(c) { return NOT_CARRIED[c.extra.kind] || 'l’acte n’a pas
 function setKind(k) { kind.value = k; selectedId.value = null; reload(); }
 function notBuilt(what) {
   pending.value = (what || 'Cet acte') + " n'est pas encore branché au serveur. Rien n'a été enregistré.";
+}
+
+/* ── Le TRONC du patron (M3 g7) — instruire / décider, routés par domaine. Le
+ * tronc uniforme ne couvre que congé + retour ; les procédures à verbe propre
+ * (réorientation, démission, abandon, discipline) attendent un contrat serveur
+ * par procédure (get_dossier ne porte pas leur détail — S-19). ── */
+const TRUNK = {
+  conge: { instruct: instructCoaRequest, decide: decideCoaRequest },
+  retour: { instruct: instructLeaveReturnRequest, decide: decideLeaveReturnRequest },
+};
+const actError = ref('');
+const busy = ref(false);
+async function onInstruct() {
+  const c = current.value; const t = TRUNK[c?.kind];
+  if (!t) return;
+  actError.value = '';
+  try { busy.value = true; await t.instruct({ name: c.name }); reload(); }
+  catch (e) { actError.value = e.message || 'Instruction refusée.'; }
+  finally { busy.value = false; }
+}
+async function onDecide({ decision, decision_reason }) {
+  const c = current.value; const t = TRUNK[c?.kind];
+  if (!t) return;
+  actError.value = '';
+  try { busy.value = true; await t.decide({ name: c.name, decision, decision_reason }); reload(); }
+  catch (e) { actError.value = e.message || 'Décision refusée.'; }
+  finally { busy.value = false; }
 }
 
 function reload() {

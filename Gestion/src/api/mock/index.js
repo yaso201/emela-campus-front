@@ -160,6 +160,12 @@ const HANDLERS = {
   [EW + 'close_preconisation']: (p) => ({ name: p.name, status: 'Clôturée' }),
   [EW + 'hold_cps_session']: (p) => ({ name: p.name, status: 'Tenue', unjustified_absences: [] }),
 
+  // Actes M3 g7 — tronc du patron (instruire / décider). Forme serveur inline.
+  'portal_app.api.academic.academic_leave_request.instruct_coa_request': (p) => ({ name: p.name, status: 'En revue' }),
+  'portal_app.api.academic.academic_leave_request.decide_coa_request': (p) => ({ name: p.name, status: p.decision }),
+  'portal_app.api.academic.leave_return.instruct_leave_return_request': (p) => ({ name: p.name, status: 'En revue' }),
+  'portal_app.api.academic.leave_return.decide_leave_return_request': (p) => ({ name: p.name, status: p.decision }),
+
   // ─── Grappe 9 · documents et clôture ────────────────────────────────────
   // 🔴 Même statut. Le code de vérification NAÎT de l'émission : la fixture rend
   // `verification_code: null` avant l'acte, et ce n'est pas un oubli.
