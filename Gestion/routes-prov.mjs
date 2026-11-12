@@ -5,6 +5,11 @@ import { chromium } from 'playwright-core';
 const BASE = process.env.BASE || 'http://127.0.0.1:8000';
 const MODE = process.env.MODE || 'mock';
 const LOGIN = process.env.LOGIN === '1';
+const PW = process.env.PW;
+if (!PW) {
+  console.error("PW absent : ce harnais se connecte en Administrator ; fournir le mot de passe par l'environnement, jamais dans le code (D-SEC-CLAIR-02).");
+  process.exit(2);
+}
 const ROUTES = ['/a-traiter','/structure','/repartition','/repartition/validation',
  '/repartition/charge','/repartition/signaux','/repartition/realise','/groupes',
  '/groupes/inscriptions','/planning','/notes','/notes/deliberation','/planning/examens',
@@ -24,7 +29,7 @@ page.on('response', (r) => {
 
 // le login par l'API — la desserte /gestion est gatée par session (SRV)
 const lr = await page.request.post(`${BASE}/api/method/login`, {
-  form: { usr: 'Administrator', pwd: process.env.PW || 'admin' },
+  form: { usr: 'Administrator', pwd: PW },
 });
 if (lr.status() !== 200) { console.log('LOGIN KO', lr.status()); process.exit(2); }
 

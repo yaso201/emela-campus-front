@@ -22,7 +22,7 @@
 
 ## ✅ Validation avec auth réelle — Student Setupb 002 (ETU-SETUPB-00002)
 
-**User** : `student.setupb.002@recette.lanem.bj` / `Test2026!`  
+**User** : identifiants fournis hors dépôt (D-SEC-CLAIR-02)  
 **Site** : `campus-test-v1` (port 8081)  
 **Données** : 41 UE Results sur semestre 2026-2027 (S1), statut `published`
 
