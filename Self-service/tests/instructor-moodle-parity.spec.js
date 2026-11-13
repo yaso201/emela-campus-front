@@ -5,7 +5,13 @@
 
 import { test, expect, request } from '@playwright/test';
 
-const PASSWORD = process.env.LANEM_TEST_PASSWORD || 'admin';
+const PASSWORD = process.env.LANEM_TEST_PASSWORD;
+if (!PASSWORD) {
+  throw new Error(
+    'LANEM_TEST_PASSWORD absent : ce test se connecte au site de test ; ' +
+    "fournir le mot de passe par l'environnement, jamais dans le code (D-SEC-CLAIR-01).",
+  );
+}
 const STUDENT_USER = process.env.LANEM_TEST_STUDENT || 'Administrator';
 const INSTRUCTOR_USER = process.env.LANEM_TEST_INSTRUCTOR || 'Administrator';
 

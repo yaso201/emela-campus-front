@@ -3,7 +3,13 @@ import path from 'node:path';
 
 import { expect, request, test } from '@playwright/test';
 
-const PASSWORD = 'LaNEM-Recette-2026!';
+const PASSWORD = process.env.LANEM_ATTENDANCE_TEST_PASSWORD;
+if (!PASSWORD) {
+  throw new Error(
+    'LANEM_ATTENDANCE_TEST_PASSWORD absent : ce test se connecte avec des comptes de test ; ' +
+    "fournir le mot de passe par l'environnement, jamais dans le code (D-SEC-CLAIR-02).",
+  );
+}
 const ARTIFACT_DIR = path.resolve('test-results/attendance-p3-finalisation-visual');
 const LOCAL_EDGE_URL = process.env.LANEM_ATTENDANCE_EDGE_URL || 'http://127.0.0.1:8003';
 
