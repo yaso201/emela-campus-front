@@ -26,25 +26,29 @@
       </p>
 
       <template v-else>
+        <!-- Règle 3 (C-1, MANDAT-10) : un rôle que le serveur n'attend pas ne voit AUCUN bouton — ni grisé, ni
+             inerte. Il lit qui est attendu. -->
+        <p v-if="phase !== 'none' && !canAct" class="rounded-sm-ln bg-ln-gray-50 p-3 text-caption text-ln-gray-600">
+          En attente de : <b class="font-semibold">{{ (dossier.waiting_for_roles || []).join(', ') || '—' }}</b>.
+          {{ phase === 'instruct' ? 'Instruire précède la décision ; celui qui instruit ne décidera pas.' : 'La décision appartient à ce rôle.' }}
+        </p>
+
         <!-- INSTRUIRE (statut Soumise) — sans paramètre. -->
-        <template v-if="phase === 'instruct'">
+        <template v-else-if="phase === 'instruct'">
           <p class="mb-3 text-body-sm leading-relaxed text-ln-gray-700">
             Instruire fait passer le dossier en revue. C'est un acte distinct de la décision —
             celui qui instruit ne décidera pas.
           </p>
-          <button type="button" class="ln-btn-primary" :disabled="!canAct || busy" @click="emit('instruct')">
+          <button type="button" class="ln-btn-primary" :disabled="busy" @click="emit('instruct')">
             {{ dossier.act }}
           </button>
-          <p v-if="!canAct" class="mt-2 text-caption text-ln-gray-500">
-            En attente de : {{ (dossier.waiting_for_roles || []).join(', ') || '—' }}.
-          </p>
         </template>
 
         <!-- DÉCIDER (statut En revue) — décision + motif obligatoire. -->
         <template v-else-if="phase === 'decide'">
           <p class="mb-2 text-micro font-bold uppercase tracking-wider text-ln-gray-500">Décision</p>
           <div class="mb-3 flex gap-2">
-            <label v-for="d in DECISIONS" :key="d"
+            <label v-for="d in decisions" :key="d"
                    class="flex min-h-[40px] flex-1 cursor-pointer items-center justify-center rounded-sm-ln border px-3 text-body-sm font-semibold"
                    :class="d === decision ? 'border-ln-blue-800 bg-ln-blue-50 text-ln-blue-900' : 'border-ln-gray-300 text-ln-gray-700'">
               <input v-model="decision" type="radio" name="trunk-decision" :value="d" class="sr-only" />
@@ -62,9 +66,6 @@
                     @click="emit('decide', { decision, decision_reason: reason.trim() })">
               {{ dossier.act }}
             </button>
-            <p v-if="!canAct" class="mt-2 text-caption text-ln-gray-500">
-              En attente de : {{ (dossier.waiting_for_roles || []).join(', ') || '—' }}.
-            </p>
           </div>
         </template>
 
@@ -77,7 +78,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { StateBanner } from '../../components/index.js';
 import { useSession } from '../../composables/useSession.js';
 
@@ -90,8 +91,13 @@ const emit = defineEmits(['instruct', 'decide']);
 
 const { roles } = useSession();
 
-/** Vocabulaire serveur (decide_X n'accepte que ces deux valeurs). */
-const DECISIONS = ['Approuvée', 'Rejetée'];
+/**
+ * Vocabulaire serveur PAR PROCÉDURE (C-8, MANDAT-10) : `decide_coa_request` n'accepte que Approuvée / Rejetée,
+ * `decide_leave_return_request` que Acceptée / Refusée. Un seul vocabulaire pour les deux faisait échouer toute
+ * décision de retour de congé (417 « Décision : 'Acceptée' ou 'Refusée'. »).
+ */
+const DECISIONS_BY_KIND = { conge: ['Approuvée', 'Rejetée'], retour: ['Acceptée', 'Refusée'] };
+const decisions = computed(() => DECISIONS_BY_KIND[props.dossier.kind] || []);
 
 // Le tronc uniforme ne route que congé + retour ; les autres domaines sont dits ⏸.
 const TRUNK_DOMAINS = new Set(['conge', 'retour']);
@@ -113,5 +119,7 @@ const canAct = computed(() => {
 
 const decision = ref('');
 const reason = ref('');
+// Le dossier change : la décision et le motif saisis pour le précédent ne le suivent pas.
+watch(() => props.dossier && props.dossier.name, () => { decision.value = ''; reason.value = ''; });
 const canDecide = computed(() => canAct.value && !!decision.value && reason.value.trim().length > 0);
 </script>

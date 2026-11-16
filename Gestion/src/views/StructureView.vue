@@ -22,7 +22,7 @@
             @cancel="createOpen = false" @submit="submitUe" />
 
     <StateBanner v-if="maquetteState === 'valide'" variant="info"
-                 lead="Maquette validée le 2 juillet 2026."
+                 :lead="validatedLead"
                  :text="lockSentence" />
 
     <div class="grid items-start gap-5 lg:grid-cols-[352px_1fr]">
@@ -319,6 +319,12 @@ const usageSentence = computed(() => {
     'ce sont les inscriptions et les notes. Cette unité compte ' + counts +
     ' — <b class="font-semibold">une seule inscription suffira à la verrouiller</b>.';
 });
+// C-14 (MANDAT-10) : la date de validation est celle que le serveur trace (`maquette.validated_on`), jamais une
+// date écrite en dur — « 2 juillet 2026 » s'affichait quelle que soit la maquette.
+const validatedLead = computed(() => {
+  const on = tree.data.value?.maquette?.validated_on;
+  return on ? 'Maquette validée le ' + String(on).slice(0, 10) + '.' : 'Maquette validée.';
+});
 const lockSentence = computed(() =>
   'La validation n\'a rien figé par elle-même : ce sont les inscriptions et les notes qui verrouillent un code. ' +
   'Modifier une unité validée la repasse en brouillon et exige une nouvelle validation.');
@@ -440,7 +446,8 @@ async function submitDraft({ reason, detail }) {
 }
 function openHistory() { notBuilt('Historique de l’unité'); }
 
-const addActions = [{ key: 'ue', label: 'Ajouter une unité' }];
+// Règle 3 (C-9, MANDAT-10) : l'ajout d'une unité n'est rendu qu'à qui porte `write:structure` — jamais grisé.
+const addActions = computed(() => (can('write:structure') ? [{ key: 'ue', label: 'Ajouter une unité' }] : []));
 
 function loadTree() { if (program.value) tree.load({ ...params.value, program: program.value }); }
 function loadUsage() { if (selectedUeId.value) usage.load({ ue: selectedUeId.value }); }

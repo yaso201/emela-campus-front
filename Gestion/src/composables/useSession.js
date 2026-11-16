@@ -35,7 +35,14 @@ async function open() {
       person.value = { ...s.person, initials };
       roles.value = s.roles || [];
       scope.value = s.scope || scope.value;
-      spaces.value = s.spaces || spaces.value;
+      // FORMES (C-13, MANDAT-10) : le serveur rend `{ student, staff }` (profile_resolver._detect_spaces),
+      // l'écran lit `{ management, personal }` (README §1.1). Sans adaptation, la bascule « Mon espace »
+      // n'apparaissait jamais en branché. Les deux formes sont acceptées.
+      const sp = s.spaces || {};
+      spaces.value = {
+        management: sp.management ?? sp.staff ?? true,
+        personal: sp.personal ?? !!sp.student,
+      };
       permissions.value = s.permissions || {};
       ready.value = true;
     } catch (err) {
