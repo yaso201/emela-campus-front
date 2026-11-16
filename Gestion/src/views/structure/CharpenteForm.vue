@@ -27,6 +27,10 @@
               <option value="" disabled>—</option>
               <option v-for="o in f.options" :key="o.value ?? o" :value="o.value ?? o">{{ o.label ?? o }}</option>
             </select>
+            <select v-else-if="f.type === 'multiselect'" :id="idOf(f)" v-model="form[f.key]" multiple :size="Math.min(6, Math.max(3, (f.options || []).length))"
+                    class="mt-2 w-full rounded-sm-ln border border-ln-gray-300 bg-white px-3 py-2 text-body-sm text-ln-gray-900 outline-none focus:border-ln-blue-600">
+              <option v-for="o in f.options" :key="o.value ?? o" :value="o.value ?? o">{{ o.label ?? o }}</option>
+            </select>
             <input v-else :id="idOf(f)" v-model="form[f.key]" :type="f.type || 'text'" :min="f.min"
                    :placeholder="f.placeholder || ''"
                    class="mt-2 h-11 w-full rounded-sm-ln border border-ln-gray-300 px-3 text-body-sm text-ln-gray-900 outline-none focus:border-ln-blue-600" />
@@ -66,8 +70,10 @@ const props = defineProps({
 });
 const emit = defineEmits(['cancel', 'submit']);
 
-const form = reactive(Object.fromEntries(props.fields.map((f) => [f.key, f.initial ?? (f.type === 'check' ? false : '')])));
-const complete = computed(() => props.fields.every((f) => !f.required || String(form[f.key] ?? '').trim() !== '')
+const form = reactive(Object.fromEntries(props.fields.map((f) =>
+  [f.key, f.initial ?? (f.type === 'check' ? false : f.type === 'multiselect' ? [] : '')])));
+const filled = (f) => (f.type === 'multiselect' ? (form[f.key] || []).length > 0 : String(form[f.key] ?? '').trim() !== '');
+const complete = computed(() => props.fields.every((f) => !f.required || filled(f))
   && props.fields.every((f) => !f.live || f.live(form)?.tone !== 'error'));
 
 const idOf = (f) => `${props.name}-${f.key}`;
@@ -82,6 +88,7 @@ function submit() {
   for (const f of props.fields) {
     const v = form[f.key];
     if (f.type === 'check') values[f.key] = v ? 1 : 0;
+    else if (f.type === 'multiselect') { if ((v || []).length) values[f.key] = [...v]; }
     else if (f.type === 'number') { if (v !== '' && v != null) values[f.key] = Number(v); }
     else if (String(v ?? '').trim() !== '') values[f.key] = String(v).trim();
   }

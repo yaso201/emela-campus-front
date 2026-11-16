@@ -37,7 +37,7 @@
     <CharpenteForm v-if="form === 'parcours'" name="cat-parcours" :title="'Créer un parcours — ' + (program?.program_name || '')"
                    :fields="PARCOURS_FIELDS" confirm-label="Créer le parcours" :error="formError" :busy="busy"
                    footnote="Le parcours naît en Brouillon ; ses unités se composent dans l'éditeur de maquette, puis il suit le cycle de validation."
-                   @cancel="close" @submit="submit(createParcours, { ...$event, program: program.name })" />
+                   @cancel="close" @submit="submitParcours($event)" />
 
     <div class="grid items-start gap-5 xl:grid-cols-[352px_1fr]">
       <WorkQueue title="Filières" :items="queueItems" :selected-id="selectedId" :total="queueItems.length"
@@ -103,7 +103,7 @@
           <h4 class="text-micro font-bold uppercase tracking-wider text-ln-gray-500">Parcours</h4>
           <router-link :to="{ name: 'structure' }" class="text-caption font-semibold text-ln-blue-600">Composer dans l'éditeur de maquette</router-link>
           <button v-if="maquetteWritable" type="button" class="ln-btn-secondary ml-auto"
-                  @click="open('parcours')">+ Créer un parcours</button>
+                  @click="openParcours">+ Créer un parcours</button>
         </div>
         <DenseTable :state="detailRows('parcours')" :row-height="40" max-height="280px"
                     state-title="Aucun parcours"
@@ -158,8 +158,11 @@ import {
   listProgramCatalogue, getProgramDetail, createProgram, updateProgram, setProgramActive,
   createAcademicLevel, createParcours,
 } from '../api/charpente.js';
+import { getStructureTree } from '../api/structure.js';
+import { useAcademicContext } from '../composables/useAcademicContext.js';
 
 const { can, scope } = useSession();
+const { params } = useAcademicContext();
 const listRes = useResource(listProgramCatalogue, { isEmpty: (d) => !d?.length });
 const detailRes = useResource(getProgramDetail, { isEmpty: (d) => !d });
 const listState = listRes.state;
@@ -241,9 +244,10 @@ function detailRows(key) {
 const TYPES = ['Licence', 'Cycle Préparatoire', 'Master', 'Bachelor', 'Double-Diplomation'];
 const PROGRAM_FIELDS = [
   { key: 'program_name', label: 'Intitulé', required: true, placeholder: 'Ex. Licence Informatique et Systèmes' },
+  // La règle est celle du serveur (contrôleur Program) : trois majuscules, rien d'autre — dite à la saisie.
   { key: 'custom_filiere_acronym', label: 'Sigle', required: true, placeholder: 'Ex. LIS',
-    live: (f) => (f.custom_filiere_acronym && !/^[A-Z0-9-]{2,10}$/.test(f.custom_filiere_acronym)
-      ? { text: 'Majuscules, chiffres et tiret, de 2 à 10 caractères : le sigle préfixe les codes d’unité.', tone: 'error' } : null) },
+    live: (f) => (f.custom_filiere_acronym && !/^[A-Z]{3}$/.test(f.custom_filiere_acronym)
+      ? { text: 'Trois lettres majuscules exactement (ex. LIS) : le sigle préfixe les codes d’unité.', tone: 'error' } : null) },
   { key: 'custom_program_type', label: 'Type', type: 'select', required: true, options: TYPES.slice(0, 3) },
   { key: 'custom_nb_annees', label: 'Durée (années)', type: 'number', min: 1, required: true },
   { key: 'custom_total_ects_required', label: 'Crédits requis (ECTS)', type: 'number', min: 0 },
@@ -273,12 +277,32 @@ const LEVEL_FIELDS = [
   { key: 'max_semesters', label: 'Semestres', type: 'number', min: 1, required: true, initial: 2 },
   { key: 'max_duration_years', label: 'Durée maximale (années)', type: 'number', min: 1, required: true, initial: 2 },
 ];
-const PARCOURS_FIELDS = [
+/**
+ * Un parcours naît AVEC ses unités : le contrôleur refuse un nombre de choix supérieur au nombre d'unités, donc un
+ * parcours vide. Les unités proposées sont celles de la filière pour l'année du contexte (arbre de structure).
+ */
+const ueOptions = ref([]);
+const PARCOURS_FIELDS = computed(() => [
   { key: 'parcours_code', label: 'Code', placeholder: 'Ex. LIS-M1' },
   { key: 'parcours_name', label: 'Intitulé', required: true },
   { key: 'parcours_type', label: 'Nature', type: 'select', required: true, options: ['Majeure', 'Mineure', 'Option'] },
-  { key: 'choice_count', label: 'Unités à choisir', type: 'number', min: 1, required: true, initial: 1 },
-];
+  { key: 'ues', label: 'Unités du parcours', type: 'multiselect', required: true, options: ueOptions.value,
+    hint: ueOptions.value.length ? 'Plusieurs choix possibles (Ctrl ou Cmd).' : 'Aucune unité pour cette filière sur l’année du contexte : composez d’abord la maquette.' },
+  { key: 'choice_count', label: 'Unités à choisir', type: 'number', min: 1, required: true, initial: 1,
+    live: (f) => (Number(f.choice_count) > (f.ues || []).length
+      ? { text: 'Le nombre de choix ne peut pas dépasser le nombre d’unités du parcours.', tone: 'error' } : null) },
+]);
+async function openParcours() {
+  ueOptions.value = [];
+  try {
+    const tree = await getStructureTree({ program: program.value.name, academic_year: params.value.academic_year });
+    ueOptions.value = (tree?.nodes || []).filter((n) => n.level === 2).map((n) => ({ value: n.id, label: n.label }));
+  } catch { /* la liste vide le dit */ }
+  open('parcours');
+}
+function submitParcours(values) {
+  return submit(createParcours, { ...values, ues: (values.ues || []).map((course_ue) => ({ course_ue })), program: program.value.name });
+}
 
 function open(which) { form.value = which; formError.value = ''; done.value = ''; }
 function close() { form.value = ''; }
