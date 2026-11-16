@@ -72,7 +72,9 @@
 
         <div class="mb-2 flex items-center gap-3">
           <h4 class="text-micro font-bold uppercase tracking-wider text-ln-gray-500">Niveaux</h4>
-          <button v-if="editable" type="button" class="ln-btn-secondary ml-auto" @click="open('level')">+ Ajouter un niveau</button>
+          <!-- K3 (décision e) : le niveau appartient à la MAQUETTE — Responsable de formation (sa filière) et
+               Education Manager ; le Gestionnaire académique ne le voit pas (règle 3). -->
+          <button v-if="maquetteWritable" type="button" class="ln-btn-secondary ml-auto" @click="open('level')">+ Ajouter un niveau</button>
         </div>
         <DenseTable :state="detailRows('levels')" :row-height="40" max-height="280px"
                     state-title="Aucun niveau"
@@ -100,7 +102,7 @@
         <div class="mb-2 mt-6 flex items-center gap-3">
           <h4 class="text-micro font-bold uppercase tracking-wider text-ln-gray-500">Parcours</h4>
           <router-link :to="{ name: 'structure' }" class="text-caption font-semibold text-ln-blue-600">Composer dans l'éditeur de maquette</router-link>
-          <button v-if="can('write:structure') && !program.custom_catalogue_only" type="button" class="ln-btn-secondary ml-auto"
+          <button v-if="maquetteWritable" type="button" class="ln-btn-secondary ml-auto"
                   @click="open('parcours')">+ Créer un parcours</button>
         </div>
         <DenseTable :state="detailRows('parcours')" :row-height="40" max-height="280px"
@@ -157,7 +159,7 @@ import {
   createAcademicLevel, createParcours,
 } from '../api/charpente.js';
 
-const { can } = useSession();
+const { can, scope } = useSession();
 const listRes = useResource(listProgramCatalogue, { isEmpty: (d) => !d?.length });
 const detailRes = useResource(getProgramDetail, { isEmpty: (d) => !d });
 const listState = listRes.state;
@@ -175,6 +177,20 @@ const detail = computed(() => detailRes.data.value || null);
 const levels = computed(() => detail.value?.levels || []);
 const parcours = computed(() => detail.value?.parcours || []);
 const editable = computed(() => can('write:charpente') && !!program.value && !program.value.custom_catalogue_only);
+
+/**
+ * La portée du lecteur, telle que la session la rend (`scope.programs` : la liste des filières liées, ou null pour
+ * une visibilité globale). Un bouton d'acte hors de la portée serait un bouton mort : il n'est pas rendu.
+ */
+function inScope(programName) {
+  const s = scope.value || {};
+  if (Array.isArray(s.programs)) return s.programs.includes(programName);
+  if (s.program) return s.program === programName;          // forme du simulacre
+  return true;
+}
+/** Niveaux et parcours relèvent de la maquette (K3, décision e) : RF dans sa filière, EM. */
+const maquetteWritable = computed(() => can('write:structure') && !!program.value
+  && !program.value.custom_catalogue_only && inScope(program.value.name));
 
 const STATUS = { Brouillon: 'brouillon', 'Proposé': 'propose', 'Validé': 'valide' };
 
@@ -206,7 +222,7 @@ const identity = computed(() => {
     { label: 'Sigle', value: p.custom_filiere_acronym || '—' },
     { label: 'Durée', value: p.custom_nb_annees ? p.custom_nb_annees + ' ans' : '—' },
     { label: 'Crédits requis', value: p.custom_total_ects_required ? p.custom_total_ects_required + ' ECTS' : '—' },
-    { label: 'Responsable', value: p.responsable_name || 'non désigné' },
+    { label: 'Responsable', value: p.responsable_name || p.custom_responsable_programme || 'non désigné' },
     { label: 'Unités rattachées', value: detail.value?.counters?.ues ?? '…' },
     { label: 'Étudiants inscrits', value: detail.value?.counters?.students ?? '…' },
   ];

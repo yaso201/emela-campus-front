@@ -28,7 +28,7 @@
                    footnote="Un semestre sans numéro est refusé : sa parité ne se devine pas."
                    @cancel="close" @submit="submit(createAcademicTerm, { ...$event, year: selected.name })" />
     <CharpenteForm v-if="form === 'holiday'" name="cal-holiday" :title="'Ajouter un jour férié — ' + (selected?.name || '')"
-                   subtitle="Un férié retire un jour ouvré : il décale les délais de droit qui se comptent en jours ouvrés."
+                   :subtitle="'Un férié retire un jour ouvré : il décale les délais de droit qui se comptent en jours ouvrés. Dates de l’année : du ' + shortDate(selected?.year_start_date) + ' au ' + shortDate(selected?.year_end_date) + '.'"
                    :fields="HOLIDAY_FIELDS" confirm-label="Ajouter le férié" :error="formError" :busy="busy"
                    footnote="Les fêtes mobiles (Pâques, Tabaski…) se saisissent chaque année."
                    @cancel="close" @submit="submit(addHoliday, { ...$event, year: selected.name })" />
@@ -69,8 +69,7 @@
           </div>
         </div>
 
-        <StateBanner v-if="selected.closed" variant="info"
-                     :lead="'Année close le ' + longDate(selected.closed_on) + '.'"
+        <StateBanner v-if="selected.closed" variant="info" lead="Année close."
                      text="Ses semestres et ses fériés se lisent ; ils ne se modifient plus. Une réouverture motivée se fait à l'écran de clôture." />
 
         <!-- Semestres -->
@@ -99,11 +98,12 @@
               </td>
               <td :class="bodyTd">{{ shortDate(t.term_start_date) }}</td>
               <td :class="bodyTd">{{ shortDate(t.term_end_date) }}</td>
-              <td :class="bodyTd">{{ t.working_days }}</td>
+              <td :class="bodyTd">{{ t.working_days ?? '—' }}</td>
             </tr>
           </template>
           <template #legend>
-            <span>Les jours ouvrés sont calculés au serveur, fériés de l'année déduits — l'écran ne les recalcule jamais.</span>
+            <span>Les jours ouvrés sont calculés au serveur, fériés déduits — l'écran ne les recalcule jamais ;
+              « — » : aucun calendrier ne couvre ces dates.</span>
           </template>
         </DenseTable>
 
@@ -125,7 +125,6 @@
             <tr>
               <th :class="headTh" class="!text-left">Date</th>
               <th :class="headTh" class="!text-left">Fête</th>
-              <th :class="headTh" class="!text-left">Nature</th>
               <th :class="headTh"></th>
             </tr>
           </template>
@@ -133,7 +132,6 @@
             <tr v-for="h in selected.holidays" :key="h.holiday_date">
               <td :class="bodyTd" class="!text-left">{{ longDate(h.holiday_date) }}</td>
               <td :class="bodyTd" class="!text-left">{{ h.description }}</td>
-              <td :class="bodyTd" class="!text-left text-ln-gray-500">{{ h.kind === 'mobile' ? 'mobile — à revoir chaque année' : 'date fixe' }}</td>
               <td :class="bodyTd">
                 <button v-if="writable" type="button"
                         class="h-[26px] rounded-sm-ln border border-ln-gray-300 px-2 text-caption font-semibold text-ln-gray-700"
@@ -256,10 +254,18 @@ const TERM_FIELDS = [
   { key: 'term_start_date', label: 'Premier jour', type: 'date', required: true },
   { key: 'term_end_date', label: 'Dernier jour', type: 'date', required: true },
 ];
-const HOLIDAY_FIELDS = [
-  { key: 'holiday_date', label: 'Date', type: 'date', required: true },
+// K1 : la date est bornée aux dates de l'année — dite à la saisie, refusée au serveur.
+const HOLIDAY_FIELDS = computed(() => [
+  { key: 'holiday_date', label: 'Date', type: 'date', required: true,
+    live: (f) => {
+      const y = selected.value;
+      if (!f.holiday_date || !y) return null;
+      return f.holiday_date < y.year_start_date || f.holiday_date > y.year_end_date
+        ? { text: 'Hors de l’année ' + y.name + ' (du ' + shortDate(y.year_start_date) + ' au ' + shortDate(y.year_end_date) + ') : un férié s’ajoute à l’année qui le contient.', tone: 'error' }
+        : null;
+    } },
   { key: 'description', label: 'Fête', required: true, placeholder: 'Ex. Fête de l’Indépendance' },
-];
+]);
 const REMOVE_REASONS = [{ key: 'r', label: 'Motif', options: [
   { value: 'erreur', label: 'Erreur de saisie' },
   { value: 'deplace', label: 'Fête déplacée par décret' },

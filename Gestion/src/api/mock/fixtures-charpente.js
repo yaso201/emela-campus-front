@@ -7,31 +7,39 @@
  * persiste rien — une création renvoie l'écho de ce qu'elle aurait créé.
  */
 
-const fer = (holiday_date, description, kind = 'fixe') => ({ holiday_date, description, kind });
+// K1 (VERDICT-MANDAT-10-PC1B) : un férié appartient à l'année dont les dates le contiennent — le 1ᵉʳ et le
+// 15 août 2026 sont des fériés de 2025-2026 (qui finit le 31 août), pas de 2026-2027.
+const fer = (holiday_date, description) => ({ holiday_date, description });
 
-const HOLIDAYS_2026 = [
+const HOLIDAYS_2025 = [
+  fer('2026-05-01', 'Fête du travail'),
   fer('2026-08-01', 'Fête de l’Indépendance'),
   fer('2026-08-15', 'Assomption'),
-  fer('2026-08-26', 'Maouloud', 'mobile'),
+  fer('2026-08-26', 'Maouloud'),
+];
+
+const HOLIDAYS_2026 = [
   fer('2026-11-01', 'Toussaint'),
   fer('2026-12-25', 'Noël'),
   fer('2027-01-01', 'Jour de l’an'),
   fer('2027-01-10', 'Fête des religions endogènes'),
-  fer('2027-03-10', 'Fin du Ramadan', 'mobile'),
-  fer('2027-03-29', 'Lundi de Pâques', 'mobile'),
+  fer('2027-03-10', 'Fin du Ramadan'),
+  fer('2027-03-29', 'Lundi de Pâques'),
   fer('2027-05-01', 'Fête du travail'),
-  fer('2027-05-06', 'Ascension', 'mobile'),
-  fer('2027-05-16', 'Tabaski', 'mobile'),
-  fer('2027-05-17', 'Lundi de Pentecôte', 'mobile'),
+  fer('2027-05-06', 'Ascension'),
+  fer('2027-05-16', 'Tabaski'),
+  fer('2027-05-17', 'Lundi de Pentecôte'),
+  fer('2027-08-01', 'Fête de l’Indépendance'),
+  fer('2027-08-15', 'Assomption'),
 ];
 
 const HOLIDAYS_2027 = [
-  fer('2027-08-01', 'Fête de l’Indépendance'),
-  fer('2027-08-15', 'Assomption'),
   fer('2027-11-01', 'Toussaint'),
   fer('2027-12-25', 'Noël'),
   fer('2028-01-01', 'Jour de l’an'),
   fer('2028-01-10', 'Fête des religions endogènes'),
+  fer('2028-05-01', 'Fête du travail'),
+  fer('2028-08-01', 'Fête de l’Indépendance'),
 ];
 
 const term = (year, term_name, start, end, working_days) => ({
@@ -63,12 +71,12 @@ const YEARS = [
   },
   {
     name: '2025-2026', year_start_date: '2025-09-01', year_end_date: '2026-08-31',
-    is_current: false, closed: true, closed_on: '2026-08-14', holiday_list: null,
+    is_current: false, closed: true, holiday_list: 'FERIES-2025-2026',
     terms: [
       term('2025-2026', 'S1', '2025-09-01', '2026-01-31', 103),
       term('2025-2026', 'S2', '2026-02-01', '2026-07-31', 121),
     ],
-    holidays: [],
+    holidays: HOLIDAYS_2025,
   },
 ];
 
