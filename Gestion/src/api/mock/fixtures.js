@@ -75,6 +75,24 @@ export const session = {
   permissions: Object.fromEntries(PERMISSIONS.map((k) => [k, !DENIED.has(k)])),
 };
 
+/**
+ * E3' (maquette des étapes 1 et 2) — le même lecteur, ou un lecteur d'un autre rôle, choisi par `?as=` :
+ *   `rf` — responsable de formation : la maquette et les parcours, ni le calendrier ni la charpente ;
+ *   `de` — directeur des études : lecture seule de la charpente.
+ * Un simulacre de lecteur, pas une politique : les clés retirées sont celles que la matrice serveur ne lui donne pas.
+ */
+const AS = {
+  rf: { roles: ['Responsable de formation'], drop: ['write:calendar', 'write:charpente', 'write:groups', 'publish:planning'] },
+  de: { roles: ['Directeur des Études'], drop: ['write:calendar', 'write:charpente', 'write:structure', 'write:groups'] },
+};
+export function sessionAs(as) {
+  const v = AS[as];
+  if (!v) return session;
+  const permissions = { ...session.permissions };
+  for (const k of v.drop) permissions[k] = false;
+  return { ...session, roles: v.roles, permissions };
+}
+
 export const academicContext = {
   years: [
     { id: 'AY-2026', label: '2026-2027', current: true },

@@ -25,6 +25,8 @@ import DocumentsView from './views/DocumentsView.vue';
 import ClosureView from './views/ClosureView.vue';
 import GraduationView from './views/GraduationView.vue';
 import RolesView from './views/RolesView.vue';
+import CalendarView from './views/CalendarView.vue';
+import CatalogueView from './views/CatalogueView.vue';
 
 /**
  * Le routeur DÉRIVE de la navigation déclarée : ajouter un écran, c'est ajouter
@@ -35,7 +37,7 @@ import RolesView from './views/RolesView.vue';
  * createWebHistory quand la réécriture sera en place.
  */
 const VIEWS = {
-  WorkQueueView, AtelierView, StructureView,
+  WorkQueueView, AtelierView, StructureView, CalendarView, CatalogueView,
   RepartitionView, RepartitionValidationView, TeacherLoadView,
   ServiceSignalsView, ServiceProgressView,
   GroupsView, EnrollmentView,

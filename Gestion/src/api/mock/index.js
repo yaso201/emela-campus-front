@@ -21,6 +21,7 @@ import * as N from './fixtures-notes.js';
 import * as D from './fixtures-dossiers.js';
 import * as C from './fixtures-conseil.js';
 import * as Z from './fixtures-fin-de-cycle.js';
+import * as K from './fixtures-charpente.js';
 
 
 const LATENCY = 260;
@@ -40,7 +41,9 @@ const HANDLERS = {
   // AN-09 (M3) : fermeture de session — cœur Frappe, no-op en simulacre.
   logout: (p) => ({}),
   // ─── Grappe 1 · châssis ─────────────────────────────────────────────────
-  'portal_app.api.identity.session_context.get_session_context': () => F.session,
+  // E3' (maquette) : `?as=rf` ou `?as=de` rend un lecteur SANS les droits de charpente — pour voir la règle 3.
+  'portal_app.api.identity.session_context.get_session_context': () =>
+    F.sessionAs(new URLSearchParams(location.search).get('as')),
   'portal_app.api.academic.chassis.get_academic_context': () => F.academicContext,
   'portal_app.api.academic.chassis.get_work_queue': (p) => F.workQueue(p),
   'portal_app.api.academic.chassis.get_work_queue_counts': () => F.workQueueCounts,
@@ -195,6 +198,20 @@ const HANDLERS = {
   'portal_app.api.identity.role_administration.add_scope': (p) => raApplied(p),
   'portal_app.api.identity.role_administration.remove_scope': (p) => raApplied(p),
 
+  // ─── Étapes 1 et 2 · charpente (MANDAT-10, E3', maquette) ───────────────
+  [ST + 'list_academic_calendar']: (p) => K.academicCalendar(p),
+  [ST + 'create_academic_year']: (p) => K.echo.year(p),
+  [ST + 'create_academic_term']: (p) => K.echo.term(p),
+  [ST + 'update_academic_term']: (p) => ({ name: p && p.name, ...((p && p.values) || {}) }),
+  [ST + 'add_holiday']: (p) => K.echo.holiday(p),
+  [ST + 'remove_holiday']: (p) => K.echo.removed(p),
+  [ST + 'set_current_academic_year']: (p) => K.echo.current(p),
+  [ST + 'list_program_catalogue']: (p) => K.programCatalogue(p),
+  [ST + 'get_program_charpente']: (p) => K.programCharpente(p),
+  [ST + 'create_program']: (p) => K.echo.program(p),
+  [ST + 'update_program']: (p) => K.echo.program(p),
+  [ST + 'create_academic_level']: (p) => K.echo.level(p),
+  [ST + 'create_parcours']: (p) => K.echo.parcours(p),
 };
 
 /* ── Acte de peuplement de groupe (M2 g4) — rapport de masse, forme serveur ── */

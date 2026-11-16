@@ -1,5 +1,6 @@
 <template>
   <div>
+    <StructureTabs />
     <header class="mb-4 flex flex-wrap items-start justify-between gap-5">
       <div>
         <p class="mb-2 text-caption text-ln-gray-500">Structure · <b class="font-semibold text-ln-gray-900">Maquette</b></p>
@@ -200,6 +201,7 @@ import {
 } from '../api/structure.js';
 import ProgramPicker from './planning/ProgramPicker.vue';
 import UeForm from './structure/UeForm.vue';
+import StructureTabs from './structure/StructureTabs.vue';
 
 const { can } = useSession();
 const { params, term } = useAcademicContext();

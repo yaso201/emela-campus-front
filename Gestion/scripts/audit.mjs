@@ -152,7 +152,7 @@ say('\n2 · Simulacre');
  * inatteignable pour sa propre défaillance, et le contrat du script — une ligne
  * ÉCHEC nommée, puis code 1 — était rompu.
  */
-let fx, fxG, fxP, fxN, fxD, fxC, fxZ;
+let fx, fxG, fxP, fxN, fxD, fxC, fxZ, fxK;
 const FIXTURE_MODULES = {};
 try {
   /**
@@ -178,9 +178,11 @@ try {
   fxD = FIXTURE_MODULES['fixtures-dossiers.js'];
   fxC = FIXTURE_MODULES['fixtures-conseil.js'];
   fxZ = FIXTURE_MODULES['fixtures-fin-de-cycle.js'];
+  // MANDAT-10, E3' : la charpente (calendrier académique, catalogue des filières).
+  fxK = FIXTURE_MODULES['fixtures-charpente.js'];
   const missing = ['fixtures.js', 'fixtures-groupes.js', 'fixtures-planning.js',
     'fixtures-notes.js', 'fixtures-dossiers.js', 'fixtures-conseil.js',
-    'fixtures-fin-de-cycle.js'].filter((n) => !FIXTURE_MODULES[n]);
+    'fixtures-fin-de-cycle.js', 'fixtures-charpente.js'].filter((n) => !FIXTURE_MODULES[n]);
   if (missing.length) throw new Error('modules attendus absents : ' + missing.join(', '));
 } catch (e) {
   check('le module de simulacre se charge', [e.message]);
@@ -281,6 +283,12 @@ const probes = [
   ['roleProfiles', () => fxZ.roleProfiles().length],
   ['grantAnomalies', () => fxZ.grantAnomalies({}).holders_with_anomalies.length],
   ['grantJournal', () => fxZ.grantJournal({}).length],
+  // MANDAT-10, E3' — la charpente : chaque fixture rend la forme proposée au serveur.
+  ['academicCalendar', () => fxK.academicCalendar({}).years[0].terms.length],
+  ['programCatalogue', () => fxK.programCatalogue({}).length],
+  ['programCharpente', () => fxK.programCharpente({ program: 'LIS' }).levels.length],
+  ['echo', () => fxK.echo.year({ values: { year_start_date: '2027-09-01', year_end_date: '2028-08-31' } }).name],
+  ['sessionAs', () => fx.sessionAs('rf').roles.length],
 ];
 const dead = [];
 for (const [name, fn] of probes) { try { fn(); } catch (e) { dead.push(name + ' → ' + e.message); } }
