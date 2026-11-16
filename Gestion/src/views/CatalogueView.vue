@@ -19,6 +19,7 @@
     </header>
 
     <StateBanner v-if="done" variant="success" lead="Enregistré." :text="done" />
+    <StateBanner v-if="formError && !form" variant="error" lead="L'acte a échoué." :text="formError" />
 
     <CharpenteForm v-if="form === 'program'" name="cat-program" title="Créer une filière"
                    subtitle="Une filière porte ses niveaux et ses parcours ; ses unités se composent ensuite dans l'éditeur de maquette."
@@ -57,6 +58,9 @@
               <p class="mt-0.5 text-caption text-ln-gray-500">{{ program.custom_filiere_acronym }} · {{ program.custom_program_type || 'type non renseigné' }}</p>
             </div>
             <button v-if="editable" type="button" class="ln-btn-secondary ml-auto" @click="open('edit')">Modifier…</button>
+            <button v-if="editable" type="button" class="ln-btn-secondary" :disabled="busy" @click="toggleActive">
+              {{ program.custom_is_active ? 'Désactiver la filière' : 'Réactiver la filière' }}
+            </button>
           </header>
           <dl class="grid grid-cols-2 gap-x-6 gap-y-3 px-4 py-3 text-body-sm md:grid-cols-4">
             <div v-for="f in identity" :key="f.label">
@@ -149,12 +153,13 @@ import StructureTabs from './structure/StructureTabs.vue';
 import { useSession } from '../composables/useSession.js';
 import { useResource } from '../composables/useResource.js';
 import {
-  listProgramCatalogue, getProgramCharpente, createProgram, updateProgram, createAcademicLevel, createParcours,
+  listProgramCatalogue, getProgramDetail, createProgram, updateProgram, setProgramActive,
+  createAcademicLevel, createParcours,
 } from '../api/charpente.js';
 
 const { can } = useSession();
 const listRes = useResource(listProgramCatalogue, { isEmpty: (d) => !d?.length });
-const detailRes = useResource(getProgramCharpente, { isEmpty: (d) => !d });
+const detailRes = useResource(getProgramDetail, { isEmpty: (d) => !d });
 const listState = listRes.state;
 const showCatalogue = ref(false);
 const selectedId = ref(null);
@@ -202,8 +207,8 @@ const identity = computed(() => {
     { label: 'Durée', value: p.custom_nb_annees ? p.custom_nb_annees + ' ans' : '—' },
     { label: 'Crédits requis', value: p.custom_total_ects_required ? p.custom_total_ects_required + ' ECTS' : '—' },
     { label: 'Responsable', value: p.responsable_name || 'non désigné' },
-    { label: 'Unités rattachées', value: detail.value?.usage?.ues ?? '…' },
-    { label: 'Étudiants inscrits', value: detail.value?.usage?.students ?? '…' },
+    { label: 'Unités rattachées', value: detail.value?.counters?.ues ?? '…' },
+    { label: 'Étudiants inscrits', value: detail.value?.counters?.students ?? '…' },
   ];
 });
 const catalogueSentence = computed(() => (program.value?.custom_dd_enabled
@@ -229,11 +234,22 @@ const PROGRAM_FIELDS = [
 ];
 const editFields = computed(() => [
   { key: 'program_name', label: 'Intitulé', required: true, initial: program.value?.program_name },
+  { key: 'custom_nb_annees', label: 'Durée (années)', type: 'number', min: 1, initial: program.value?.custom_nb_annees },
   { key: 'custom_total_ects_required', label: 'Crédits requis (ECTS)', type: 'number', min: 0,
     initial: program.value?.custom_total_ects_required },
-  { key: 'custom_is_active', label: 'Filière active', type: 'check', initial: !!program.value?.custom_is_active,
-    hint: 'Une filière inactive disparaît des sélecteurs ; ses données restent.' },
 ]);
+
+/** Activer ou désactiver : un acte à part (`set_program_active`), pas un champ du formulaire. */
+async function toggleActive() {
+  formError.value = '';
+  try {
+    busy.value = true;
+    await setProgramActive({ program: program.value.name, is_active: program.value.custom_is_active ? 0 : 1 });
+    done.value = program.value.custom_is_active ? 'La filière est désactivée.' : 'La filière est réactivée.';
+    loadList();
+  } catch (e) { done.value = ''; formError.value = e.message || 'Refusé.'; }
+  finally { busy.value = false; }
+}
 const LEVEL_FIELDS = [
   { key: 'level_code', label: 'Code', required: true, placeholder: 'Ex. LIS-L1' },
   { key: 'level_name', label: 'Intitulé', required: true, placeholder: 'Ex. Licence 1' },

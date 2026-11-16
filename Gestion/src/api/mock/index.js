@@ -54,7 +54,9 @@ const HANDLERS = {
   [ST + 'get_structure_tree']: (p) => F.structureTree(p),
   [ST + 'get_ue']: (p) => F.ueDetail(p),
   [ST + 'list_structure_options']: () => F.structureOptions,
-  [ST + 'list_programs']: (p) => F.programs(p),
+  // E3' : le catalogue des filières lit `list_programs(include_inactive=1)` — servi par le simulacre de la
+  // charpente (filières du banc) ; les sélecteurs de filière des autres écrans gardent leur simulacre.
+  [ST + 'list_programs']: (p) => (p && Number(p.include_inactive) === 1 ? K.programCatalogue(p) : F.programs(p)),
   // Actes M2 g2 — forme serveur inline (UE + cycle de maquette).
   [ST + 'create_ue']: (p) => ({ name: 'UE-MOCK-0001', ue_name: (p.values || {}).ue_name }),
   [ST + 'update_ue']: (p) => ({ name: p && p.ue, ue_name: (p.values || {}).ue_name }),
@@ -199,17 +201,18 @@ const HANDLERS = {
   'portal_app.api.identity.role_administration.remove_scope': (p) => raApplied(p),
 
   // ─── Étapes 1 et 2 · charpente (MANDAT-10, E3', maquette) ───────────────
-  [ST + 'list_academic_calendar']: (p) => K.academicCalendar(p),
-  [ST + 'create_academic_year']: (p) => K.echo.year(p),
-  [ST + 'create_academic_term']: (p) => K.echo.term(p),
-  [ST + 'update_academic_term']: (p) => ({ name: p && p.name, ...((p && p.values) || {}) }),
+  // Proposés (⏳ E3') : la lecture du calendrier, les fériés, l'année courante.
+  [ST + 'get_academic_calendar']: (p) => K.academicCalendar(p),
   [ST + 'add_holiday']: (p) => K.echo.holiday(p),
   [ST + 'remove_holiday']: (p) => K.echo.removed(p),
   [ST + 'set_current_academic_year']: (p) => K.echo.current(p),
-  [ST + 'list_program_catalogue']: (p) => K.programCatalogue(p),
-  [ST + 'get_program_charpente']: (p) => K.programCharpente(p),
+  // Existants au serveur, sans écran jusqu'ici — échos de leur forme.
+  [ST + 'create_academic_year']: (p) => K.echo.year(p),
+  [ST + 'create_academic_term']: (p) => K.echo.term(p),
+  [ST + 'get_program']: (p) => K.programDetail(p),
   [ST + 'create_program']: (p) => K.echo.program(p),
   [ST + 'update_program']: (p) => K.echo.program(p),
+  [ST + 'set_program_active']: (p) => K.echo.active(p),
   [ST + 'create_academic_level']: (p) => K.echo.level(p),
   [ST + 'create_parcours']: (p) => K.echo.parcours(p),
 };

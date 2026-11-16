@@ -105,7 +105,10 @@ export const CATALOGUE = [
       custom_dd_component_1: 'LIS', custom_dd_component_2: 'Bachelor Développeur Web et Mobile' }),
 ];
 
-/** `list_program_catalogue()` — forme proposée au serveur (comptes de niveaux et de parcours par filière). */
+/**
+ * `list_programs(include_inactive=1)` — forme EXISTANTE (`PROGRAM_LIST_FIELDS`), plus les champs que la maquette
+ * propose d'y ajouter (`custom_catalogue_only`, `custom_nb_annees`, `custom_total_ects_required`) et deux comptes.
+ */
 export function programCatalogue(params = {}) {
   if (params.__empty) return [];
   return CATALOGUE.map((p) => ({
@@ -144,28 +147,28 @@ const PARCOURS = {
   LRC: [],
 };
 
-/** `get_program_charpente(program)` — forme proposée au serveur. */
-export function programCharpente(params = {}) {
+/**
+ * `get_program(program)` — forme EXISTANTE (identité, `levels`, `counters`), plus ce que la maquette propose d'y
+ * ajouter : `parcours` (la liste) et `counters.students` (une filière utilisée ne se supprime pas, elle se désactive).
+ */
+export function programDetail(params = {}) {
   const p = CATALOGUE.find((x) => x.name === params.program) || CATALOGUE[0];
+  const parcours = params.__empty ? [] : (PARCOURS[p.name] || []);
   return {
-    program: p,
+    ...p,
     levels: params.__empty ? [] : (LEVELS[p.name] || []),
-    parcours: params.__empty ? [] : (PARCOURS[p.name] || []),
-    // Ce qui dépend déjà de la filière : une filière utilisée ne se supprime pas, elle se désactive.
-    usage: { ues: p.name === 'LIS' ? 59 : p.name === 'LRC' ? 23 : 0, students: p.name === 'LIS' ? 3 : 0 },
+    counters: { ues: p.name === 'LIS' ? 59 : p.name === 'LRC' ? 23 : 0, mhc_modules: 0,
+      parcours: parcours.length, students: p.name === 'LIS' ? 3 : 0 },
+    parcours,
   };
 }
 
 /* ─── Échos d'actes (non stateful) ─────────────────────────────────────── */
 
 export const echo = {
-  year: (p) => {
-    const v = (p && p.values) || {};
-    const name = (v.year_start_date || '').slice(0, 4) + '-' + (v.year_end_date || '').slice(0, 4);
-    return { name, year_start_date: v.year_start_date, year_end_date: v.year_end_date };
-  },
+  year: (p) => ({ name: (p && p.academic_year_name) || '' }),
   term: (p) => {
-    const v = (p && p.values) || {};
+    const v = p || {};
     if (!/S\d+/.test(v.term_name || '')) {
       throw Object.assign(new Error('Le nom du semestre doit porter son numéro (S1, S2…) : la parité s’en déduit et ne se devine pas.'),
         { code: 'VALIDATION', status: 417 });
@@ -175,7 +178,8 @@ export const echo = {
   holiday: (p) => ({ academic_year: p && p.academic_year, holiday_date: p && p.holiday_date, description: p && p.description }),
   removed: (p) => ({ academic_year: p && p.academic_year, holiday_date: p && p.holiday_date, removed: true }),
   current: (p) => ({ current_academic_year: p && p.academic_year, previous: '2026-2027' }),
-  program: (p) => ({ name: ((p && p.values) || {}).program_name || (p && p.name) }),
+  program: (p) => ({ name: (p && (p.program_name || p.name)) || '' }),
+  active: (p) => ({ name: p && p.program, custom_is_active: p && p.is_active ? 1 : 0 }),
   level: (p) => ({ name: ((p && p.values) || {}).level_code }),
   parcours: (p) => ({ name: 'PRC-MOCK-0001', validation_status: 'Brouillon' }),
 };

@@ -286,8 +286,8 @@ const probes = [
   // MANDAT-10, E3' — la charpente : chaque fixture rend la forme proposée au serveur.
   ['academicCalendar', () => fxK.academicCalendar({}).years[0].terms.length],
   ['programCatalogue', () => fxK.programCatalogue({}).length],
-  ['programCharpente', () => fxK.programCharpente({ program: 'LIS' }).levels.length],
-  ['echo', () => fxK.echo.year({ values: { year_start_date: '2027-09-01', year_end_date: '2028-08-31' } }).name],
+  ['programDetail', () => fxK.programDetail({ program: 'LIS' }).levels.length],
+  ['echo', () => fxK.echo.year({ academic_year_name: '2027-2028' }).name],
   ['sessionAs', () => fx.sessionAs('rf').roles.length],
 ];
 const dead = [];

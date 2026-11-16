@@ -21,7 +21,7 @@
                    subtitle="Le nom de l'année se déduit de ses dates (2027-2028). Une année ne chevauche jamais une autre (RUN-05)."
                    :fields="YEAR_FIELDS" confirm-label="Ouvrir l'année" :error="formError" :busy="busy"
                    footnote="Les semestres et les fériés s'ajoutent ensuite, dans l'année."
-                   @cancel="close" @submit="submit(createAcademicYear, $event)" />
+                   @cancel="close" @submit="submit(createAcademicYear, withYearName($event))" />
     <CharpenteForm v-if="form === 'term'" name="cal-term" :title="'Ajouter un semestre — ' + (selected?.name || '')"
                    subtitle="Le numéro du semestre (S1, S2…) porte sa parité : impair au premier semestre, pair au second."
                    :fields="TERM_FIELDS" confirm-label="Ajouter le semestre" :error="formError" :busy="busy"
@@ -168,11 +168,16 @@ import StructureTabs from './structure/StructureTabs.vue';
 import { useSession } from '../composables/useSession.js';
 import { useResource } from '../composables/useResource.js';
 import {
-  listAcademicCalendar, createAcademicYear, createAcademicTerm, addHoliday, removeHoliday, setCurrentAcademicYear,
+  getAcademicCalendar, createAcademicYear, createAcademicTerm, addHoliday, removeHoliday, setCurrentAcademicYear,
 } from '../api/charpente.js';
 
 const { can } = useSession();
-const res = useResource(listAcademicCalendar, { isEmpty: (d) => !d?.years?.length });
+const res = useResource(getAcademicCalendar, { isEmpty: (d) => !d?.years?.length });
+
+/** Le nom d'une année se lit dans ses dates (2027-2028) : le serveur l'exige, l'écran ne le fait pas saisir. */
+function withYearName(v) {
+  return { ...v, academic_year_name: v.year_start_date.slice(0, 4) + '-' + v.year_end_date.slice(0, 4) };
+}
 const state = res.state;
 const cal = computed(() => res.data.value || null);
 const years = computed(() => cal.value?.years || []);
