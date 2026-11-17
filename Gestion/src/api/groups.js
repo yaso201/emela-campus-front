@@ -109,7 +109,9 @@ export const addStudentsToGroup = (p) =>
   call(GROUPS + 'add_students_to_group', p).then((d) => d && {
     total: d.total, ok: d.succeeded_count, ko: d.failed_count, retry_ids: d.retry_ids || [],
     lines: [
-      ...(d.succeeded || []).map((l) => ({ id: l.student, label: l.student_name || l.student, status: 'ok', detail: l.status })),
+      // MANDAT-10 : le statut serveur (`added`, `already_member`) était affiché tel quel — il est traduit.
+      ...(d.succeeded || []).map((l) => ({ id: l.student, label: l.student_name || l.student, status: 'ok',
+        detail: l.status === 'already_member' ? 'Déjà membre.' : 'Ajouté au groupe.' })),
       ...(d.failed || []).map((l) => ({ id: l.student, label: l.student_name || l.student, status: 'ko', reason: l.message || l.reason })),
     ],
   });

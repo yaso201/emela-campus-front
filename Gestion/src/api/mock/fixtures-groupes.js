@@ -21,15 +21,17 @@
  */
 export function groupCandidates(params = {}) {
   if (params.__empty) return [];
+  // FORMES (MANDAT-10) : la forme serveur est `{student, student_name, program, academic_level, eligible_via}`
+  // (own | shared) — le champ `active` n'existait qu'ici, et chaque candidat s'affichait « Désactivé » en branché.
+  const P = 'L2 Génie logiciel';
   return [
-    { student: 'ETU-24-0188', student_name: 'Fabrice Ahodékon', program_enrollment: 'PE-0188', active: 1 },
-    { student: 'ETU-24-0147', student_name: 'Grâce Aïvodji', program_enrollment: 'PE-0147', active: 1 },
-    { student: 'ETU-23-0091', student_name: 'Serge Bocco', program_enrollment: 'PE-0091', active: 1 },
-    { student: 'ETU-24-0203', student_name: 'Yasmine Toko', program_enrollment: 'PE-0203', active: 1 },
-    { student: 'ETU-24-0164', student_name: 'Rachid Ouédraogo', program_enrollment: 'PE-0164', active: 1 },
-    // ⚠️ `active: 0` vient de `Student.enabled` — un étudiant désactivé reste
-    // éligible au groupe côté serveur. L'écran le montre, il ne le cache pas.
-    { student: 'ETU-24-0112', student_name: 'Ange Sossou', program_enrollment: 'PE-0112', active: 0 },
+    { student: 'ETU-24-0188', student_name: 'Fabrice Ahodékon', program: P, academic_level: 'GL-L2', eligible_via: 'own' },
+    { student: 'ETU-24-0147', student_name: 'Grâce Aïvodji', program: P, academic_level: 'GL-L2', eligible_via: 'own' },
+    { student: 'ETU-23-0091', student_name: 'Serge Bocco', program: P, academic_level: 'GL-L2', eligible_via: 'own' },
+    { student: 'ETU-24-0203', student_name: 'Yasmine Toko', program: P, academic_level: 'GL-L2', eligible_via: 'own' },
+    { student: 'ETU-24-0164', student_name: 'Rachid Ouédraogo', program: P, academic_level: 'GL-L2', eligible_via: 'own' },
+    // Tronc commun : un étudiant d'une filière qui partage l'unité, éligible aux groupes Cohorte.
+    { student: 'ETU-24-0112', student_name: 'Ange Sossou', program: 'L2 Réseaux', academic_level: 'RS-L2', eligible_via: 'shared' },
   ];
 }
 
@@ -41,13 +43,15 @@ export function groupCandidates(params = {}) {
  * `active_count` est SOMMÉ sur les membres, jamais déclaré à côté d'eux.
  */
 const GROUPS = [
-  { name: 'SG-L2GL-A', group_name: 'L2 Génie logiciel — Groupe A', group_based_on: 'Batch',
+  // FORMES (MANDAT-10) : le libellé serveur est `student_group_name` (GROUP_LIST_FIELDS) — `group_name`
+  // n'existait qu'ici, et la file des groupes s'affichait sans titres en branché.
+  { name: 'SG-L2GL-A', student_group_name:'L2 Génie logiciel — Groupe A', group_based_on: 'Batch',
     custom_group_type: 'Groupe de TD', program: 'L2 Génie logiciel', max_strength: 30, disabled: 0 },
-  { name: 'SG-L2GL-B', group_name: 'L2 Génie logiciel — Groupe B', group_based_on: 'Batch',
+  { name: 'SG-L2GL-B', student_group_name:'L2 Génie logiciel — Groupe B', group_based_on: 'Batch',
     custom_group_type: 'Groupe de TD', program: 'L2 Génie logiciel', max_strength: 30, disabled: 0 },
-  { name: 'SG-L2GL-PROMO', group_name: 'L2 Génie logiciel — Promotion', group_based_on: 'Batch',
+  { name: 'SG-L2GL-PROMO', student_group_name:'L2 Génie logiciel — Promotion', group_based_on: 'Batch',
     custom_group_type: 'Cohorte', program: 'L2 Génie logiciel', max_strength: 0, disabled: 0 },
-  { name: 'SG-L2GL-RES', group_name: 'RES-102 — travaux pratiques', group_based_on: 'Course',
+  { name: 'SG-L2GL-RES', student_group_name:'RES-102 — travaux pratiques', group_based_on: 'Course',
     custom_group_type: 'Groupe de TP', program: 'L2 Génie logiciel', max_strength: 16, disabled: 0 },
 ];
 
@@ -186,7 +190,7 @@ export function cohortOverview(params = {}) {
 export function studentGroupsOf(params = {}) {
   if (params.__empty) return [];
   return GROUPS.filter((g) => membersOf(g.name).some((s) => s.student === params.student))
-    .map((g) => ({ name: g.name, group_name: g.group_name,
+    .map((g) => ({ name: g.name, student_group_name: g.student_group_name,
                    custom_group_type: g.custom_group_type }));
 }
 
