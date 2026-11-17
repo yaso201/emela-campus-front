@@ -21,6 +21,7 @@ import * as N from './fixtures-notes.js';
 import * as D from './fixtures-dossiers.js';
 import * as C from './fixtures-conseil.js';
 import * as Z from './fixtures-fin-de-cycle.js';
+import * as K from './fixtures-charpente.js';
 
 
 const LATENCY = 260;
@@ -40,7 +41,9 @@ const HANDLERS = {
   // AN-09 (M3) : fermeture de session — cœur Frappe, no-op en simulacre.
   logout: (p) => ({}),
   // ─── Grappe 1 · châssis ─────────────────────────────────────────────────
-  'portal_app.api.identity.session_context.get_session_context': () => F.session,
+  // E3' (maquette) : `?as=rf` ou `?as=de` rend un lecteur SANS les droits de charpente — pour voir la règle 3.
+  'portal_app.api.identity.session_context.get_session_context': () =>
+    F.sessionAs(new URLSearchParams(location.search).get('as')),
   'portal_app.api.academic.chassis.get_academic_context': () => F.academicContext,
   'portal_app.api.academic.chassis.get_work_queue': (p) => F.workQueue(p),
   'portal_app.api.academic.chassis.get_work_queue_counts': () => F.workQueueCounts,
@@ -51,7 +54,9 @@ const HANDLERS = {
   [ST + 'get_structure_tree']: (p) => F.structureTree(p),
   [ST + 'get_ue']: (p) => F.ueDetail(p),
   [ST + 'list_structure_options']: () => F.structureOptions,
-  [ST + 'list_programs']: (p) => F.programs(p),
+  // E3' : le catalogue des filières lit `list_programs(include_inactive=1)` — servi par le simulacre de la
+  // charpente (filières du banc) ; les sélecteurs de filière des autres écrans gardent leur simulacre.
+  [ST + 'list_programs']: (p) => (p && Number(p.include_inactive) === 1 ? K.programCatalogue(p) : F.programs(p)),
   // Actes M2 g2 — forme serveur inline (UE + cycle de maquette).
   [ST + 'create_ue']: (p) => ({ name: 'UE-MOCK-0001', ue_name: (p.values || {}).ue_name }),
   [ST + 'update_ue']: (p) => ({ name: p && p.ue, ue_name: (p.values || {}).ue_name }),
@@ -90,8 +95,8 @@ const HANDLERS = {
   [GR + 'create_group']: (p) => ({ name: 'SG-MOCK-0001', student_group_name: (p.values || {}).student_group_name }),
   [GR + 'add_students_to_group']: (p) => grpAddReport(p),
   [GR + 'deactivate_students_in_group']: (p) => ({ deactivated: (p.students || []) }),
-  // L'ACTE d'écriture — appelé sur un geste, jamais au chargement d'un écran.
-  'emela_core.academic_core.api.enrollment.create_student_from_applicant': (p) => G.enrollmentReport(p),
+  // L'ACTE d'écriture — appelé sur un geste, jamais au chargement d'un écran. (La cascade d'admission
+  // `create_student_from_applicant` n'est plus appelée par ce front : MANDAT-10, Q3.)
   [EN + 'replay_enrollment']: (p) => G.enrollmentReport(p),
   [EN + 'list_incomplete_enrollments']: (p) => G.enrollmentReplayQueue(p),
   [EN + 'list_moodle_orphans']: (p) => G.moodleOrphans(p),
@@ -195,6 +200,21 @@ const HANDLERS = {
   'portal_app.api.identity.role_administration.add_scope': (p) => raApplied(p),
   'portal_app.api.identity.role_administration.remove_scope': (p) => raApplied(p),
 
+  // ─── Étapes 1 et 2 · charpente (MANDAT-10, E3', maquette) ───────────────
+  // Proposés (⏳ E3') : la lecture du calendrier, les fériés, l'année courante.
+  [ST + 'get_academic_calendar']: (p) => K.academicCalendar(p),
+  [ST + 'add_holiday']: (p) => K.echo.holiday(p),
+  [ST + 'remove_holiday']: (p) => K.echo.removed(p),
+  [ST + 'set_current_academic_year']: (p) => K.echo.current(p),
+  // Existants au serveur, sans écran jusqu'ici — échos de leur forme.
+  [ST + 'create_academic_year']: (p) => K.echo.year(p),
+  [ST + 'create_academic_term']: (p) => K.echo.term(p),
+  [ST + 'get_program']: (p) => K.programDetail(p),
+  [ST + 'create_program']: (p) => K.echo.program(p),
+  [ST + 'update_program']: (p) => K.echo.program(p),
+  [ST + 'set_program_active']: (p) => K.echo.active(p),
+  [ST + 'create_academic_level']: (p) => K.echo.level(p),
+  [ST + 'create_parcours']: (p) => K.echo.parcours(p),
 };
 
 /* ── Acte de peuplement de groupe (M2 g4) — rapport de masse, forme serveur ── */

@@ -149,8 +149,10 @@
                      @change="togglePick(s.student, $event.target.checked)" />
               <span class="text-ln-gray-900">{{ s.student_name }}</span>
               <span class="font-mono text-[11px] text-ln-gray-500">{{ s.student }}</span>
-              <StatusPill class="ml-auto" :status="s.active ? 'valide' : 'brouillon'"
-                          :label="s.active ? 'Actif' : 'Désactivé'" />
+              <!-- MANDAT-10 : un candidat n'a pas d'état « actif » (`list_group_candidates` rend `eligible_via`) —
+                   chaque candidat s'affichait « Désactivé » en branché. L'écran dit d'où vient l'éligibilité. -->
+              <StatusPill class="ml-auto" :status="s.eligible_via === 'shared' ? 'propose' : 'valide'"
+                          :label="s.eligible_via === 'shared' ? 'Tronc commun' : 'Inscrit à la filière'" />
               <StatusPill v-if="memberIds.has(s.student)" status="propose" label="Déjà membre" />
             </label>
           </div>
@@ -246,7 +248,7 @@ const overCapacity = computed(() =>
 
 const queueItems = computed(() => groups.value.map((g) => ({
   id: g.name,
-  title: g.group_name,
+  title: g.student_group_name || g.name,
   subtitle: g.max_strength
     ? g.active_count + ' membres sur ' + g.max_strength + ' · ' + basis(g.group_based_on)
     : g.active_count + ' membres · ' + basis(g.group_based_on),

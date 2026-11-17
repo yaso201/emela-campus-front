@@ -9,7 +9,19 @@
     </header>
 
     <BlockState v-if="state !== 'ready'" :state="state" :title="stateTitle" :message="stateMessage"
-                :rows="6" :skeleton-widths="[24, 90, 200]" :row-height="44" class="m-4" @retry="emit('retry')" />
+                :rows="6" :skeleton-widths="[24, 90, 200]" :row-height="44" class="m-4" @retry="emit('retry')">
+      <!-- C-15 (MANDAT-10) : un arbre VIDE offre quand même l'ajout — sinon la première unité d'une année ne peut
+           pas naître à l'écran. Les actions d'ajout ne sont rendues qu'à qui les porte (le parent les filtre). -->
+      <template #action>
+        <template v-if="state === 'empty'">
+          <button v-for="add in addActions" :key="add.key" type="button"
+                  class="flex min-h-[36px] items-center gap-1.5 px-3 text-left text-caption font-medium text-ln-blue-600"
+                  @click="emit('add', add.key)">
+            <span aria-hidden="true">+</span> {{ add.label }}
+          </button>
+        </template>
+      </template>
+    </BlockState>
 
     <div v-else class="overflow-auto" :style="{ maxHeight: maxHeight }" role="tree">
       <div v-for="node in nodes" :key="node.id"

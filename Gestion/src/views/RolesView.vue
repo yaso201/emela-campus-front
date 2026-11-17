@@ -9,7 +9,8 @@
         <p class="mt-1 text-body-sm text-ln-gray-500">{{ subtitle }}</p>
       </div>
       <div class="ml-auto">
-        <button type="button" class="ln-btn-primary" @click="grant">Doter une personne…</button>
+        <!-- Règle 3 (C-10, MANDAT-10) : l'acte n'est rendu qu'au porteur de `grant_role` (System Manager). -->
+        <button v-if="can('grant_role')" type="button" class="ln-btn-primary" @click="grant">Doter une personne…</button>
       </div>
     </header>
 
@@ -231,10 +232,12 @@ import { StateBanner, StatusPill, headTh, bodyTd } from '../components/index.js'
 import BlockState from '../components/internal/BlockState.vue';
 import GrantPanel from './administration/GrantPanel.vue';
 import { useResource } from '../composables/useResource.js';
+import { useSession } from '../composables/useSession.js';
 import { listRoleGrants, listGrantAnomalies, listGrantJournal, listAssignableRoles } from '../api/roles.js';
 import { listStructureOptions } from '../api/structure.js';
 
 const route = useRoute();
+const { can } = useSession();
 const res = useResource(listRoleGrants, { isEmpty: (d) => !d?.items?.length });
 const anomaliesRes = useResource(listGrantAnomalies, { isEmpty: (d) => !d?.items?.length });
 const journalRes = useResource(listGrantJournal, { isEmpty: (d) => !d?.items?.length });

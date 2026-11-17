@@ -63,8 +63,10 @@
               <StatusPill :status="row.status" :label="row.status_label" />
               <!-- Les actes sont DÉRIVÉS de la ligne au simulacre, jamais énumérés
                    ici : c'est ce qui garantit que les deux restent proposés. -->
-              <button v-for="a in row.acts" :key="a"
-                      v-show="a !== 'avertissement' || can('hold:council')" type="button"
+              <!-- Règle 3 (MANDAT-10) : l'avertissement non permis n'est pas RENDU (il était seulement masqué par
+                   `v-show`, donc présent au DOM et à l'arbre d'accessibilité). -->
+              <button v-for="a in row.acts.filter((x) => x !== 'avertissement' || can('hold:council'))" :key="a"
+                      type="button"
                       class="inline-flex h-[26px] items-center rounded-sm-ln border border-ln-gray-300 bg-white px-2.5 text-caption font-semibold text-ln-gray-700"
                       @click="doAct(row, a)">{{ ACTS[a] }}</button>
             </span>

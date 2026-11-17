@@ -189,6 +189,7 @@
           </template>
         </div>
 
+        <StateBanner v-if="populateError" class="mx-5 mb-3" variant="error" lead="Ajout refusé." :text="populateError" />
         <footer class="flex items-center gap-3 border-t border-ln-gray-200 bg-ln-gray-50 px-5 py-3">
           <span class="text-caption text-ln-gray-500">
             {{ report ? 'La liste des candidats est à jour.' : 'Un étudiant déjà inscrit ne sera pas dupliqué.' }}
@@ -196,7 +197,7 @@
           <span class="ml-auto flex gap-2">
             <button type="button" class="ln-btn-secondary" @click="closePopulate">Fermer</button>
             <button v-if="!report" type="button" class="ln-btn-primary"
-                    :disabled="!sourceGroup" @click="runPopulate">Ajouter</button>
+                    :disabled="!sourceGroup || populating" @click="runPopulate">Ajouter</button>
           </span>
         </footer>
       </section>
@@ -332,14 +333,26 @@ async function loadGroupOptions() {
   groupOptions.value = (rows?.items || rows || []).map((g) => g.name || g.id);
 }
 
+/**
+ * C-7 (MANDAT-10) : l'appel n'était pas rattrapé — un refus serveur (groupe d'une autre filière, épreuve
+ * close…) laissait le dialogue muet. La phrase serveur est désormais affichée dans le dialogue.
+ */
+const populateError = ref('');
+const populating = ref(false);
 async function runPopulate() {
   if (!sourceGroup.value) return; // défense en profondeur — le bouton est déjà inerte
-  report.value = await populateExamStudentsFromGroup({
-    exam_schedule: selectedId.value, student_group: sourceGroup.value,
-  });
+  populateError.value = '';
+  try {
+    populating.value = true;
+    report.value = await populateExamStudentsFromGroup({
+      exam_schedule: selectedId.value, student_group: sourceGroup.value,
+    });
+  } catch (e) { populateError.value = e.message || 'Le peuplement a été refusé. Rien n’a été modifié.'; }
+  finally { populating.value = false; }
 }
 function closePopulate() {
   populateOpen.value = false;
+  populateError.value = '';
   report.value = null;
   // Le peuplement a modifié la liste : la recharger, sinon le tableau des
   // candidats resterait sur son compte d'avant l'ajout (règle 6 — un seul état).

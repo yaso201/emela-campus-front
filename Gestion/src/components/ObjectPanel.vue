@@ -42,5 +42,6 @@ defineProps({
   stateTitle: { type: String, default: 'Sélectionnez un élément' },
   stateMessage: { type: String, default: 'Choisissez un élément dans la liste pour en voir le détail.' },
 });
-defineEmits(['retry']);
+// MANDAT-10 : le gabarit appelle `emit('retry')` — sans affectation, « Réessayer » levait une erreur.
+const emit = defineEmits(['retry']);
 </script>

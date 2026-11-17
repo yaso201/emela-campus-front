@@ -5,7 +5,9 @@
         <p class="mb-2 text-caption text-ln-gray-500">
           Conseil pédagogique · <b class="font-semibold text-ln-gray-900">Candidats</b>
         </p>
-        <h1 class="text-h1 tracking-tight text-ln-gray-900">Candidats au conseil — {{ data.program_label }}</h1>
+        <!-- MANDAT-10 : en branché, la filière et l'effectif ne sont pas portés par la lecture (S-18, L4-B) — l'écran
+             n'affiche plus « — » ni « null » à leur place, il nomme ce qu'il sait (le semestre du contexte). -->
+        <h1 class="text-h1 tracking-tight text-ln-gray-900">Candidats au conseil{{ data.program_label ? ' — ' + data.program_label : '' }}</h1>
         <p class="mt-1 text-body-sm text-ln-gray-500">{{ subtitle }}</p>
       </div>
       <div class="ml-auto flex items-center gap-2">
@@ -142,7 +144,7 @@
 
       <p class="mt-4 text-caption text-ln-gray-500">
         La séance se tient ailleurs :
-        <router-link :to="{ name: 'council-session' }" class="font-semibold">ouvrir la séance du {{ data.session_date }}</router-link>
+        <router-link :to="{ name: 'council-session' }" class="font-semibold">ouvrir la séance{{ data.session_date ? ' du ' + data.session_date : '' }}</router-link>
         · <router-link :to="{ name: 'council-absences' }" class="font-semibold">les seuils d'absence</router-link>
         · <router-link :to="{ name: 'council-preconisations' }" class="font-semibold">les préconisations de l'année</router-link>
       </p>
@@ -224,11 +226,15 @@ const retainedCount = computed(() => withRetained.value.filter((r) => r.retained
 
 const subtitle = computed(() => {
   if (state.value !== 'ready') return 'Chargement des candidats';
+  const d = data.value;
+  const n = d.count + ' étudiant' + (d.count > 1 ? 's relèvent' : ' relève') + ' d’au moins un critère'
+    + (d.enrolled !== null && d.enrolled !== undefined ? ' sur ' + d.enrolled + ' inscrits' : '');
+  const semestre = d.term_label || params.value.term || '';
   return [
-    data.value.count + ' étudiants relèvent d’au moins un critère sur ' + data.value.enrolled + ' inscrits',
-    data.value.retained + ' retenus pour la séance du ' + data.value.session_date,
-    'calculé sur le ' + (data.value.term_label || '').toLowerCase(),
-  ].join(' · ');
+    n,
+    d.session_date ? d.retained + ' retenus pour la séance du ' + d.session_date : '',
+    semestre ? 'calculé sur le semestre ' + semestre : '',
+  ].filter(Boolean).join(' · ');
 });
 
 function decimal(v) { return v == null ? '—' : String(v.toFixed(2)).replace('.', ','); }

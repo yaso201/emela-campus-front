@@ -63,7 +63,7 @@
                     state-message="La répartition de cette filière n'a pas commencé. Chaque ligne nomme un module, un type d'activité, un groupe et un volume."
                     @retry="loadAll">
           <template #empty-action>
-            <button v-if="plan.can_carry_over" type="button" class="ln-btn-secondary" @click="carry">
+            <button v-if="can('write:service') && plan.can_carry_over" type="button" class="ln-btn-secondary" @click="carry">
               Reprendre les lignes de {{ plan.previous_year_label }}
             </button>
           </template>
@@ -147,7 +147,7 @@
                   <td colspan="4" class="h-9 border-b border-ln-gray-100 px-3 text-left italic">
                     <template v-if="gap.assigned">{{ gap.assigned }} h réparties sur {{ gap.expected }} h prévues — il manque {{ gap.expected - gap.assigned }} h.</template>
                     <template v-else>{{ gap.expected }} h prévues à la maquette, aucune heure répartie.</template>
-                    <button type="button" class="ml-1 font-semibold not-italic text-ln-blue-600" @click="addLine()">Attribuer</button>
+                    <button v-if="can('write:service')" type="button" class="ml-1 font-semibold not-italic text-ln-blue-600" @click="addLine()">Attribuer</button>
                   </td>
                   <td :class="bodyTd"></td>
                 </tr>

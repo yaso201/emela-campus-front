@@ -34,7 +34,7 @@
                   title="Aucune inscription à afficher"
                   :message="shownLog
                     ? 'Ce journal d’inscription n’a pas pu être lu.'
-                    : 'Aucune inscription récente pour cette année — la file des reprises est vide. Cet onglet s’ouvre sur le dernier journal qu’elle désigne.'"
+                    : 'Aucune inscription en échec : la file des reprises est vide. Cet onglet s’ouvre sur le dernier journal qu’elle désigne.'"
                   :rows="5" :skeleton-widths="[24, 240, 200]" :row-height="40"
                   @retry="loadReport">
         <template #action>
@@ -55,7 +55,7 @@
         <svg class="mt-0.5 h-[18px] w-[18px] flex-shrink-0 text-ln-warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2" /><path d="M7 10h4M7 14h7" /></svg>
         <p>
           <b class="font-semibold">L'inscription ne crée pas le badge d'accès.</b>
-          {{ report.student_name }} est inscrite et dispose de ses cours, mais elle
+          Le dossier {{ report.student_name }} est inscrit et dispose de ses cours, mais la personne
           <b class="font-semibold">ne franchira aucun portique</b> tant que le badge n'a pas été émis
           par le service compétent. Ce n'est pas un défaut de cette cascade : le badge n'en fait pas
           partie. C'est écrit ici parce que rien d'autre ne le dirait, et qu'un étudiant qu'on croit
@@ -98,21 +98,12 @@
         duplication</b> — c'est écrit dans la fonction serveur.
       </StateBanner>
 
-      <div class="flex items-start gap-3 rounded-md-ln border border-dashed border-ln-error bg-ln-error-bg p-4 text-body-sm leading-relaxed text-[#7A2020]">
-        <span class="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-ln-error"></span>
-        <p>
-          <b class="font-semibold">Cet écran n'est pas branché, et je ne l'ai pas contourné.</b>
-          La fonction de reprise <b class="font-mono text-[12px]">replay_enrollment_from_log</b> existe
-          côté serveur — je l'ai lue — mais elle ne porte pas de décoration d'exposition : sa garde de
-          rôle vit chez un autre applicatif. Je n'invente pas de chemin pour l'atteindre. Il faut soit
-          l'exposer avec sa garde, soit me donner le chemin de l'appelant qui la porte déjà.
-        </p>
-      </div>
-
+      <!-- C-4 (MANDAT-10) : l'encart « cet écran n'est pas branché » est retiré — la reprise est branchée
+           (`enrollment_mgmt.replay_enrollment`, GA/SM) et le bouton n'est rendu qu'à qui la porte. -->
       <DenseTable class="mt-4" :state="replayState === 'denied' ? 'loading' : replayState" :row-height="44"
                   :skeleton-widths="[150, 260, 140, 130]" max-height="none"
                   state-title="Aucune inscription à reprendre"
-                  state-message="Toutes les inscriptions de cette année ont abouti. Ce n'est pas un écran vide : c'est une liste vide."
+                  state-message="Aucune inscription en échec ni partielle n'attend de reprise. Ce n'est pas un écran vide : c'est une liste vide."
                   @retry="loadReplays">
         <template #head>
           <tr>
@@ -134,9 +125,12 @@
             </td>
             <td :class="bodyTd" class="!text-left"><StatusPill :status="r.status" :label="r.log_status" /></td>
             <td :class="bodyTd" class="!text-left">
-              <button type="button"
+              <!-- Règle 3 : la reprise est un acte du gestionnaire académique (garde serveur GA/SM) —
+                   le bouton n'existe pas pour les autres lecteurs, il n'est pas grisé. -->
+              <button v-if="can('write:groups')" type="button"
                       class="inline-flex h-[26px] items-center rounded-sm-ln border border-ln-gray-300 px-2.5 text-caption font-semibold text-ln-gray-700"
                       @click="runReplay(r.id)">Rejouer…</button>
+              <span v-else class="text-caption text-ln-gray-500">Reprise par la scolarité</span>
             </td>
           </tr>
         </template>
@@ -210,19 +204,23 @@
  * erreur : il n'y a pas de défaut à corriger, il y a une règle qui s'applique.
  * Le motif de la sanction reste dans son dossier.
  *
- * ⚠️ La reprise n'est PAS branchée, et l'écran le dit à la place de contourner :
- * `replay_enrollment_from_log` existe côté serveur mais n'est pas exposée. Un
- * manque nommé vaut mieux qu'un nom inventé.
+ * ⚠️ La reprise EST branchée (`enrollment_mgmt.replay_enrollment`, garde GA/SM) et
+ * son bouton n'est rendu qu'à qui la porte (règle 3). La lecture du journal est
+ * pure (`get_enrollment_log`, paramètre `integration_log`) ; après une reprise,
+ * l'écran RELIT le journal — qui fait foi — au lieu d'afficher le résultat brut
+ * de la cascade (FORMES, MANDAT-10 C-2/C-3/C-4).
  */
 import { computed, onMounted, ref, watch } from 'vue';
 import { DenseTable, StatusPill, StateBanner, BatchReport, headTh, bodyTd } from '../components/index.js';
 import BlockState from '../components/internal/BlockState.vue';
+import { useSession } from '../composables/useSession.js';
 import { useAcademicContext } from '../composables/useAcademicContext.js';
 import { useResource } from '../composables/useResource.js';
 import {
   getEnrollmentLog, listIncompleteEnrollments, listMoodleOrphans, replayEnrollment,
 } from '../api/groups.js';
 
+const { can } = useSession();
 const { params } = useAcademicContext();
 const pending = ref('');
 const tab = ref('report');
@@ -370,11 +368,13 @@ function notBuilt(what) { pending.value = what + " — cet acte n'est pas encore
 async function runReplay(logName) {
   pending.value = '';
   try {
-    const fresh = await replayEnrollment({ integration_log: logName });
-    // Le journal rendu par l'acte fait foi : l'écran ne fabrique pas son rapport.
-    reportRes.data.value = fresh;
+    await replayEnrollment({ integration_log: logName });
+    // L'acte rend le RÉSULTAT de la cascade ; c'est le JOURNAL qui fait foi : l'écran le relit (C-3),
+    // et la file se recharge — un journal repris avec succès la quitte.
     pickedLog.value = logName;
+    loadReport();
     loadReplays();
+    tab.value = 'report';
   } catch (err) {
     pending.value = 'Reprise de ' + logName + ' — ' + (err.message || 'l’acte a échoué')
       + ' Rien n’a été modifié.';
@@ -386,15 +386,19 @@ async function runReplay(logName) {
  * défaut, un autre sur sélection. Aucun identifiant n'est inventé par l'écran :
  * ils viennent d'une lecture de liste.
  */
-function loadReport() { if (shownLog.value) reportRes.load({ log_name: shownLog.value }); }
+function loadReport() { if (shownLog.value) reportRes.load({ integration_log: shownLog.value }); }
 
 /**
  * Le cas de refus est un journal comme un autre, lu par son nom. Il n'est PLUS
  * derrière un drapeau de mise au point : `__fail` partait dans le corps de la
  * requête au branchement, et ne correspondait à rien côté serveur.
  */
-function loadRefused() { if (refusedLog.value) refusedRes.load({ log_name: refusedLog.value }); }
-function loadReplays() { replayRes.load(params.value); }
+function loadRefused() { if (refusedLog.value) refusedRes.load({ integration_log: refusedLog.value }); }
+/**
+ * C-2 (MANDAT-10) : la file n'est pas contextuelle — `list_incomplete_enrollments(limit)` ne connaît
+ * que `limit`. Un journal en échec attend quelle que soit l'année ouverte à l'écran.
+ */
+function loadReplays() { replayRes.load({ limit: 50 }); }
 function loadOrphans() { orphansRes.load(params.value); }
 
 // La file d'abord : c'est elle qui nomme les journaux. Les deux lectures suivent.

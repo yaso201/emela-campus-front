@@ -29,6 +29,10 @@ export const NAV = [
     title: 'Domaines',
     items: [
       { key: 'structure', label: 'Structure', path: '/structure', icon: IconTree, view: 'StructureView', need: 'read:structure', grappe: 2, hint: 'Maquette pédagogique : unités, modules, cycle Brouillon→Proposé→Validé.' },
+      // E3' (MANDAT-10) — les deux autres écrans de « Structure » (Lot 1) : atteints par les onglets de la rubrique,
+      // déclarés ici pour que leurs liens ne tombent pas dans la redirection fourre-tout.
+      { key: 'calendar', label: 'Calendrier académique', path: '/structure/calendrier', icon: IconCalendar, view: 'CalendarView', need: 'read:structure', grappe: 2, hidden: true, hint: 'Années, semestres et leur parité, jours fériés, année courante.' },
+      { key: 'catalogue', label: 'Catalogue des filières', path: '/structure/filieres', icon: IconTree, view: 'CatalogueView', need: 'read:structure', grappe: 2, hidden: true, hint: 'Filières, niveaux et parcours.' },
       { key: 'service', label: 'Répartition', path: '/repartition', icon: IconShare, view: 'RepartitionView', need: 'read:service', grappe: 3, hint: 'Lignes de service prévisionnelles de la filière.' },
       { key: 'service-validate', label: 'Valider les répartitions', path: '/repartition/validation', icon: IconShare, view: 'RepartitionValidationView', need: 'validate:service', grappe: 3, hint: 'Validation des répartitions proposées (Directeur des Études).' },
       // Le bilan porte SON SUJET dans l'URL : un bilan de charge sans enseignant

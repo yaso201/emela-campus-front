@@ -2,7 +2,9 @@
   <section class="flex max-h-[560px] flex-col overflow-hidden rounded-md-ln border border-ln-gray-200" :aria-label="title">
     <header class="flex flex-shrink-0 items-center gap-2 border-b border-ln-gray-200 bg-ln-gray-50 px-4 py-3">
       <h3 class="text-caption font-semibold text-ln-gray-900">{{ title }}</h3>
-      <p v-if="total" class="tabular ml-auto text-caption text-ln-gray-500">{{ doneCount }} / {{ total }} traitées</p>
+      <!-- K2 (VERDICT-MANDAT-10-PC1B) : la progression n'a de sens que si les éléments portent `done` — une
+           liste d'objets (groupes, années, filières) n'est pas une file de travail et n'affiche pas « 0 / N ». -->
+      <p v-if="total && hasDone" class="tabular ml-auto text-caption text-ln-gray-500">{{ doneCount }} / {{ total }} traitées</p>
     </header>
 
     <BlockState v-if="state !== 'ready'" :state="state" :title="stateTitle" :message="stateMessage"
@@ -62,6 +64,7 @@ const props = defineProps({
 const emit = defineEmits(['select', 'retry']);
 
 const doneCount = computed(() => props.items.filter((i) => i.done).length);
+const hasDone = computed(() => props.items.some((i) => i.done !== undefined));
 
 function itemClass(item) {
   const out = [];

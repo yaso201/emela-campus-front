@@ -80,6 +80,18 @@ function check(title, problems, detail = '') {
   return ok;
 }
 
+/**
+ * Un AVERTISSEMENT nommé : dit, compté, jamais un échec (MANDAT-10, Q5). Réservé à ce qu'une décision a classé
+ * comme dette documentaire — aujourd'hui le seul manifeste périmé. Il ne sert pas à faire taire un échec.
+ */
+let warnings = 0;
+function warn(title, items, detail = '') {
+  if (!items.length) { say('  ok     ' + title + ' — aucun' + (detail ? '  — ' + detail : '')); return; }
+  warnings += items.length;
+  say('  avert.  ' + title + ' — ' + items.length + (detail ? '  — ' + detail : ''));
+  items.forEach((p) => say('          ' + p));
+}
+
 function fatal(err) {
   // Le filet est global : il attrape aussi bien une forme de fixture disparue
   // qu'un fichier de configuration absent au §8 ou une faute dans ce script.
@@ -152,7 +164,7 @@ say('\n2 · Simulacre');
  * inatteignable pour sa propre défaillance, et le contrat du script — une ligne
  * ÉCHEC nommée, puis code 1 — était rompu.
  */
-let fx, fxG, fxP, fxN, fxD, fxC, fxZ;
+let fx, fxG, fxP, fxN, fxD, fxC, fxZ, fxK;
 const FIXTURE_MODULES = {};
 try {
   /**
@@ -178,9 +190,11 @@ try {
   fxD = FIXTURE_MODULES['fixtures-dossiers.js'];
   fxC = FIXTURE_MODULES['fixtures-conseil.js'];
   fxZ = FIXTURE_MODULES['fixtures-fin-de-cycle.js'];
+  // MANDAT-10, E3' : la charpente (calendrier académique, catalogue des filières).
+  fxK = FIXTURE_MODULES['fixtures-charpente.js'];
   const missing = ['fixtures.js', 'fixtures-groupes.js', 'fixtures-planning.js',
     'fixtures-notes.js', 'fixtures-dossiers.js', 'fixtures-conseil.js',
-    'fixtures-fin-de-cycle.js'].filter((n) => !FIXTURE_MODULES[n]);
+    'fixtures-fin-de-cycle.js', 'fixtures-charpente.js'].filter((n) => !FIXTURE_MODULES[n]);
   if (missing.length) throw new Error('modules attendus absents : ' + missing.join(', '));
 } catch (e) {
   check('le module de simulacre se charge', [e.message]);
@@ -219,13 +233,16 @@ const probes = [
   ['cohortOverview', () => Object.keys(fxG.cohortOverview({}).totals_by_type).length],
   ['studentGroupsOf', () => fxG.studentGroupsOf({ student: 'ETU-24-0188' }).length],
   ['currentEnrollment', () => fxG.currentEnrollment({}).program],
-  ['enrollmentReport', () => fxG.enrollmentReport({}).lines.length],
   // ⚠️ Sondée avec une CLÉ RÉELLE : cette fixture lève sur un nom inconnu, donc
   // la sonde garde aussi contre le renommage de ce journal. Sans elle, renommer
   // la clé ne cassait rien à l'audit — et l'onglet du rapport affichait « aucune
   // inscription à afficher », un état vide crédible.
-  ['enrollmentLog', () => fxG.enrollmentLog({ log_name: 'LOG-2027-0440' }).lines.length],
-  ['enrollmentReplayQueue', () => fxG.enrollmentReplayQueue({}).items.length],
+  // FORMES (MANDAT-10, C-2/C-3) : les fixtures portent la FORME SERVEUR (`integration_log`, `pivots`,
+  // liste nue) — les étapes et les lignes d'écran vivent aux adaptateurs d'api/groups.js.
+  ['enrollmentLog', () => fxG.enrollmentLog({ integration_log: 'LOG-2027-0440' }).pivots.completable_errors.length],
+  ['enrollmentReplayQueue', () => fxG.enrollmentReplayQueue({}).length],
+  // La reprise ÉCRIT dans la table (le journal repris quitte la file) : sondée après les lectures.
+  ['enrollmentReport', () => fxG.enrollmentReport({ integration_log: 'LOG-2027-0431' }).status],
   ['moodleOrphans', () => fxG.moodleOrphans({}).families.length],
   // Grappe 5 — le troisième module.
   ['schedules', () => fxP.schedules({}).length],
@@ -281,6 +298,12 @@ const probes = [
   ['roleProfiles', () => fxZ.roleProfiles().length],
   ['grantAnomalies', () => fxZ.grantAnomalies({}).holders_with_anomalies.length],
   ['grantJournal', () => fxZ.grantJournal({}).length],
+  // MANDAT-10, E3' — la charpente : chaque fixture rend la forme proposée au serveur.
+  ['academicCalendar', () => fxK.academicCalendar({}).years[0].terms.length],
+  ['programCatalogue', () => fxK.programCatalogue({}).length],
+  ['programDetail', () => fxK.programDetail({ program: 'LIS' }).levels.length],
+  ['echo', () => fxK.echo.year({ academic_year_name: '2027-2028' }).name],
+  ['sessionAs', () => fx.sessionAs('rf').roles.length],
 ];
 const dead = [];
 for (const [name, fn] of probes) { try { fn(); } catch (e) { dead.push(name + ' → ' + e.message); } }
@@ -1203,7 +1226,9 @@ for (const r of roster.items) {
     if (expect !== sem.semester_validated) {
       juryBad.push(r.student + ' ' + term + ' : validation ' + sem.semester_validated + ' ≠ ' + expect);
     }
-    const unacq = ues.filter((u) => !u.is_validated && !u.is_compensated).map((u) => u.course_ue);
+    // FORMES (MANDAT-10) : la fixture porte la forme SERVEUR — les intitulés (`ue_label`) ; l'adaptateur
+    // `deliberationRowToView` les traduit en codes pour l'écran.
+    const unacq = ues.filter((u) => !u.is_validated && !u.is_compensated).map((u) => u.ue_label);
     if (unacq.join() !== (sem.unacquired || []).join()) {
       juryBad.push(r.student + ' ' + term + ' : unités non acquises divergent');
     }
@@ -1707,22 +1732,40 @@ if (!manifest) {
       if (m[1].includes('_') || m[1].includes('.')) redPaths.add(m[1]);
     }
   }
+  /**
+   * ⚠️ MANIFESTE PÉRIMÉ ≠ CHEMIN INVENTÉ (MANDAT-10, VERDICT-MANDAT-10-PC1 Q5).
+   *
+   * Le manifeste du handoff a été écrit avant le back reconstruit ; il donne encore 🔴 des chemins que le
+   * serveur déclare aujourd'hui (la CARTE DES SIGNATURES, générée par le serveur, en fait foi). Un tel chemin
+   * n'est pas un chemin inventé : c'est le MANIFESTE qui est en retard. Il devient un AVERTISSEMENT nommé, pas un
+   * échec — et SEULEMENT lui : un chemin 🔴 du manifeste ABSENT de la carte reste un échec (chemin sans serveur).
+   * Le chemin complet est résolu par la constante de module (`ROLES + 'add_role'`), comme au contrôle 7 quater.
+   */
+  const SIGMAP = JSON.parse(read(join(SRC, 'api/server-signatures.json')));
   const unmarked = [];
+  const stale = [];
   for (const p of callModules) {
     const src = read(p);
+    const consts = {};
+    for (const c of src.matchAll(/const (\w+) = '([\w.]+)';/g)) consts[c[1]] = c[2];
     const headerRed = /🔴/.test(src.slice(0, src.indexOf('import ')));
-    for (const m of src.matchAll(/export (?:const|function|async function) (\w+)[\s\S]{0,200}?call\(\s*(?:[A-Z_]+\s*\+\s*)?'([^']+)'/g)) {
-      const [, name, path] = m;
+    for (const m of src.matchAll(/export (?:const|function|async function) (\w+)[\s\S]{0,200}?call\(\s*(?:([A-Z_]+)\s*\+\s*)?'([^']+)'/g)) {
+      const [, name, constName, path] = m;
       if (!redPaths.has(path)) continue;
       const declStart = src.lastIndexOf('/**', m.index);
       const localRed = declStart >= 0 && /🔴/.test(src.slice(declStart, m.index));
-      if (!headerRed && !localRed) {
+      if (headerRed || localRed) continue;
+      const full = (constName ? (consts[constName] || '') : '') + path;
+      if (SIGMAP[full]) {
+        stale.push(basename(p) + ' → ' + name + ' : ' + full + ' est déclaré par le serveur (carte), le manifeste le donne encore 🔴');
+      } else {
         unmarked.push(basename(p) + ' → ' + name + ' appelle ' + path + ', donné 🔴 au manifeste, sans marqueur ici');
       }
     }
   }
-  check('tout chemin 🔴 du manifeste porte son marqueur dans src/api/', unmarked,
+  check('tout chemin 🔴 du manifeste porte son marqueur dans src/api/ (hors manifeste périmé)', unmarked,
     redPaths.size + ' chemins 🔴 au manifeste');
+  warn('manifeste périmé : chemins donnés 🔴 que la carte du serveur déclare', stale);
 
   /**
    * ⚠️ ET LE SENS INVERSE : TOUT CHEMIN 🔴 DU CODE EST NOMMÉ DANS LE HANDOFF.
@@ -2144,6 +2187,55 @@ for (const f of readdirSync(join(SRC, 'api')).filter((n) => n.endsWith('.js'))) 
 }
 check('aucun paramètre envoyé hors de la signature déclarée', [...new Set(paramGaps)],
   confronted + ' appels confrontés · ' + Object.keys(SIGNATURES).length + ' signatures');
+
+/**
+ * ⚠️ 0 CHEMIN HORS CARTE, COMPOSÉS COMPRIS (D-SIGNATURES-COUVERTURE-01, MANDAT-10 E4).
+ *
+ * Le contrôle ci-dessus SAUTE un chemin absent de la carte (« clé nue : autre contrôle ») : 36 chemins des cinq
+ * modules « cycle de vie », appelés par chemin COMPOSÉ (`COA + 'decide_coa_request'`), échappaient ainsi à toute
+ * confrontation. Ici, TOUT chemin appelé — littéral ou composé, avec ou sans objet de paramètres — doit être
+ * dans la carte du serveur, sauf une liste NOMMÉE et motivée :
+ *   - `logout` : le cœur Frappe, hors de toute surface métier ;
+ *   - les clés NUES du simulacre (sans module), que le front appelle sans les brancher au serveur : elles sont
+ *     🔴 au manifeste et suivies par leurs propres contrôles (grappe 9 et S-18 : L4-C, L4-B).
+ */
+const OUT_OF_MAP_ALLOWED = {
+  logout: 'cœur Frappe (frappe.handler), hors surface métier',
+};
+const calledPaths = new Map();   // chemin complet → [module:export]
+for (const f of readdirSync(join(SRC, 'api')).filter((n) => n.endsWith('.js'))) {
+  const src = read(join(SRC, 'api', f));
+  const consts = {};
+  for (const m of src.matchAll(/const (\w+) = '([\w.]+)';/g)) consts[m[1]] = m[2];
+  for (const m of src.matchAll(/call\(\s*(?:(\w+)\s*\+\s*)?'([\w.]+)'/g)) {
+    const full = (m[1] ? (consts[m[1]] || ('<' + m[1] + '>.')) : '') + m[2];
+    if (!calledPaths.has(full)) calledPaths.set(full, []);
+    calledPaths.get(full).push(f);
+  }
+}
+const outOfMap = [];
+const bareKeys = [];
+for (const [path, files] of calledPaths) {
+  if (SIGNATURES[path] || OUT_OF_MAP_ALLOWED[path]) continue;
+  if (!path.includes('.')) { bareKeys.push(path + ' (' + [...new Set(files)].join(', ') + ')'); continue; }
+  outOfMap.push(path + ' — appelé par ' + [...new Set(files)].join(', ') + ' : absent de la carte du serveur');
+}
+check('0 chemin appelé hors de la carte du serveur, composés compris', outOfMap,
+  calledPaths.size + ' chemins appelés · ' + Object.keys(SIGNATURES).length + ' dans la carte · '
+  + Object.keys(OUT_OF_MAP_ALLOWED).length + ' hors surface nommé');
+warn('clés nues sans module (🔴, non branchées au serveur)', bareKeys);
+// Éprouvé : un chemin composé hors carte est vu ; un chemin composé de la carte passe.
+{
+  const probe = [];
+  const src = "const M = 'portal_app.api.academic.leave_return.';\nexport const x = () => call(M + 'decide_leave_return_request', p);\nexport const y = () => call(M + 'invente_ici');";
+  const consts = {};
+  for (const m of src.matchAll(/const (\w+) = '([\w.]+)';/g)) consts[m[1]] = m[2];
+  const seen = [...src.matchAll(/call\(\s*(?:(\w+)\s*\+\s*)?'([\w.]+)'/g)].map((m) => (m[1] ? consts[m[1]] : '') + m[2]);
+  if (!seen.includes('portal_app.api.academic.leave_return.decide_leave_return_request')) probe.push('un chemin composé ne serait pas résolu');
+  if (!SIGNATURES['portal_app.api.academic.leave_return.decide_leave_return_request']) probe.push('la carte ne couvre pas le cycle de vie');
+  if (SIGNATURES['portal_app.api.academic.leave_return.invente_ici']) probe.push('un chemin inventé passerait');
+  check('le contrôle hors carte résout les composés et attrape l’inventé', probe);
+}
 // Éprouvé dans les deux sens : il attrape un paramètre non déclaré, il
 // laisse passer un appel conforme.
 {
@@ -2285,6 +2377,40 @@ for (const p of vue) {
 }
 check('toute prop passée à un composant existe à son defineProps',
   [...new Set(propBad)], Object.keys(componentProps).length + ' composants lus');
+
+/**
+ * ⚠️ TOUTE BALISE DE COMPOSANT D'UN GABARIT EST IMPORTÉE ; TOUT `emit()` DU GABARIT A SON `const emit`
+ * (MANDAT-10, revue de design).
+ *
+ * `DenseTable` utilisait `<BlockState>` sans l'importer : Vue rendait une balise HTML inconnue `<blockstate>`,
+ * sans erreur ni avertissement en production — et AUCUN tableau dense ne montrait ses états vide, chargement ou
+ * erreur. Le contrôle des props ci-dessus ne le voyait pas : il confronte les props d'un composant CONNU. Ici,
+ * chaque balise en PascalCase d'un gabarit doit être nommée dans le script (import), hors composants intégrés.
+ * Même classe de défaut : `emit('…')` au gabarit sans `const emit = defineEmits(…)` lève au premier clic.
+ */
+{
+  const BUILTIN = new Set(['Transition', 'TransitionGroup', 'KeepAlive', 'Teleport', 'Suspense', 'RouterLink', 'RouterView', 'Component']);
+  const unresolved = [];
+  for (const p of vue) {
+    const src = read(p);
+    const tpl = (src.match(/<template>[\s\S]*<\/template>/) || [''])[0];
+    const script = (src.match(/<script[\s\S]*?<\/script>/) || [''])[0];
+    for (const t of new Set([...tpl.matchAll(/<([A-Z][A-Za-z0-9]+)/g)].map((m) => m[1]))) {
+      if (!BUILTIN.has(t) && !new RegExp('\\b' + t + '\\b').test(script)) unresolved.push(basename(p) + ' : <' + t + '> non importé');
+    }
+    if (/\bemit\(/.test(tpl) && !/const emit\s*=/.test(script)) unresolved.push(basename(p) + ' : emit() au gabarit sans const emit');
+  }
+  check('toute balise de composant est importée ; tout emit() du gabarit est affecté', unresolved, vue.length + ' fichiers .vue');
+  // Éprouvé : il attrape la balise non importée et laisse passer l'importée.
+  const probe = [];
+  const bad = '<template><div><BlockState /></div></template><script setup>defineProps({})</script>';
+  const good = "<template><div><BlockState /></div></template><script setup>import BlockState from './x.vue'</script>";
+  const seen = (s) => [...(s.match(/<template>[\s\S]*<\/template>/) || [''])[0].matchAll(/<([A-Z][A-Za-z0-9]+)/g)]
+    .some((m) => !new RegExp('\\b' + m[1] + '\\b').test((s.match(/<script[\s\S]*?<\/script>/) || [''])[0]));
+  if (!seen(bad)) probe.push('une balise non importée passerait');
+  if (seen(good)) probe.push('une balise importée serait accusée');
+  check('le contrôle des balises attrape le faux et laisse passer le juste', probe);
+}
 
 /**
  * ⚠️ LA FORME DES OBJETS PASSÉS DANS UNE PROP DE TYPE TABLEAU.
@@ -2570,5 +2696,5 @@ if (failures) {
   say(failures + ' vérification(s) en échec.');
   process.exit(1);
 }
-say('Toutes les vérifications passent.');
+say('Toutes les vérifications passent.' + (warnings ? ' ' + warnings + ' avertissement(s) nommé(s) ci-dessus (dette documentaire, non bloquante).' : ''));
 say('Reste à faire, et non remplaçable : npm run dev, puis ?simulate=denied|error|empty.');

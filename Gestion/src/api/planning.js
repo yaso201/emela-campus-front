@@ -198,11 +198,32 @@ export const assignScheduleInstructor = (p) => call(PLAN + 'assign_instructor', 
  * `derogate:planning` commande la présence du champ de motif, pas du bouton de
  * publication.
  */
-/** ⚠️ FORMES — le CONTRAT DE MASSE serveur, mappé pour le composant
- * (ok/ko/lines ← succeeded_count/failed_count/rows). */
+/**
+ * ⚠️ FORMES — le CONTRAT DE MASSE serveur, mappé pour le composant
+ * (ok/ko/lines ← succeeded_count/failed_count/rows).
+ *
+ * C-5 (MANDAT-10) : les lignes serveur `{schedule, status, message}` ne sont pas
+ * celles du composant `{id, label, status: ok|ko, detail|reason}` — sans
+ * adaptation, chaque ligne s'affichait sans libellé, en « réussite ». Et
+ * `retry_ids` est rendu toujours présent (liste vide au pire).
+ */
+const PUBLISH_OK = { published: 'Publiée.', already_published: 'Déjà publiée.' };
+const PUBLISH_KO = {
+  j7_derogation_required: 'Préavis non tenu — publiable par dérogation du directeur des études.',
+  not_found: 'Séance introuvable.',
+};
+export function publishRowToLine(r) {
+  const ok = r.status in PUBLISH_OK;
+  return {
+    id: r.schedule, label: r.schedule, status: ok ? 'ok' : 'ko',
+    detail: ok ? PUBLISH_OK[r.status] : '',
+    reason: ok ? '' : (r.message || PUBLISH_KO[r.status] || 'Publication refusée.'),
+  };
+}
 export const publishSchedules = async (p) => {
   const d = await call(PLAN + 'publish_schedules', p);
-  return d && { ...d, ok: d.succeeded_count, ko: d.failed_count, lines: d.rows };
+  return d && { ...d, ok: d.succeeded_count, ko: d.failed_count, retry_ids: d.retry_ids || [],
+    lines: (d.rows || []).map(publishRowToLine) };
 };
 
 /* ─── Examens ────────────────────────────────────────────────────────────── */
@@ -245,8 +266,22 @@ export const removeExamStudents = (p) => call(EXAM + 'remove_exam_students', p);
  * 🟢 `exam_mgmt.py:66` — `populate_exam_students_from_group(exam_schedule,
  * student_group)`. ÉCRITURE — acte de masse, rapport ligne à ligne.
  */
-/** ⚠️ FORMES — le CONTRAT DE MASSE serveur, mappé pour le composant. */
+/**
+ * ⚠️ FORMES — le CONTRAT DE MASSE serveur, mappé pour le composant.
+ * C-7 (MANDAT-10) : lignes serveur `{student, status, message}` → `{id, label, status: ok|ko, detail|reason}`.
+ */
+const POPULATE_OK = { added: 'Ajouté à la liste.', already_listed: 'Déjà candidat.' };
+export function populateRowToLine(r) {
+  const ok = r.status in POPULATE_OK;
+  return {
+    id: r.student, label: r.student_name || r.student, status: ok ? 'ok' : 'ko',
+    detail: ok ? POPULATE_OK[r.status] : '',
+    reason: ok ? '' : (r.message || (r.status === 'not_in_program'
+      ? 'Aucune inscription au programme de l’épreuve.' : 'Ajout refusé.')),
+  };
+}
 export const populateExamStudentsFromGroup = async (p) => {
   const d = await call(EXAM + 'populate_exam_students_from_group', p);
-  return d && { ...d, ok: d.succeeded_count, ko: d.failed_count, lines: d.rows };
+  return d && { ...d, ok: d.succeeded_count, ko: d.failed_count, retry_ids: d.retry_ids || [],
+    lines: (d.rows || []).map(populateRowToLine) };
 };
