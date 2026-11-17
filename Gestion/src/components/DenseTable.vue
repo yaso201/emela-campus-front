@@ -43,6 +43,13 @@
  * exporter. La colonne ancrée porte l'identité de la ligne : sans elle, le
  * défilement fait perdre le sujet.
  */
+// MANDAT-10 (revue de design) — deux défauts présents depuis la pose des sources :
+//   1. BlockState n'était PAS importé : le gabarit émettait une balise `<blockstate>` inconnue, et AUCUN tableau
+//      dense de l'application ne rendait ses états vide, chargement ou erreur (zone blanche sous le titre) ;
+//   2. le gabarit appelait `emit('retry')` sans que `defineEmits` soit affecté : « Réessayer » aurait levé une erreur.
+// L'audit gagne le contrôle « toute balise de composant d'un gabarit est importée ».
+import BlockState from './internal/BlockState.vue';
+
 defineProps({
   state: { type: String, default: 'ready' },
   stateTitle: { type: String, default: 'Aucune donnée' },
@@ -53,6 +60,6 @@ defineProps({
   expectedCount: { type: [Number, String], default: null },
   expectedLabel: { type: String, default: 'lignes' },
 });
-defineEmits(['retry']);
+const emit = defineEmits(['retry']);
 
 </script>

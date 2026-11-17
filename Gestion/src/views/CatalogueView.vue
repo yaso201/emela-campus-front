@@ -8,7 +8,8 @@
         <p class="mt-1 text-body-sm text-ln-gray-500">{{ subtitle }}</p>
       </div>
       <div class="flex flex-wrap items-center gap-2">
-        <label class="inline-flex items-center gap-2 text-body-sm text-ln-gray-700">
+        <!-- Revue de design : la bascule n'apparaît que s'il y a des programmes de catalogue à montrer. -->
+        <label v-if="all.some((p) => p.custom_catalogue_only)" class="inline-flex items-center gap-2 text-body-sm text-ln-gray-700">
           <input v-model="showCatalogue" type="checkbox" class="h-4 w-4" />
           Programmes de catalogue
         </label>
@@ -55,7 +56,7 @@
           <header class="flex flex-wrap items-center gap-3 border-b border-ln-gray-200 bg-ln-gray-50 px-4 py-3">
             <div>
               <h3 class="text-[14px] font-semibold text-ln-gray-900">{{ program.program_name }}</h3>
-              <p class="mt-0.5 text-caption text-ln-gray-500">{{ program.custom_filiere_acronym }} · {{ program.custom_program_type || 'type non renseigné' }}</p>
+              <p class="mt-0.5 text-caption text-ln-gray-500">{{ [program.custom_filiere_acronym, program.custom_program_type || 'type non renseigné'].filter(Boolean).join(' · ') }}</p>
             </div>
             <button v-if="editable" type="button" class="ln-btn-secondary ml-auto" @click="open('edit')">Modifier…</button>
             <button v-if="editable" type="button" class="ln-btn-secondary" :disabled="busy" @click="toggleActive">
@@ -78,7 +79,9 @@
         </div>
         <DenseTable :state="detailRows('levels')" :row-height="40" max-height="280px"
                     state-title="Aucun niveau"
-                    state-message="Sans niveau, la filière n'accueille ni inscription ni maquette.">
+                    :state-message="maquetteWritable
+                      ? 'Sans niveau, la filière n’accueille ni inscription ni maquette.'
+                      : 'Sans niveau, la filière n’accueille ni inscription ni maquette. Ses niveaux sont ajoutés par son responsable de formation ou par l’Education Manager.'">
           <template #head>
             <tr>
               <th :class="headTh" class="!text-left">Code</th>
@@ -217,16 +220,17 @@ const subtitle = computed(() => {
   if (listState.value !== 'ready') return 'Chargement du catalogue';
   const n = all.value.filter((p) => !p.custom_catalogue_only).length;
   const c = all.value.length - n;
-  return n + ' filières' + (c ? ' · ' + c + ' programmes de catalogue' + (showCatalogue.value ? '' : ' masqués') : '');
+  return n + (n > 1 ? ' filières' : ' filière')
+    + (c ? ' · ' + c + (c > 1 ? ' programmes de catalogue' : ' programme de catalogue') + (showCatalogue.value ? '' : (c > 1 ? ' masqués' : ' masqué')) : '');
 });
 
 const identity = computed(() => {
   const p = program.value;
   if (!p) return [];
   return [
-    { label: 'Sigle', value: p.custom_filiere_acronym || '—' },
-    { label: 'Durée', value: p.custom_nb_annees ? p.custom_nb_annees + ' ans' : '—' },
-    { label: 'Crédits requis', value: p.custom_total_ects_required ? p.custom_total_ects_required + ' ECTS' : '—' },
+    { label: 'Sigle', value: p.custom_filiere_acronym || 'non renseigné' },
+    { label: 'Durée', value: p.custom_nb_annees ? p.custom_nb_annees + ' ans' : 'non renseignée' },
+    { label: 'Crédits requis', value: p.custom_total_ects_required ? p.custom_total_ects_required + ' ECTS' : 'non renseignés' },
     // Le nom du responsable vient de la FICHE (`get_program`) ; la liste ne porte que l'identifiant.
     { label: 'Responsable', value: detail.value?.responsable_name || p.custom_responsable_programme || 'non désigné' },
     { label: 'Unités rattachées', value: detail.value?.counters?.ues ?? '…' },

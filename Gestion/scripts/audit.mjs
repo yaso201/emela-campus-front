@@ -2379,6 +2379,40 @@ check('toute prop passée à un composant existe à son defineProps',
   [...new Set(propBad)], Object.keys(componentProps).length + ' composants lus');
 
 /**
+ * ⚠️ TOUTE BALISE DE COMPOSANT D'UN GABARIT EST IMPORTÉE ; TOUT `emit()` DU GABARIT A SON `const emit`
+ * (MANDAT-10, revue de design).
+ *
+ * `DenseTable` utilisait `<BlockState>` sans l'importer : Vue rendait une balise HTML inconnue `<blockstate>`,
+ * sans erreur ni avertissement en production — et AUCUN tableau dense ne montrait ses états vide, chargement ou
+ * erreur. Le contrôle des props ci-dessus ne le voyait pas : il confronte les props d'un composant CONNU. Ici,
+ * chaque balise en PascalCase d'un gabarit doit être nommée dans le script (import), hors composants intégrés.
+ * Même classe de défaut : `emit('…')` au gabarit sans `const emit = defineEmits(…)` lève au premier clic.
+ */
+{
+  const BUILTIN = new Set(['Transition', 'TransitionGroup', 'KeepAlive', 'Teleport', 'Suspense', 'RouterLink', 'RouterView', 'Component']);
+  const unresolved = [];
+  for (const p of vue) {
+    const src = read(p);
+    const tpl = (src.match(/<template>[\s\S]*<\/template>/) || [''])[0];
+    const script = (src.match(/<script[\s\S]*?<\/script>/) || [''])[0];
+    for (const t of new Set([...tpl.matchAll(/<([A-Z][A-Za-z0-9]+)/g)].map((m) => m[1]))) {
+      if (!BUILTIN.has(t) && !new RegExp('\\b' + t + '\\b').test(script)) unresolved.push(basename(p) + ' : <' + t + '> non importé');
+    }
+    if (/\bemit\(/.test(tpl) && !/const emit\s*=/.test(script)) unresolved.push(basename(p) + ' : emit() au gabarit sans const emit');
+  }
+  check('toute balise de composant est importée ; tout emit() du gabarit est affecté', unresolved, vue.length + ' fichiers .vue');
+  // Éprouvé : il attrape la balise non importée et laisse passer l'importée.
+  const probe = [];
+  const bad = '<template><div><BlockState /></div></template><script setup>defineProps({})</script>';
+  const good = "<template><div><BlockState /></div></template><script setup>import BlockState from './x.vue'</script>";
+  const seen = (s) => [...(s.match(/<template>[\s\S]*<\/template>/) || [''])[0].matchAll(/<([A-Z][A-Za-z0-9]+)/g)]
+    .some((m) => !new RegExp('\\b' + m[1] + '\\b').test((s.match(/<script[\s\S]*?<\/script>/) || [''])[0]));
+  if (!seen(bad)) probe.push('une balise non importée passerait');
+  if (seen(good)) probe.push('une balise importée serait accusée');
+  check('le contrôle des balises attrape le faux et laisse passer le juste', probe);
+}
+
+/**
  * ⚠️ LA FORME DES OBJETS PASSÉS DANS UNE PROP DE TYPE TABLEAU.
  *
  * Le contrôle des noms de props est aveugle d'un niveau : une prop `steps` de type

@@ -77,7 +77,9 @@
           <h4 class="text-micro font-bold uppercase tracking-wider text-ln-gray-500">Semestres et périodes</h4>
           <button v-if="writable" type="button" class="ln-btn-secondary ml-auto" @click="open('term')">+ Ajouter un semestre</button>
         </div>
-        <DenseTable :state="selected.terms.length ? 'ready' : 'empty'" :row-height="40" max-height="320px"
+        <!-- Revue de design : plus de hauteur bornée — l'année porte jusqu'à 18 semestres (S1 et semestres de
+             parcours), et la barre de défilement masquée par le système cachait les dix derniers. -->
+        <DenseTable :state="selected.terms.length ? 'ready' : 'empty'" :row-height="40" max-height="none"
                     state-title="Aucun semestre" state-message="Cette année n'a pas encore de semestre. Les inscriptions, les groupes et les épreuves s'y rattachent.">
           <template #head>
             <tr>
@@ -98,7 +100,7 @@
               </td>
               <td :class="bodyTd">{{ shortDate(t.term_start_date) }}</td>
               <td :class="bodyTd">{{ shortDate(t.term_end_date) }}</td>
-              <td :class="bodyTd">{{ t.working_days ?? '—' }}</td>
+              <td :class="bodyTd">{{ t.working_days ?? 'non calculé' }}</td>
             </tr>
           </template>
           <template #legend>
@@ -136,15 +138,17 @@
             <tr>
               <th :class="headTh" class="!text-left">Date</th>
               <th :class="headTh" class="!text-left">Fête</th>
-              <th :class="headTh"></th>
+              <!-- Revue de design : la colonne d'action n'existe que pour qui peut retirer (une colonne vide
+                   décalait le tableau pour les lecteurs). -->
+              <th v-if="writable" :class="headTh"></th>
             </tr>
           </template>
           <template #body>
             <tr v-for="h in selected.holidays" :key="h.holiday_date">
               <td :class="bodyTd" class="!text-left">{{ longDate(h.holiday_date) }}</td>
               <td :class="bodyTd" class="!text-left">{{ h.description }}</td>
-              <td :class="bodyTd">
-                <button v-if="writable" type="button"
+              <td v-if="writable" :class="bodyTd">
+                <button type="button"
                         class="h-[26px] rounded-sm-ln border border-ln-gray-300 px-2 text-caption font-semibold text-ln-gray-700"
                         @click="removing = h">Retirer…</button>
               </td>
@@ -229,7 +233,7 @@ const queueItems = computed(() => years.value.map((y) => ({
 })));
 
 const subtitle = computed(() => (state.value !== 'ready' ? 'Chargement du calendrier'
-  : years.value.length + ' années · année courante ' + (cal.value?.current_academic_year || 'non désignée')));
+  : years.value.length + (years.value.length > 1 ? ' années' : ' année') + ' · année courante ' + (cal.value?.current_academic_year || 'non désignée')));
 
 const totals = computed(() => {
   const y = selected.value;
@@ -245,12 +249,12 @@ const totals = computed(() => {
 const MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
 const DAYS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
 function shortDate(d) {
-  if (!d) return '—';
+  if (!d) return 'non renseignée';
   const [y, m, j] = d.split('-').map(Number);
   return j + ' ' + MONTHS[m - 1] + ' ' + y;
 }
 function longDate(d) {
-  if (!d) return '—';
+  if (!d) return 'non renseignée';
   return DAYS[new Date(d + 'T00:00:00').getDay()] + ' ' + shortDate(d);
 }
 
