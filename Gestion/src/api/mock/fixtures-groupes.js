@@ -191,16 +191,30 @@ export function studentGroupsOf(params = {}) {
 }
 
 /**
- * L'ACTE d'inscription — `create_student_from_applicant`.
+ * LA REPRISE — `enrollment_mgmt.replay_enrollment(integration_log)`.
  *
- * ⚠️ Il rend le journal qu'il vient de produire, DEPUIS LA TABLE des journaux :
- * l'acte et sa lecture ne peuvent donc pas se contredire. Ce point d'entrée
- * ÉCRIT ; aucun écran ne l'appelle au chargement d'une page — c'est le défaut qui
- * a fait naître `get_enrollment_log`.
+ * Forme serveur : le RÉSULTAT de la cascade (`create_student_from_applicant`),
+ * pas un journal. L'écran ne lit pas ce résultat : il RELIT le journal, qui fait
+ * foi. Ici la reprise réussit et la TABLE des journaux en porte l'effet (le
+ * journal passe « Traité avec succès » et quitte la file) : l'acte et sa lecture
+ * ne peuvent pas se contredire. Ce point d'entrée ÉCRIT ; aucun écran ne l'appelle
+ * au chargement d'une page.
  */
 export function enrollmentReport(params = {}) {
   if (params.__empty) return null;
-  return enrollmentLog({ log_name: params.__log || 'LOG-2027-0440' });
+  const log = enrollmentLog(params);
+  const student = log.pivots.student || 'ETU-27-0999';
+  Object.assign(log, {
+    status: 'Traité avec succès', attempt_count: (log.attempt_count || 0) + 1, error_message: '',
+    replay_reference: 'REPLAY-' + log.name, timestamp: '2027-03-15 10:02:00',
+    pivots: { ...log.pivots, student, critical_errors: [], completable_errors: [] },
+  });
+  return {
+    status: 'created', student, program_enrollment: 'PE-' + student.slice(-4),
+    pedagogical: { ues_enrolled: 7, courses_enrolled: 14, mhc_enrolled: 1, groups_added: 1, errors: [] },
+    fee_sync: { status: 'handled_by_student_hook' }, user: log.pivots.applicant_name + '@test.invalid',
+    critical_errors: [], completable_errors: [],
+  };
 }
 
 /** `api.get_current_enrollment` — l'inscription courante d'un étudiant. */
@@ -228,84 +242,82 @@ export function currentEnrollment(params = {}) {
  * branchement et ne correspondait à rien côté serveur. Un refus est un journal
  * comme un autre : il se lit par son nom.
  */
+/*
+ * FORMES (MANDAT-10, C-2 / C-3) : la table porte la FORME SERVEUR de
+ * `enrollment_mgmt.get_enrollment_log` — un `Integration Log` : état, motif,
+ * tentatives, et dans `pivots` l'étudiant créé et les erreurs critiques /
+ * complétables de la cascade (`_finalize_enrollment_log`, emela_core). Les
+ * ÉTAPES que l'écran affiche en sont dérivées par l'adaptateur
+ * `enrollmentLogToView` (api/groups.js) — le serveur ne stocke pas d'étapes.
+ */
 const LOGS = {
   'LOG-2027-0440': {
-    log_name: 'LOG-2027-0440', outcome: 'partial', log_status: 'En attente', logged_on: '14 mars',
-    applicant: 'CAND-2027-0087', student_name: 'Nadia Gbaguidi', student: 'ETU-27-0311',
-    summary: 'Partielle · compte et groupe non posés',
-    partial_message: 'L’étudiante est créée et inscrite. Deux étapes n’ont pas abouti — elles sont '
-      + 'reprenables sans recréer le dossier.',
-    lines: [
-      { step: 'Étudiant', status: 'ok', detail: 'ETU-27-0311 créée.' },
-      { step: 'Inscription au programme', status: 'ok', detail: 'L2 Génie logiciel · 2026-2027.' },
-      { step: 'Inscription pédagogique', status: 'ok', detail: '14 unités, 6 modules rattachés.' },
-      { step: 'Compte utilisateur', status: 'ko',
-        detail: 'Adresse déjà portée par un autre compte — identifiant de connexion non posé.' },
-      { step: 'Rattachement aux groupes', status: 'ko',
-        detail: 'Groupe B au complet (30 / 30) — rattachement non effectué.' },
-    ],
-    // ⚠️ T2 : l'inscription administrative ne crée PAS le badge d'accès.
-    badge: { created: false },
+    name: 'LOG-2027-0440', source_doctype: 'Student Applicant', source_name: 'CAND-2027-0087',
+    status: 'En attente', attempt_count: 1,
+    error_message: 'Compte utilisateur: L’adresse est déjà portée par un autre compte — identifiant de '
+      + 'connexion non posé.; Groupe GRP-GL-L2-B: Cannot enroll more than 30 students for this student group.',
+    replay_reference: null, last_actor: 'ga@campus.invalid',
+    timestamp: '2027-03-14 09:12:00', created: '2027-03-14 09:12:00',
+    pivots: {
+      applicant_name: 'CAND-2027-0087', person_id: 'PERS-00087', program: 'L2 Génie logiciel', student: 'ETU-27-0311',
+      critical_errors: [],
+      completable_errors: [
+        'Compte utilisateur: L’adresse est déjà portée par un autre compte — identifiant de connexion non posé.',
+        'Groupe GRP-GL-L2-B: Cannot enroll more than 30 students for this student group.',
+      ],
+    },
   },
+  // Le refus : les contrôles d'entrée ont arrêté la cascade avant toute écriture (pas d'étudiant, pas d'erreur
+  // critique — un motif). Il se lit par son nom, comme les autres.
   'LOG-2027-0438': {
-    log_name: 'LOG-2027-0438', outcome: 'rejected', log_status: 'Rejeté', logged_on: '12 mars',
-    applicant: 'CAND-2027-0088', student_name: 'Ibrahim Salifou',
-    summary: 'Rejetée · période disciplinaire active',
-    partial_message: 'Aucune inscription n’a été créée. Le contrôle a arrêté la cascade avant toute '
-      + 'écriture — rien n’est à défaire, et rien n’est à reprendre tant que la période court.',
-    lines: [
-      { step: 'Contrôle des doublons', status: 'ok', detail: 'Aucun étudiant existant pour cette pièce d’identité.' },
-      { step: 'Période disciplinaire', status: 'ko',
-        detail: 'Suspension du 12 au 26 février — aucune inscription pendant la période. Reprise dès le 27.' },
-    ],
+    name: 'LOG-2027-0438', source_doctype: 'Student Applicant', source_name: 'CAND-2027-0088',
+    status: 'Rejeté', attempt_count: 1,
+    error_message: 'C4 : période disciplinaire active (suspension du 12 au 26 février) — aucune inscription '
+      + 'pendant la période. Reprise dès le 27.',
+    replay_reference: null, last_actor: 'ga@campus.invalid',
+    timestamp: '2027-03-12 16:40:00', created: '2027-03-12 16:40:00',
+    pivots: { applicant_name: 'CAND-2027-0088', person_id: 'PERS-00088', program: 'L2 Génie logiciel',
+      critical_errors: [], completable_errors: [] },
   },
   'LOG-2027-0431': {
-    log_name: 'LOG-2027-0431', outcome: 'partial', log_status: 'En attente', logged_on: '8 mars',
-    applicant: 'CAND-2027-0081', student_name: 'Aïcha Bello', student: 'ETU-27-0304',
-    summary: 'Partielle · inscription pédagogique',
-    partial_message: 'L’étudiante est créée et inscrite au programme. L’inscription pédagogique n’a '
-      + 'pas abouti — elle est reprenable sans recréer le dossier.',
-    lines: [
-      { step: 'Étudiant', status: 'ok', detail: 'ETU-27-0304 créée.' },
-      { step: 'Inscription au programme', status: 'ok', detail: 'M1 Systèmes d’information · 2026-2027.' },
-      { step: 'Inscription pédagogique', status: 'ko',
-        detail: 'Maquette non validée pour cette filière — aucune unité à rattacher.' },
-      { step: 'Compte utilisateur', status: 'ok', detail: 'Identifiant de connexion posé.' },
-      { step: 'Rattachement aux groupes', status: 'ok', detail: 'Promotion M1 SI.' },
-    ],
-    badge: { created: false },
+    name: 'LOG-2027-0431', source_doctype: 'Student Applicant', source_name: 'CAND-2027-0081',
+    status: 'En attente', attempt_count: 1,
+    error_message: 'Inscription pédagogique: Maquette non validée pour cette filière — aucune unité à rattacher.',
+    replay_reference: null, last_actor: 'ga@campus.invalid',
+    timestamp: '2027-03-08 11:05:00', created: '2027-03-08 11:05:00',
+    pivots: {
+      applicant_name: 'CAND-2027-0081', person_id: 'PERS-00081', program: 'M1 Systèmes d’information', student: 'ETU-27-0304',
+      critical_errors: [],
+      completable_errors: ['Inscription pédagogique: Maquette non validée pour cette filière — aucune unité à rattacher.'],
+    },
   },
 };
 
-/** Lecture d'un journal par son nom. Un nom inconnu lève : jamais un voisin. */
+/** Lecture d'un journal par son nom (`integration_log`). Un nom inconnu lève : jamais un voisin. */
 export function enrollmentLog(params = {}) {
   if (params.__empty) return null;
-  const log = LOGS[params.log_name];
+  const log = LOGS[params.integration_log];
   if (!log) {
-    throw Object.assign(new Error('Ce journal d’inscription est introuvable.'),
+    throw Object.assign(new Error('Journal d’inscription introuvable : ' + (params.integration_log || '—') + '.'),
       { code: 'NOT_FOUND', status: 404 });
   }
   return log;
 }
 
 /**
- * Les inscriptions à reprendre — DÉRIVÉES de la table des journaux.
- *
- * Un journal réussi n'y figure pas : la file ne porte que ce qui reste à
- * reprendre. Les pastilles emploient le vocabulaire de `StatusPill`.
+ * Les inscriptions à reprendre — DÉRIVÉES de la table des journaux, dans la
+ * FORME SERVEUR de `list_incomplete_enrollments(limit)` : une LISTE de journaux
+ * « Rejeté », « En attente » ou « En reprise » (`_failed_integration_rows`), les
+ * plus récents d'abord. Un journal réussi n'y figure pas. L'adaptateur
+ * `failedEnrollmentToRow` (api/groups.js) en fait les lignes de l'écran.
  */
 export function enrollmentReplayQueue(params = {}) {
-  if (params.__empty) return { items: [] };
-  const items = Object.values(LOGS)
-    .filter((l) => l.outcome !== 'created')
-    .map((l) => ({
-      id: l.log_name,
-      title: l.student_name,
-      subtitle: l.summary + ' · ' + l.logged_on,
-      status: l.outcome === 'rejected' ? 'renvoyee' : 'incomplete',
-      log_status: l.log_status,
-    }));
-  return { count: items.length, items };
+  if (params.__empty) return [];
+  return Object.values(LOGS)
+    .filter((l) => ['Rejeté', 'En attente', 'En reprise'].includes(l.status))
+    .sort((a, b) => (a.created < b.created ? 1 : -1))
+    .slice(0, Number(params.limit) || 50)
+    .map((l) => ({ ...l, object_type: 'student_enrollment', creation: l.created }));
 }
 
 /**

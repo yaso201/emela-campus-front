@@ -95,8 +95,8 @@ const HANDLERS = {
   [GR + 'create_group']: (p) => ({ name: 'SG-MOCK-0001', student_group_name: (p.values || {}).student_group_name }),
   [GR + 'add_students_to_group']: (p) => grpAddReport(p),
   [GR + 'deactivate_students_in_group']: (p) => ({ deactivated: (p.students || []) }),
-  // L'ACTE d'écriture — appelé sur un geste, jamais au chargement d'un écran.
-  'emela_core.academic_core.api.enrollment.create_student_from_applicant': (p) => G.enrollmentReport(p),
+  // L'ACTE d'écriture — appelé sur un geste, jamais au chargement d'un écran. (La cascade d'admission
+  // `create_student_from_applicant` n'est plus appelée par ce front : MANDAT-10, Q3.)
   [EN + 'replay_enrollment']: (p) => G.enrollmentReport(p),
   [EN + 'list_incomplete_enrollments']: (p) => G.enrollmentReplayQueue(p),
   [EN + 'list_moodle_orphans']: (p) => G.moodleOrphans(p),

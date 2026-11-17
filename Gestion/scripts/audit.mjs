@@ -221,13 +221,16 @@ const probes = [
   ['cohortOverview', () => Object.keys(fxG.cohortOverview({}).totals_by_type).length],
   ['studentGroupsOf', () => fxG.studentGroupsOf({ student: 'ETU-24-0188' }).length],
   ['currentEnrollment', () => fxG.currentEnrollment({}).program],
-  ['enrollmentReport', () => fxG.enrollmentReport({}).lines.length],
   // ⚠️ Sondée avec une CLÉ RÉELLE : cette fixture lève sur un nom inconnu, donc
   // la sonde garde aussi contre le renommage de ce journal. Sans elle, renommer
   // la clé ne cassait rien à l'audit — et l'onglet du rapport affichait « aucune
   // inscription à afficher », un état vide crédible.
-  ['enrollmentLog', () => fxG.enrollmentLog({ log_name: 'LOG-2027-0440' }).lines.length],
-  ['enrollmentReplayQueue', () => fxG.enrollmentReplayQueue({}).items.length],
+  // FORMES (MANDAT-10, C-2/C-3) : les fixtures portent la FORME SERVEUR (`integration_log`, `pivots`,
+  // liste nue) — les étapes et les lignes d'écran vivent aux adaptateurs d'api/groups.js.
+  ['enrollmentLog', () => fxG.enrollmentLog({ integration_log: 'LOG-2027-0440' }).pivots.completable_errors.length],
+  ['enrollmentReplayQueue', () => fxG.enrollmentReplayQueue({}).length],
+  // La reprise ÉCRIT dans la table (le journal repris quitte la file) : sondée après les lectures.
+  ['enrollmentReport', () => fxG.enrollmentReport({ integration_log: 'LOG-2027-0431' }).status],
   ['moodleOrphans', () => fxG.moodleOrphans({}).families.length],
   // Grappe 5 — le troisième module.
   ['schedules', () => fxP.schedules({}).length],
