@@ -190,10 +190,13 @@
         <div v-if="report" class="px-5 py-4">
           <BatchReport title="Publication de la semaine" :report="report"
                        ok-label="publiées" ko-label="non publiées"
-                       :retryable="report.retry_ids.length > 0"
+                       :retryable="(report.retry_ids || []).length > 0"
                        retry-label="Publier avec dérogation…"
                        footnote="Seules les séances rejouables reparaissent : une dérogation peut être accordée, une séance introuvable restera introuvable."
-                       @retry="derogationOpen = true" />
+                       @retry-failed="derogationOpen = true" />
+          <!-- C-5 (MANDAT-10) : le composant émet `retry-failed` ; l'écran écoutait `retry`, et la branche de
+               dérogation ne s'ouvrait jamais — un bouton qui feignait. -->
+
 
           <!-- La dérogation : le motif, pas le bouton -->
           <div v-if="derogationOpen" class="mt-4 rounded-md-ln border border-ln-warning bg-ln-warning-bg p-4">

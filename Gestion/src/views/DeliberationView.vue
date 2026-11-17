@@ -19,7 +19,9 @@
                   @click="tab = t.key">{{ t.label }}</button>
         </span>
         <button type="button" class="ln-btn-secondary" @click="notBuilt('Export du procès-verbal')">Exporter</button>
-        <button v-if="can('close:deliberation')" type="button" class="ln-btn-primary" @click="closeOpen = true">
+        <!-- C-6 (MANDAT-10) : rendu seulement avec une délibération choisie — sans sujet, le geste n'avait
+             aucun effet (bouton qui feignait). -->
+        <button v-if="can('close:deliberation') && subject" type="button" class="ln-btn-primary" @click="closeOpen = true">
           Clore la délibération…
         </button>
       </div>

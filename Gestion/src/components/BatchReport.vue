@@ -37,7 +37,7 @@
            d'entrée. `retryable` par défaut à vrai, faux quand aucun chemin
            n'existe — un bouton muet est pire qu'un bouton absent. -->
       <button v-if="report.ko && retryable" type="button" class="ln-btn-primary" @click="emit('retry-failed')">
-        Reprendre les {{ report.ko }} en échec
+        {{ retryLabel || 'Reprendre les ' + report.ko + ' en échec' }}
       </button>
     </footer>
   </section>
@@ -71,6 +71,9 @@ const props = defineProps({
   // Faux quand aucun point d'entrée de reprise n'existe : le bouton n'est alors
   // pas rendu, jamais rendu puis inerte.
   retryable: { type: Boolean, default: true },
+  // Le libellé du geste de reprise quand il n'est pas un simple « reprendre » (ex. publier par dérogation).
+  // MANDAT-10 C-5 : l'écran du planning le passait déjà, sans prop pour le recevoir.
+  retryLabel: { type: String, default: '' },
 });
 const emit = defineEmits(['retry-line', 'retry-failed']);
 
