@@ -1,4 +1,68 @@
 {
+ "portal_app.api.academic.abandonment.create_abandonment_finding": [
+  "student_id",
+  "academic_term",
+  "ground_category",
+  "ground_details"
+ ],
+ "portal_app.api.academic.abandonment.dismiss_abandonment": [
+  "name",
+  "dismiss_reason"
+ ],
+ "portal_app.api.academic.abandonment.issue_abandonment_notice": [
+  "name"
+ ],
+ "portal_app.api.academic.abandonment.list_abandonment_candidates": [
+  "academic_term",
+  "limit"
+ ],
+ "portal_app.api.academic.abandonment.list_abandonment_findings": [
+  "status",
+  "limit"
+ ],
+ "portal_app.api.academic.abandonment.pronounce_abandonment": [
+  "name",
+  "pronounce_reason"
+ ],
+ "portal_app.api.academic.abandonment.record_abandonment_response": [
+  "name",
+  "response_text"
+ ],
+ "portal_app.api.academic.academic_leave_request.arbitrate_coa_request": [
+  "name",
+  "decision",
+  "arbitration_reason"
+ ],
+ "portal_app.api.academic.academic_leave_request.cancel_coa_request": [
+  "name"
+ ],
+ "portal_app.api.academic.academic_leave_request.create_coa_request": [
+  "student_id",
+  "reason",
+  "from_date",
+  "to_date",
+  "attachment",
+  "event_date",
+  "force_majeure_reason"
+ ],
+ "portal_app.api.academic.academic_leave_request.decide_coa_request": [
+  "name",
+  "decision",
+  "decision_reason"
+ ],
+ "portal_app.api.academic.academic_leave_request.get_my_coa_requests": [
+  "student_id"
+ ],
+ "portal_app.api.academic.academic_leave_request.instruct_coa_request": [
+  "name"
+ ],
+ "portal_app.api.academic.academic_leave_request.reactivate_from_coa": [
+  "name",
+  "decision_reason"
+ ],
+ "portal_app.api.academic.academic_leave_request.submit_coa_request": [
+  "name"
+ ],
  "portal_app.api.academic.chassis.get_academic_context": [],
  "portal_app.api.academic.chassis.get_unit_usage": [
   "ue"
@@ -210,6 +274,10 @@
  "portal_app.api.academic.enrollment_mgmt.get_enrollment_log": [
   "integration_log"
  ],
+ "portal_app.api.academic.enrollment_mgmt.list_failed_integrations": [
+  "object_type",
+  "limit"
+ ],
  "portal_app.api.academic.enrollment_mgmt.list_incomplete_enrollments": [
   "limit"
  ],
@@ -384,6 +452,34 @@
   "name",
   "values"
  ],
+ "portal_app.api.academic.leave_return.cancel_leave_return_request": [
+  "name"
+ ],
+ "portal_app.api.academic.leave_return.create_leave_return_request": [
+  "student_id",
+  "leave_request",
+  "resume_date",
+  "message",
+  "attachment"
+ ],
+ "portal_app.api.academic.leave_return.decide_leave_return_request": [
+  "name",
+  "decision",
+  "decision_reason"
+ ],
+ "portal_app.api.academic.leave_return.get_my_leave_return_requests": [
+  "student_id"
+ ],
+ "portal_app.api.academic.leave_return.instruct_leave_return_request": [
+  "name"
+ ],
+ "portal_app.api.academic.leave_return.list_leave_return_requests": [
+  "status",
+  "limit"
+ ],
+ "portal_app.api.academic.leave_return.submit_leave_return_request": [
+  "name"
+ ],
  "portal_app.api.academic.module_grade.list_adjusted_module_averages": [
   "course",
   "student",
@@ -454,6 +550,84 @@
   "name",
   "values"
  ],
+ "portal_app.api.academic.reorientation.add_commission_member": [
+  "name",
+  "member_role",
+  "member_user"
+ ],
+ "portal_app.api.academic.reorientation.add_credit_recognition": [
+  "name",
+  "source_label",
+  "credits_recognized",
+  "basis"
+ ],
+ "portal_app.api.academic.reorientation.create_reorientation_request": [
+  "target_program",
+  "case",
+  "motivation",
+  "student_id",
+  "notification_event_date"
+ ],
+ "portal_app.api.academic.reorientation.decide_reorientation": [
+  "name",
+  "decision",
+  "decision_reason",
+  "target_academic_year",
+  "target_academic_term",
+  "target_level"
+ ],
+ "portal_app.api.academic.reorientation.get_mutualization_rate": [
+  "origin_program",
+  "target_program",
+  "academic_term"
+ ],
+ "portal_app.api.academic.reorientation.get_my_reorientation_requests": [
+  "student_id"
+ ],
+ "portal_app.api.academic.reorientation.list_reorientation_requests": [
+  "status",
+  "limit"
+ ],
+ "portal_app.api.academic.reorientation.record_reorientation_notification": [
+  "name",
+  "notified_on"
+ ],
+ "portal_app.api.academic.reorientation.start_reorientation_commission": [
+  "name"
+ ],
+ "portal_app.api.academic.reorientation.submit_reorientation_request": [
+  "name"
+ ],
+ "portal_app.api.academic.resignation.cancel_resignation_request": [
+  "name"
+ ],
+ "portal_app.api.academic.resignation.create_resignation_request": [
+  "student_id",
+  "attachment"
+ ],
+ "portal_app.api.academic.resignation.deposit_resignation": [
+  "name"
+ ],
+ "portal_app.api.academic.resignation.get_my_resignation_requests": [
+  "student_id"
+ ],
+ "portal_app.api.academic.resignation.list_resignations_due": [
+  "limit"
+ ],
+ "portal_app.api.academic.resignation.record_resignation_information": [
+  "name",
+  "info_channel"
+ ],
+ "portal_app.api.academic.resignation.refuse_resignation": [
+  "name",
+  "refusal_reason"
+ ],
+ "portal_app.api.academic.resignation.register_resignation": [
+  "name"
+ ],
+ "portal_app.api.academic.resignation.retract_resignation": [
+  "name"
+ ],
  "portal_app.api.academic.service_allocation.carry_over_service_lines": [
   "program",
   "from_year",
@@ -515,6 +689,11 @@
  "portal_app.api.academic.status_cause.get_my_status_cause": [
   "student_id"
  ],
+ "portal_app.api.academic.structure.add_holiday": [
+  "academic_year",
+  "holiday_date",
+  "description"
+ ],
  "portal_app.api.academic.structure.attach_module_to_ue": [
   "ue",
   "course",
@@ -556,6 +735,7 @@
   "ue",
   "course"
  ],
+ "portal_app.api.academic.structure.get_academic_calendar": [],
  "portal_app.api.academic.structure.get_maquette_validation_status": [
   "program",
   "academic_term"
@@ -590,11 +770,20 @@
   "academic_term",
   "items"
  ],
+ "portal_app.api.academic.structure.remove_holiday": [
+  "academic_year",
+  "holiday_date",
+  "reason"
+ ],
  "portal_app.api.academic.structure.return_maquette_to_draft": [
   "program",
   "academic_term",
   "reason",
   "items"
+ ],
+ "portal_app.api.academic.structure.set_current_academic_year": [
+  "academic_year",
+  "reason"
  ],
  "portal_app.api.academic.structure.set_program_active": [
   "program",
