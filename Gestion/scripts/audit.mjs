@@ -1214,7 +1214,9 @@ for (const r of roster.items) {
     if (expect !== sem.semester_validated) {
       juryBad.push(r.student + ' ' + term + ' : validation ' + sem.semester_validated + ' ≠ ' + expect);
     }
-    const unacq = ues.filter((u) => !u.is_validated && !u.is_compensated).map((u) => u.course_ue);
+    // FORMES (MANDAT-10) : la fixture porte la forme SERVEUR — les intitulés (`ue_label`) ; l'adaptateur
+    // `deliberationRowToView` les traduit en codes pour l'écran.
+    const unacq = ues.filter((u) => !u.is_validated && !u.is_compensated).map((u) => u.ue_label);
     if (unacq.join() !== (sem.unacquired || []).join()) {
       juryBad.push(r.student + ' ' + term + ' : unités non acquises divergent');
     }

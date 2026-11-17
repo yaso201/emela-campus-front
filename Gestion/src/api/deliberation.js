@@ -71,10 +71,44 @@ export const listDeliberations = async (p) => {
   return { items: (d && d.deliberations) || [], truncated: !!(d && d.truncated) };
 };
 
+/**
+ * FORMES (MANDAT-10, révélées au clic sur le back reconstruit) — une ligne de jury serveur → la ligne de l'écran.
+ *
+ * 1. `previous_semester_result` vaut `{}` quand l'étudiant n'a pas de semestre précédent (premier semestre) :
+ *    l'écran lisait `sem.unacquired.length` et TOUT le tableau tombait (écran blanc, TypeError). Un semestre
+ *    absent devient une colonne « — » nommée, jamais un objet vide.
+ * 2. `unacquired` porte les INTITULÉS d'UE (`ue_label`, forme du manifeste côté serveur) ; le panneau d'unité
+ *    retrouve l'UE par son CODE (`course_ue`). Sans traduction, le clic sur une unité non acquise n'ouvrait rien,
+ *    et la décision de jury sur l'unité était inatteignable. L'intitulé est traduit en code par les `ue_results`
+ *    de la même ligne (même semestre, non validée) ; l'intitulé reste lisible au titre du panneau.
+ */
+function normSemester(sem, ueResults, fallbackName) {
+  if (!sem || !sem.name) {
+    return { name: fallbackName, absent: true, semester_average: null,
+      total_ects_earned: '—', total_ects_possible: '—', unacquired: [] };
+  }
+  const unacquired = (sem.unacquired || []).map((label) => {
+    const u = ueResults.find((x) => x.academic_term === sem.academic_term && !x.is_validated
+      && (x.ue_label === label || x.course_ue === label));
+    return u ? u.course_ue : label;
+  });
+  return { ...sem, unacquired };
+}
+export function deliberationRowToView(r) {
+  const ues = r.ue_results || [];
+  return {
+    ...r,
+    ue_results: ues,
+    semester_result: normSemester(r.semester_result, ues, 'SR-' + r.student),
+    previous_semester_result: normSemester(r.previous_semester_result, ues, 'SR-PREV-' + r.student),
+    cps_history: r.cps_history || { preconisations: [], unjustified_cps_absences: [] },
+  };
+}
+
 export const listDeliberationRoster = async (p) => {
   const d = await call('portal_app.api.academic.deliberation_mgmt.get_deliberation_dashboard',
     { name: (p && (p.deliberation || p.name)), include_undecided: 1 });
-  const items = (d && d.rows) || [];
+  const items = ((d && d.rows) || []).map(deliberationRowToView);
   return { count: items.length,
            instructed: items.filter((r) => r.decision).length,
            items };

@@ -165,14 +165,15 @@ function ueResults(s, term) {
     const ue = list[i];
     if (avg === null || avg === undefined) {
       // Une unité sans note n'est ni acquise ni ratée : elle est absente.
-      return { course_ue: ue.code, ue_label: ue.label, academic_term: term,
+      // FORMES (MANDAT-10) : `name` = l'identifiant du UE Result serveur (la décision de jury sur l'unité le vise).
+      return { name: 'URES-' + s.student + '-' + ue.code, course_ue: ue.code, ue_label: ue.label, academic_term: term,
                ue_average: null, is_validated: 0, is_compensated: 0,
                has_floor_violation: 0, ects_earned: 0, ects_possible: ue.ects,
                ects_grade: null, is_after_retake: 0, is_jury_validated: 0 };
     }
     const validated = avg >= PASS ? 1 : 0;
     const floor = avg < FLOOR ? 1 : 0;
-    return { course_ue: ue.code, ue_label: ue.label, academic_term: term,
+    return { name: 'URES-' + s.student + '-' + ue.code, course_ue: ue.code, ue_label: ue.label, academic_term: term,
              ue_average: avg, is_validated: validated,
              // La compensation dépend de la moyenne du semestre : posée ci-dessous.
              is_compensated: 0, has_floor_violation: floor,
@@ -212,6 +213,7 @@ function semesterResult(s, term) {
     rows,
     result: {
       name: 'SR-' + s.student + '-' + term,
+      academic_term: term,
       semester_average: average === null ? null : Math.round(average * 100) / 100,
       total_ects_earned: earned,
       total_ects_possible: possible,
@@ -220,8 +222,9 @@ function semesterResult(s, term) {
       all_mhc_validated: 1,
       jury_decision: null,
       // Les unités non acquises, NOMMÉES — le jury voit lesquelles, pas combien.
+      // FORMES (MANDAT-10) : le serveur rend les INTITULÉS (`ue_label`) ; l'adaptateur les traduit en codes.
       unacquired: rows.filter((r) => !r.is_validated && !r.is_compensated)
-        .map((r) => r.course_ue),
+        .map((r) => r.ue_label),
     },
   };
 }
@@ -316,8 +319,9 @@ function juryRow(s) {
       threshold: 10,
     },
     // Le semestre délibéré, et le précédent : la synthèse porte les deux.
+    // FORMES (MANDAT-10) : sans semestre précédent (aucune note en T-1), le serveur rend `{}` — le simulacre aussi.
     semester_result: s2.result,
-    previous_semester_result: s1.result,
+    previous_semester_result: (s.grades['T-1'] || []).length ? s1.result : {},
     ue_results: [...s1.rows, ...s2.rows],
     annual_average: annualAverage(s),
     cps_history: s.cps,
