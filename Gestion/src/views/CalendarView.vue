@@ -115,8 +115,19 @@
           <button v-if="writable" type="button" class="ln-btn-secondary ml-auto" @click="open('holiday')">+ Ajouter un férié</button>
         </div>
         <p v-if="!inForce && !selected.closed" class="mb-2 text-caption leading-relaxed text-ln-gray-500">
-          Les délais en jours ouvrés lisent aujourd'hui la liste <b class="font-semibold">{{ cal?.holiday_list_in_force || '—' }}</b>.
-          Ceux de cette année seront lus dès qu'elle commencera.
+          <template v-if="cal?.holiday_list_in_force">
+            Les délais en jours ouvrés lisent aujourd'hui la liste <b class="font-semibold">{{ cal.holiday_list_in_force }}</b>.
+            Ceux de cette année seront lus dès qu'elle commencera.
+          </template>
+          <template v-else>
+            Aucun calendrier de jours fériés ne couvre aujourd'hui : les délais en jours ouvrés sont refusés tant qu'il manque.
+          </template>
+        </p>
+        <!-- Revue MANDAT-10 (constat 1) : sans liste propre, ce sont les fériés de la liste du site qui font foi pour
+             l'année. Le premier ajout ou retrait crée la liste de l'année, qui les reprend tous. -->
+        <p v-if="inheritedFromSite" class="mb-2 text-caption leading-relaxed text-ln-gray-500">
+          Ces fériés viennent de la liste du site. Ajouter ou retirer un férié crée la liste propre de l'année, qui les reprend ;
+          la liste du site n'est pas modifiée.
         </p>
         <DenseTable :state="selected.holidays.length ? 'ready' : 'empty'" :row-height="40" max-height="360px"
                     state-title="Aucun jour férié"
@@ -191,7 +202,16 @@ const removing = ref(null);
 const designating = ref(false);
 
 const writable = computed(() => can('write:calendar') && !!selected.value && !selected.value.closed);
-const inForce = computed(() => !!selected.value && selected.value.holiday_list === cal.value?.holiday_list_in_force);
+// Revue MANDAT-10 (constat 4) : le serveur dit si les fériés de l'année font foi aujourd'hui (`holidays_in_force`) ;
+// l'écran comparait `holiday_list` à la liste en vigueur, et `null === null` annonçait « en vigueur » une année sans
+// liste un jour où aucun calendrier n'était posé. Repli sur l'ancienne comparaison, jamais vraie sur deux absences.
+const inForce = computed(() => {
+  const y = selected.value;
+  if (!y) return false;
+  if (typeof y.holidays_in_force === 'boolean') return y.holidays_in_force;
+  return !!y.holiday_list && y.holiday_list === cal.value?.holiday_list_in_force;
+});
+const inheritedFromSite = computed(() => selected.value?.holiday_source === 'site');
 
 function yearStatus(y) {
   if (y.closed) return { status: 'echue', label: 'Close' };
@@ -247,7 +267,9 @@ const TERM_FIELDS = [
   { key: 'term_name', label: 'Nom du semestre', required: true, placeholder: 'S1, S2, LIS-S5-COM…',
     live: (f) => {
       if (!f.term_name) return null;
-      const m = /S(\d+)/.exec(f.term_name);
+      // Revue MANDAT-10 (constat 6) : la MÊME règle que le serveur (`_SEMESTER_CODE_RE` : \bS(\d{1,2})\b, casse
+      // ignorée) — « s1 » était refusé ici et accepté au serveur, « BTS1 » annoncé valide ici et refusé au serveur.
+      const m = /\bS(\d{1,2})\b/i.exec(f.term_name);
       return m ? { text: 'Parité lue : ' + (Number(m[1]) % 2 ? 'impair' : 'pair') + ' (S' + m[1] + ').', tone: 'ok' }
         : { text: 'Aucun numéro S1, S2… dans le nom : la parité ne se devine pas.', tone: 'error' };
     } },

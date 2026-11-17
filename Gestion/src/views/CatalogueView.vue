@@ -205,8 +205,10 @@ function programStatus(p) {
 const queueItems = computed(() => programs.value.map((p) => ({
   id: p.name,
   title: p.program_name,
-  subtitle: [p.custom_filiere_acronym, p.custom_program_type, p.custom_nb_annees ? p.custom_nb_annees + ' ans' : null,
-    p.levels_count + ' niveau' + (p.levels_count > 1 ? 'x' : '')].filter(Boolean).join(' · '),
+  // Revue MANDAT-10 (constat 2) : `list_programs` ne compte pas les niveaux — la liste affichait « undefined
+  // niveau » en branché. Le nombre de niveaux se lit à la fiche (`get_program`).
+  subtitle: [p.custom_filiere_acronym, p.custom_program_type, p.custom_nb_annees ? p.custom_nb_annees + ' ans' : null]
+    .filter(Boolean).join(' · '),
   status: programStatus(p).status,
   statusLabel: programStatus(p).label,
 })));
@@ -225,13 +227,15 @@ const identity = computed(() => {
     { label: 'Sigle', value: p.custom_filiere_acronym || '—' },
     { label: 'Durée', value: p.custom_nb_annees ? p.custom_nb_annees + ' ans' : '—' },
     { label: 'Crédits requis', value: p.custom_total_ects_required ? p.custom_total_ects_required + ' ECTS' : '—' },
-    { label: 'Responsable', value: p.responsable_name || p.custom_responsable_programme || 'non désigné' },
+    // Le nom du responsable vient de la FICHE (`get_program`) ; la liste ne porte que l'identifiant.
+    { label: 'Responsable', value: detail.value?.responsable_name || p.custom_responsable_programme || 'non désigné' },
     { label: 'Unités rattachées', value: detail.value?.counters?.ues ?? '…' },
     { label: 'Étudiants inscrits', value: detail.value?.counters?.students ?? '…' },
   ];
 });
-const catalogueSentence = computed(() => (program.value?.custom_dd_enabled
-  ? 'Double diplôme : il assemble ' + program.value.custom_dd_component_1 + ' et ' + program.value.custom_dd_component_2
+// La composition d'un double diplôme vient de la FICHE (`get_program`) : la liste ne la porte pas.
+const catalogueSentence = computed(() => (detail.value?.custom_dd_enabled
+  ? 'Double diplôme : il assemble ' + detail.value.custom_dd_component_1 + ' et ' + detail.value.custom_dd_component_2
     + '. Il se lit ici ; il se modifie avec ses deux composantes.'
   : 'Programme présenté au catalogue d’admission, porté par un partenaire. Il se lit ici ; aucune maquette n’y est rattachée.'));
 

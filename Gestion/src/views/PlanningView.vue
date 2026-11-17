@@ -190,12 +190,16 @@
         <div v-if="report" class="px-5 py-4">
           <BatchReport title="Publication de la semaine" :report="report"
                        ok-label="publiées" ko-label="non publiées"
-                       :retryable="(report.retry_ids || []).length > 0"
+                       :retryable="(report.retry_ids || []).length > 0 && can('derogate:planning')"
                        retry-label="Publier avec dérogation…"
-                       footnote="Seules les séances rejouables reparaissent : une dérogation peut être accordée, une séance introuvable restera introuvable."
+                       :footnote="(report.retry_ids || []).length && !can('derogate:planning')
+                         ? 'Les épreuves refusées pour le préavis ne se publient que par dérogation du directeur des études, avec un motif. Votre rôle ne porte pas la dérogation.'
+                         : 'Seules les séances rejouables reparaissent : une dérogation peut être accordée, une séance introuvable restera introuvable.'"
                        @retry-failed="derogationOpen = true" />
           <!-- C-5 (MANDAT-10) : le composant émet `retry-failed` ; l'écran écoutait `retry`, et la branche de
-               dérogation ne s'ouvrait jamais — un bouton qui feignait. -->
+               dérogation ne s'ouvrait jamais — un bouton qui feignait. Revue MANDAT-10 (constat 3) : le bouton n'est
+               RENDU qu'à qui porte `derogate:planning` (règle 3) ; les autres lisent pourquoi, en note. Qu'aucun rôle
+               seul ne puisse aujourd'hui publier ET déroger est un constat du back (Q15). -->
 
 
           <!-- La dérogation : le motif, pas le bouton -->

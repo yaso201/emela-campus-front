@@ -87,7 +87,10 @@ export function academicCalendar(params = {}) {
     current_academic_year: '2026-2027',
     // La liste que le décompte des jours ouvrés lit AUJOURD'HUI (clé de site `academic_holiday_list`, RUN-01).
     holiday_list_in_force: 'FERIES-2026-2027',
-    years: YEARS,
+    // FORMES (revue MANDAT-10) : le serveur rend aussi, par année, la PROVENANCE des fériés (`year` : sa liste ;
+    // `site` : la liste du site, faute de liste propre) et s'ils font foi aujourd'hui (`holidays_in_force`).
+    years: YEARS.map((y) => ({ ...y, holiday_source: y.holiday_list ? 'year' : null,
+      holidays_in_force: y.holiday_list === 'FERIES-2026-2027' })),
   };
 }
 
@@ -114,16 +117,17 @@ export const CATALOGUE = [
 ];
 
 /**
- * `list_programs(include_inactive=1)` — forme EXISTANTE (`PROGRAM_LIST_FIELDS`), plus les champs que la maquette
- * propose d'y ajouter (`custom_catalogue_only`, `custom_nb_annees`, `custom_total_ects_required`) et deux comptes.
+ * `list_programs(include_inactive=1)` — la forme SERVEUR (`PROGRAM_LIST_FIELDS`, E3' compris) et RIEN d'autre.
+ * Revue MANDAT-10 (constat 2) : le simulacre ajoutait des comptes, le nom du responsable et la composition d'un
+ * double diplôme que le serveur ne rend pas dans la liste — l'écran affichait « undefined niveau » en branché.
+ * Ces valeurs vivent à la fiche (`programDetail`, comme `get_program`).
  */
+const PROGRAM_LIST_FIELDS = ['name', 'program_name', 'program_abbreviation', 'custom_filiere_acronym',
+  'custom_program_type', 'custom_catalogue_code', 'custom_is_active', 'custom_responsable_programme',
+  'custom_catalogue_only', 'custom_nb_annees', 'custom_total_ects_required'];
 export function programCatalogue(params = {}) {
   if (params.__empty) return [];
-  return CATALOGUE.map((p) => ({
-    ...p,
-    levels_count: (LEVELS[p.name] || []).length,
-    parcours_count: (PARCOURS[p.name] || []).length,
-  }));
+  return CATALOGUE.map((p) => Object.fromEntries(PROGRAM_LIST_FIELDS.map((f) => [f, p[f] ?? null])));
 }
 
 const LEVELS = {
@@ -177,7 +181,7 @@ export const echo = {
   year: (p) => ({ name: (p && p.academic_year_name) || '' }),
   term: (p) => {
     const v = p || {};
-    if (!/S\d+/.test(v.term_name || '')) {
+    if (!/\bS(\d{1,2})\b/i.test(v.term_name || '')) {
       throw Object.assign(new Error('Le nom du semestre doit porter son numéro (S1, S2…) : la parité s’en déduit et ne se devine pas.'),
         { code: 'VALIDATION', status: 417 });
     }
