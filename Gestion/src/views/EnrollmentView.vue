@@ -119,7 +119,8 @@
               <button type="button" class="font-mono text-[11.5px] text-ln-blue-600"
                       @click="pickedLog = r.id; tab = 'report'">{{ r.id }}</button>
             </td>
-            <td :class="bodyTd" class="!text-left">
+            <!-- C4 (PC1B) : la cause passe à la ligne — sur une ligne, elle poussait « État » hors du cadre. -->
+            <td :class="bodyTd" class="!h-auto min-w-[320px] max-w-[560px] !whitespace-normal !py-2 !text-left leading-snug">
               <b class="font-semibold">{{ r.title }}</b>
               <span class="ml-1.5 text-caption text-ln-gray-500">{{ r.subtitle }}</span>
             </td>
@@ -127,9 +128,18 @@
             <td :class="bodyTd" class="!text-left">
               <!-- Règle 3 : la reprise est un acte du gestionnaire académique (garde serveur GA/SM) —
                    le bouton n'existe pas pour les autres lecteurs, il n'est pas grisé. -->
-              <button v-if="can('write:groups')" type="button"
-                      class="inline-flex h-[26px] items-center rounded-sm-ln border border-ln-gray-300 px-2.5 text-caption font-semibold text-ln-gray-700"
-                      @click="runReplay(r.id)">Rejouer…</button>
+              <!-- C4 (PC1B) : les deux actes passent à la ligne plutôt que de pousser la colonne « État ». -->
+              <span v-if="can('write:groups')" class="flex flex-wrap gap-1.5">
+                <button type="button"
+                        class="inline-flex h-[26px] items-center rounded-sm-ln border border-ln-gray-300 px-2.5 text-caption font-semibold text-ln-gray-700"
+                        @click="runReplay(r.id)">Rejouer…</button>
+                <!-- MANDAT-12 (M7) : un PARTIEL dont l'étudiant existe se complète par la seule partie
+                     pédagogique (modules, groupes) — idempotente, sans recréer ni l'étudiant ni son inscription. -->
+                <button v-if="r.log_status === 'En attente' && r.student" type="button"
+                        class="inline-flex h-[26px] items-center rounded-sm-ln border border-ln-gray-300 px-2.5 text-caption font-semibold text-ln-gray-700"
+                        aria-label="Compléter les inscriptions pédagogiques"
+                        @click="pedagogicalFor = r">Compléter…</button>
+              </span>
               <span v-else class="text-caption text-ln-gray-500">Reprise par la scolarité</span>
             </td>
           </tr>
@@ -140,6 +150,20 @@
             a créé l'étudiant — c'est celui-là que la reprise complète.</span>
         </template>
       </DenseTable>
+
+      <!-- La confirmation, HORS du tableau (C4) : elle ne l'élargit pas. -->
+      <div v-if="pedagogicalFor" class="mt-3 rounded-md-ln border border-ln-gray-300 bg-white p-4" role="alertdialog">
+        <p class="text-body-sm font-semibold text-ln-gray-900">Compléter les inscriptions pédagogiques de {{ pedagogicalFor.student }} ?</p>
+        <p class="mt-1 text-caption leading-relaxed text-ln-gray-500">
+          Les inscriptions aux modules et aux groupes manquantes sont posées ; celles qui existent sont laissées telles
+          quelles. L'étudiant et son inscription au programme ne sont pas recréés. Le compte et le badge ne relèvent pas
+          de cet acte.
+        </p>
+        <div class="mt-3 flex gap-2">
+          <button type="button" class="ln-btn-secondary" @click="pedagogicalFor = null">Annuler</button>
+          <button type="button" class="ln-btn-primary" :disabled="busy" @click="runPedagogical(pedagogicalFor)">Compléter</button>
+        </div>
+      </div>
     </template>
 
     <!-- ══ Les orphelins ══════════════════════════════════════════════════ -->
@@ -218,6 +242,7 @@ import { useAcademicContext } from '../composables/useAcademicContext.js';
 import { useResource } from '../composables/useResource.js';
 import {
   getEnrollmentLog, listIncompleteEnrollments, listMoodleOrphans, replayEnrollment,
+  runPedagogicalEnrollment,
 } from '../api/groups.js';
 
 const { can } = useSession();
@@ -379,6 +404,20 @@ async function runReplay(logName) {
     pending.value = 'Reprise de ' + logName + ' — ' + (err.message || 'l’acte a échoué')
       + ' Rien n’a été modifié.';
   }
+}
+
+/* MANDAT-12 (M7) — compléter la partie pédagogique d'une inscription partielle (`run_pedagogical_enrollment`). */
+const pedagogicalFor = ref(null);
+const busy = ref(false);
+async function runPedagogical(r) {
+  pending.value = '';
+  try {
+    busy.value = true;
+    await runPedagogicalEnrollment({ student: r.student });
+    pedagogicalFor.value = null;
+    loadReplays();
+  } catch (e) { pending.value = e.message || 'Complétion refusée.'; }
+  finally { busy.value = false; }
 }
 
 /**

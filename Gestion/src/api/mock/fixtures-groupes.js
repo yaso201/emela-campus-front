@@ -119,11 +119,30 @@ const INSTRUCTORS = {
   'SG-L2GL-RES': [{ instructor: 'HR-0161', instructor_name: 'M. Cyrille Adjovi' }],
 };
 
+/** S-7 (MANDAT-12) — le simulacre de `list_assignable_instructors`. */
+const ASSIGNABLE = [
+  { instructor: 'HR-0142', instructor_name: 'Pr. Léonard Hounkpatin', instructor_type: 'Permanent', service_match: 'groupe' },
+  { instructor: 'HR-0155', instructor_name: 'M. Firmin Dossou', instructor_type: 'Vacataire', service_match: 'promotion' },
+  { instructor: 'HR-0161', instructor_name: 'M. Cyrille Adjovi', instructor_type: 'Permanent', service_match: 'promotion' },
+  { instructor: 'HR-0170', instructor_name: 'Mme Rachida Bio', instructor_type: 'Vacataire', service_match: null },
+  { instructor: 'HR-0188', instructor_name: 'Dr. Paulin Kiki', instructor_type: 'Permanent', service_match: null },
+];
+export function assignableInstructors(params = {}) {
+  const assigned = new Set((INSTRUCTORS[params.group] || []).map((i) => i.instructor));
+  return {
+    group: params.group,
+    instructors: ASSIGNABLE.map((i) => ({ ...i, assigned: assigned.has(i.instructor), has_service_line: !!i.service_match })),
+  };
+}
+
 const membersOf = (name) => MEMBERS[name] || [];
 const activeCount = (name) => membersOf(name).filter((s) => s.active).length;
 
 export function groups(params = {}) {
   if (params.__empty) return [];
+  // MANDAT-12 (C1) : le serveur filtre par filière ; les groupes simulés sont tous de L2-GL. Une autre
+  // filière n'en a donc aucun — c'est l'écran « Aucun groupe » (le simulacre les rendait pour toutes).
+  if (params.program && params.program !== 'L2-GL') return [];
   const rows = Number(params.include_disabled) ? GROUPS : GROUPS.filter((g) => !g.disabled);
   // Dérivé, comme le fait `_active_counts` au serveur.
   return rows.map((g) => ({ ...g, active_count: activeCount(g.name) }));

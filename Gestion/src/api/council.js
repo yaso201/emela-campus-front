@@ -197,7 +197,10 @@ export const listCouncilCandidates = (p) =>
  * veut LA séance du terme : on la résout par list_cps_sessions (la plus
  * récente) puis on lit — deux appels, une seule vérité (celle du serveur). */
 export const getCouncilSession = async (p) => {
-  let name = p && (p.name || p.item);
+  // MANDAT-12 (S-17) : `student` choisit le SUJET dans l'ordre du jour — il n'est plus pris pour un
+  // nom de séance (le point cliqué relisait une séance portant le nom de l'étudiant).
+  const student = p && p.student;
+  let name = p && p.name;
   if (!name) {
     const sessions = await call('portal_app.api.academic.early_warning.list_cps_sessions',
       { academic_term: p && (p.term || p.academic_term) });
@@ -205,8 +208,12 @@ export const getCouncilSession = async (p) => {
     if (!rows.length) return null;
     name = rows[0].name;
   }
-  return call('portal_app.api.academic.early_warning.get_cps_session', { name });
+  return call('portal_app.api.academic.early_warning.get_cps_session', student ? { name, student } : { name });
 };
+
+/** 🟢 `convoke_cps_session(name)` — EM (MANDAT-12 ; Q6 de VERDICT-MANDAT-12-PC1.md : l'acte révélé). */
+export const convokeCouncilSession = (p) =>
+  call('portal_app.api.academic.early_warning.convoke_cps_session', p);
 
 /**
  * 🟢 Apparié — early_warning.list_preconisations.

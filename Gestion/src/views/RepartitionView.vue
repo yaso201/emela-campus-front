@@ -44,7 +44,9 @@
       <b class="font-semibold">en heures contre le volume de la maquette</b>, jamais en nombre de lignes.
     </StateBanner>
 
-    <div class="grid items-start gap-5 xl:grid-cols-[1fr_356px]">
+    <!-- C4 (PC1B) : `minmax(0,1fr)` — un `1fr` nu grandissait jusqu'à la table (w-max) et portait la page à
+         2 017 px ; la table défile désormais DANS son cadre. -->
+    <div class="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_356px]">
       <section>
         <div class="mb-3 flex flex-wrap items-center gap-2">
           <button v-for="f in filters" :key="f.key" type="button"
@@ -54,6 +56,23 @@
             {{ f.label }} <span class="tabular opacity-70">{{ f.count }}</span>
           </button>
           <p class="ml-auto text-caption text-ln-gray-500">{{ stateNote }}</p>
+        </div>
+
+        <!-- MANDAT-12 (M7) · C4 : la confirmation de suppression, HORS du tableau — dans une cellule de la table
+             (large, défilante), sa phrase était coupée par le cadre. -->
+        <div v-if="deleteLine" class="mb-3 rounded-md-ln border border-ln-gray-300 bg-ln-warning-bg p-4" role="alertdialog">
+          <p class="text-body-sm font-semibold text-[#6B4415]">
+            Supprimer la ligne {{ String(deleteLine.activity || '').toUpperCase() }} · {{ deleteLine.code }} — {{ deleteLine.teacher || 'à attribuer' }}
+            · {{ deleteLine.group || 'Promotion' }} · {{ deleteLine.hours }} h ?
+          </p>
+          <p class="mt-1 text-caption leading-relaxed text-[#6B4415]">
+            Elle est en brouillon : elle n'a jamais été proposée, rien n'en dépend. Une ligne proposée ou validée ne se
+            supprime pas — le serveur le refuse.
+          </p>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <button type="button" class="ln-btn-secondary" @click="deleteTarget = null">Annuler</button>
+            <button type="button" class="ln-btn-primary" :disabled="busy" @click="removeLine(deleteTarget)">Supprimer la ligne</button>
+          </div>
         </div>
 
         <DenseTable :state="planState === 'denied' ? 'loading' : planState" :row-height="36"
@@ -120,15 +139,22 @@
                     <!-- Le serveur ne connaît qu'un `upsert` : « Modifier » rouvre le
                          formulaire de ligne pré-rempli. L'édition n'est offerte que sur
                          un Brouillon (une ligne proposée/validée ne se modifie plus ici). -->
-                    <button v-if="can('write:service') && line.status === 'brouillon'" type="button"
-                            class="h-[26px] rounded-sm-ln border border-ln-gray-300 px-2 text-caption font-semibold text-ln-gray-700"
-                            aria-label="Modifier la ligne" @click="editServiceLine(line, mod.code)">Modifier</button>
+                    <span v-if="can('write:service') && line.status === 'brouillon'" class="inline-flex gap-1.5">
+                      <button type="button"
+                              class="h-[26px] rounded-sm-ln border border-ln-gray-300 px-2 text-caption font-semibold text-ln-gray-700"
+                              aria-label="Modifier la ligne" @click="editServiceLine(line, mod.code)">Modifier</button>
+                      <!-- MANDAT-12 (M7) : une ligne Brouillon erronée sort par la suppression — la seule. -->
+                      <button type="button"
+                              class="h-[26px] rounded-sm-ln border border-ln-gray-300 px-2 text-caption font-semibold text-ln-gray-700"
+                              aria-label="Supprimer la ligne" @click="deleteTarget = line.id">Supprimer…</button>
+                    </span>
                   </td>
                 </tr>
 
                 <tr v-if="mod.over_norm_note" class="bg-ln-warning-bg">
                   <td :class="stuckTd" class="!h-auto !bg-ln-warning-bg"></td>
-                  <td colspan="5" class="border-b border-ln-gray-100 px-3 pb-3 text-caption leading-relaxed text-[#6B4415]">
+                  <!-- C4 (PC1B) : la note passe à la ligne — sur une ligne, elle portait la page à 2 017 px. -->
+                  <td colspan="5" class="whitespace-normal border-b border-ln-gray-100 px-3 pb-3 text-caption leading-relaxed text-[#6B4415]">
                     {{ mod.over_norm_note }}
                   </td>
                 </tr>
@@ -226,7 +252,7 @@ import { useProgramScope } from '../composables/useProgramScope.js';
 import { useResource } from '../composables/useResource.js';
 import {
   getServicePlan, getServiceCoverage,
-  createServiceLine, updateServiceLine, proposeServicePlan, carryOverServicePlan,
+  createServiceLine, updateServiceLine, proposeServicePlan, carryOverServicePlan, deleteServiceLine,
 } from '../api/service.js';
 
 const { can } = useSession();
@@ -304,10 +330,32 @@ const stateNote = computed(() =>
 
 /* ── Actes BRANCHÉS (M2 g3) — create/update (formulaire), propose et carry
  * (rapports de masse). Le motif de chaque acte est le contrat serveur de
- * `service_allocation.py`. `delete` reste ⏸ (aucun bouton, rapport M2 §4). ── */
+ * `service_allocation.py`. MANDAT-12 (M7) : `delete` est branché, sur un Brouillon seul. ── */
 const pending = ref('');
 const actError = ref('');
 const busy = ref(false);
+
+/* MANDAT-12 (M7) — supprimer une ligne Brouillon (`delete_service_line`, on_trash : Brouillon seul).
+ * La cible est l'IDENTIFIANT de la ligne : un objet passé par `ref()` devient un proxy, et
+ * `mod.lines.includes(proxy)` ne le retrouvait jamais — la confirmation ne s'affichait pas. */
+const deleteTarget = ref(null);
+/** La ligne visée, avec le code de son module — ce que la confirmation nomme. */
+const deleteLine = computed(() => {
+  if (!deleteTarget.value) return null;
+  for (const ue of groups.value) {
+    for (const m of (ue.modules || [])) {
+      const l = (m.lines || []).find((x) => x.id === deleteTarget.value);
+      if (l) return { ...l, code: m.code };
+    }
+  }
+  return null;
+});
+async function removeLine(lineId) {
+  actError.value = '';
+  try { busy.value = true; await deleteServiceLine({ name: lineId }); deleteTarget.value = null; loadAll(); }
+  catch (e) { actError.value = e.message || 'Suppression refusée.'; }
+  finally { busy.value = false; }
+}
 const report = ref(null);
 const reportTitle = ref('');
 const formOpen = ref(false);

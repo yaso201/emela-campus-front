@@ -16,6 +16,7 @@ const note = ref('');
 const yearId = ref(null);
 const termId = ref(null);
 const ready = ref(false);
+const candidates = shallowRef([]);
 
 let started = null;
 
@@ -53,8 +54,12 @@ async function load() {
     terms.value = ctx.terms || [];
     note.value = ctx.note || '';
     const url = fromUrl();
+    candidates.value = ctx.candidates || [];
     yearId.value = url.year || ctx.current?.year || years.value[0]?.id || null;
-    termId.value = url.term || ctx.current?.term || terms.value[0]?.id || null;
+    // MANDAT-12 (D-CONTEXTE-SEMESTRE-DEFAUT-01, Q8 b) : quand le serveur rend plusieurs candidats sans
+    // semestre courant, AUCUN n'est pris par défaut — ni le premier de la liste, ni le premier candidat.
+    termId.value = url.term || ctx.current?.term
+      || (candidates.value.length > 1 ? null : (candidates.value[0] || terms.value[0]?.id || null));
     toUrl();
     ready.value = true;
   })();
@@ -74,6 +79,9 @@ export function useAcademicContext() {
   return {
     years: readonly(years), terms: readonly(terms),
     year, term, note: readonly(note), params,
+    // MANDAT-12 (Q8 b) : les semestres candidats, quand le serveur n'a pas pu en choisir un.
+    candidateTerms: computed(() => terms.value.filter((t) => candidates.value.includes(t.id))),
+    needsTermChoice: computed(() => !termId.value && candidates.value.length > 1),
     ready: readonly(ready),
     load, setYear, setTerm,
   };

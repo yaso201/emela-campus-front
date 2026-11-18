@@ -83,7 +83,13 @@ export const session = {
  */
 const AS = {
   rf: { roles: ['Responsable de formation'], drop: ['write:calendar', 'write:charpente', 'write:groups', 'publish:planning'] },
-  de: { roles: ['Directeur des Études'], drop: ['write:calendar', 'write:charpente', 'write:structure', 'write:groups'] },
+  de: { roles: ['Directeur des Études'], drop: ['write:calendar', 'write:charpente', 'write:structure', 'write:groups',
+    'write:planning', 'publish:planning', 'write:modules'] },
+  // MANDAT-12 (maquettes) : le gestionnaire seul — il publie, il ne déroge pas (Q15 de MANDAT-10,
+  // VERDICT-MANDAT-10-PC2.md §4).
+  ga: { roles: ['Gestionnaire académique'], drop: ['derogate:planning', 'write:structure'] },
+  director: { roles: ['Director'], drop: ['write:calendar', 'write:charpente', 'write:structure', 'write:groups',
+    'write:planning', 'publish:planning', 'write:modules'] },
 };
 export function sessionAs(as) {
   const v = AS[as];

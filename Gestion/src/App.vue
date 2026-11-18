@@ -4,7 +4,8 @@
             :unread="counts.overdue > 0" :rail="rail" :compact="compact"
             @navigate="go" @switch-space="switchSpace" @search="search" @logout="logout" @toggle-nav="compactNavOpen = !compactNavOpen">
     <template #context>
-      <ContextBar :year="year" :term="term" :note="note" :loading="!ctxReady" @pick="pick" />
+      <ContextBar :year="year" :term="term" :note="note" :loading="!ctxReady"
+                  :candidates="needsTermChoice ? candidateTerms : []" @pick="pick" @choose="setTerm" />
     </template>
 
     <!-- ⚠️ Ce bandeau vit dans la COQUILLE, qui ne se démonte jamais : il doit être
@@ -40,7 +41,10 @@ import { workQueueCounts } from './api/queues.js';
 const route = useRoute();
 const router = useRouter();
 const { person, roles, spaces, open, can } = useSession();
-const { year, term, note, params, ready: ctxReady, load: loadCtx, setYear, setTerm, years, terms } = useAcademicContext();
+const {
+  year, term, note, params, ready: ctxReady, load: loadCtx, setYear, setTerm, years, terms,
+  candidateTerms, needsTermChoice,
+} = useAcademicContext();
 
 const counts = ref({ total: 0, by_domain: {}, overdue: 0 });
 const width = ref(window.innerWidth);

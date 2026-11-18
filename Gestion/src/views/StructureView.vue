@@ -77,7 +77,46 @@
 
         <!-- Modules et volumes -->
         <section class="mb-6">
-          <h4 class="mb-3 border-b border-ln-gray-200 pb-2 text-micro font-bold uppercase tracking-wider text-ln-gray-500">Modules et volumes</h4>
+          <div class="mb-3 flex flex-wrap items-center gap-2 border-b border-ln-gray-200 pb-2">
+            <h4 class="mr-auto text-micro font-bold uppercase tracking-wider text-ln-gray-500">Modules et volumes</h4>
+            <!-- MANDAT-12 (M3) : composer (maquette, write:structure) et créer (charpente, write:modules) sont
+                 deux actes, de deux acteurs : deux boutons, chacun rendu à qui le porte (règle 3). -->
+            <button v-if="can('write:structure')" type="button" class="ln-btn-secondary !h-[30px]" @click="openCatalogue">+ Composer un module</button>
+            <button v-if="can('write:modules')" type="button" class="ln-btn-secondary !h-[30px]" @click="openModule(null)">+ Créer un module</button>
+          </div>
+          <div v-if="catalogueOpen" class="mb-3 overflow-hidden rounded-md-ln border border-ln-gray-300 bg-white" role="dialog"
+               aria-label="Composer un module">
+            <header class="flex items-center gap-3 border-b border-ln-gray-200 bg-ln-gray-50 px-4 py-3">
+              <div class="mr-auto">
+                <h3 class="text-[14px] font-semibold text-ln-gray-900">Composer un module dans l'unité</h3>
+                <p class="mt-0.5 text-caption text-ln-gray-500">
+                  Les modules rattachés à cette unité. Un module rattaché à une autre unité ne s'y compose pas — le
+                  serveur le refuse, la liste ne le propose pas.
+                </p>
+              </div>
+              <button type="button" class="ln-btn-secondary" @click="catalogueOpen = false">Fermer</button>
+            </header>
+            <ul class="px-4 py-2">
+              <li v-for="m in catalogue" :key="m.course" class="flex items-center gap-3 border-b border-ln-gray-100 py-2 text-caption last:border-0">
+                <span class="font-mono text-[11.5px] text-ln-gray-500">{{ m.module_code }}</span>
+                <span class="text-ln-gray-900">{{ m.course_name }}</span>
+                <span class="text-ln-gray-500">· coefficient {{ m.coefficient }} · {{ m.module_nature }}</span>
+                <StatusPill v-if="m.attached" class="ml-auto" status="valide" label="Composé" />
+                <button v-else type="button" class="ln-btn-secondary !h-[28px] !px-3 ml-auto" :disabled="busy"
+                        @click="attach(m)">Composer</button>
+              </li>
+            </ul>
+          </div>
+          <!-- C4 : la confirmation du retrait vit HORS du tableau, pour ne jamais l'élargir. -->
+          <div v-if="detachTarget" class="mb-3 rounded-md-ln border border-ln-warning bg-ln-warning-bg p-3 text-caption leading-relaxed text-[#6B4415]"
+               role="alertdialog">
+            <b class="font-semibold">Retirer {{ detachTarget.code }} de l'unité ?</b> Le module reste rattaché, sans être
+            composé : la maquette repasse en brouillon et se repropose à la validation.
+            <span class="mt-2 flex gap-2">
+              <button type="button" class="ln-btn-secondary !h-[28px]" @click="detachTarget = null">Annuler</button>
+              <button type="button" class="ln-btn-primary !h-[28px]" :disabled="busy" @click="detach(detachTarget)">Retirer de l'unité</button>
+            </span>
+          </div>
           <DenseTable :state="detailState === 'denied' ? 'loading' : detailState" :row-height="44"
                       :skeleton-widths="[220, 56, 56, 56, 64]" max-height="none"
                       state-title="Aucun module" state-message="Cette unité n'a pas encore de module.">
@@ -86,6 +125,7 @@
                 <th :class="headTh" class="!text-left">Module</th>
                 <th v-for="c in ACTIVITIES" :key="c.key" :class="headTh">{{ c.label }}</th>
                 <th :class="headTh">Total</th>
+                <th v-if="can('write:modules') || can('write:structure')" :class="headTh"></th>
               </tr>
             </template>
             <template #body>
@@ -100,6 +140,16 @@
                   <span :class="m.volumes[c.key] ? '' : 'text-ln-gray-400'">{{ m.volumes[c.key] || '—' }}</span>
                 </td>
                 <td :class="bodyTd" class="font-semibold">{{ moduleTotal(m) }}</td>
+                <td v-if="can('write:modules') || can('write:structure')" :class="bodyTd">
+                  <span class="inline-flex gap-1.5">
+                    <button v-if="can('write:modules')" type="button"
+                            class="h-[26px] rounded-sm-ln border border-ln-gray-300 px-2 text-caption font-semibold text-ln-gray-700"
+                            @click="openModule(m)">Modifier…</button>
+                    <button v-if="can('write:structure')" type="button"
+                            class="h-[26px] rounded-sm-ln border border-ln-gray-300 px-2 text-caption font-semibold text-ln-gray-700"
+                            @click="detachTarget = m">Retirer…</button>
+                  </span>
+                </td>
               </tr>
             </template>
             <template #footbar>
@@ -154,6 +204,9 @@
       </ObjectPanel>
     </div>
 
+    <ModuleForm v-if="moduleForm" :ue-label="selectedUe?.label || ''" :initial="moduleForm.initial"
+                :error="moduleError" :busy="busy" @cancel="moduleForm = null" @submit="submitModule" />
+
     <!-- Renvoi au brouillon : un acte à motif, jamais un champ en bas de page -->
     <div v-if="reasonOpen" class="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/30 p-6">
       <ReasonStep class="w-full max-w-2xl" name="maquette-draft"
@@ -198,8 +251,10 @@ import { useResource } from '../composables/useResource.js';
 import {
   getStructureTree, getUe, getUeDownstreamUsage,
   createUe, updateUe, proposeMaquette, validateMaquette, returnMaquetteToDraft,
+  listUeModuleCatalogue, createModule, updateModule, attachModuleToUe, detachModuleFromUe,
 } from '../api/structure.js';
 import ProgramPicker from './planning/ProgramPicker.vue';
+import ModuleForm from './structure/ModuleForm.vue';
 import UeForm from './structure/UeForm.vue';
 import StructureTabs from './structure/StructureTabs.vue';
 
@@ -463,9 +518,46 @@ watch(() => tree.data.value, (d) => {
 // dans la même unité ne recharge rien.
 watch(selectedUeId, (id) => {
   if (!id) return;
+  catalogueOpen.value = false; detachTarget.value = null;
   detail.load({ ue: id });
   usage.load({ ue: id });
 }, { immediate: true });
+
+/* ── MANDAT-12 (M3) — composer, retirer (maquette) ; créer, modifier un module (charpente, write:modules) ── */
+const catalogueOpen = ref(false);
+const catalogueRes = useResource((p) => listUeModuleCatalogue(p.ue), { isEmpty: (d) => !d?.modules?.length });
+const catalogue = computed(() => catalogueRes.data.value?.modules || []);
+const detachTarget = ref(null);
+const moduleForm = ref(null);
+const moduleError = ref('');
+function openCatalogue() { catalogueOpen.value = true; catalogueRes.load({ ue: selectedUeId.value }); }
+async function moduleAct(fn, after) {
+  actError.value = '';
+  try { busy.value = true; await fn(); after(); }
+  catch (e) { actError.value = e.message || 'Acte refusé.'; }
+  finally { busy.value = false; }
+}
+function attach(m) {
+  moduleAct(() => attachModuleToUe({ ue: selectedUeId.value, course: m.course }),
+    () => { catalogueRes.load({ ue: selectedUeId.value }); detail.load({ ue: selectedUeId.value }); });
+}
+function detach(m) {
+  moduleAct(() => detachModuleFromUe({ ue: selectedUeId.value, course: m.id }),
+    () => { detachTarget.value = null; detail.load({ ue: selectedUeId.value }); });
+}
+function openModule(m) { moduleError.value = ''; moduleForm.value = { initial: m }; }
+async function submitModule(values) {
+  moduleError.value = '';
+  const m = moduleForm.value.initial;
+  try {
+    busy.value = true;
+    if (m) await updateModule({ course: m.id, values });
+    else await createModule({ course_name: values.course_name, ue: selectedUeId.value, values });
+    moduleForm.value = null;
+    detail.load({ ue: selectedUeId.value });
+  } catch (e) { moduleError.value = e.message || 'Enregistrement refusé.'; }
+  finally { busy.value = false; }
+}
 watch(() => detail.data.value, (d) => {
   form.code = d?.code || '';
   form.label = d?.label || '';

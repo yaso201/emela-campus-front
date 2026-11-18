@@ -28,6 +28,8 @@ export const PERMISSIONS = [
   // sa clé, portée par le gestionnaire académique.
   'read:structure', 'write:structure', 'validate:structure',
   'write:charpente', 'write:calendar',
+  // MANDAT-12 (Q11) : écrire un module (Course) — la garde serveur MODULE_WRITER_ROLES (GA, EM).
+  'write:modules',
 
   // Groupes et inscriptions
   'read:groups', 'write:groups',

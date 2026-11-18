@@ -114,6 +114,18 @@ export const getModulePlanningSummary = (p) =>
 export const checkScheduleConflicts = (p) => call(PLAN + 'check_schedule_conflicts', p);
 
 /**
+ * S-9 (MANDAT-12) — ce qu'il faut pour créer, modifier une séance ou en remplacer
+ * l'enseignant. 🟢 `planning_mgmt.list_schedule_options(student_group, schedule_date,
+ * from_time, to_time, exclude)` — garde GA (+SM).
+ * Rend `{ student_group, slot, group_busy, rooms[{name, room_name, room_number,
+ * seating_capacity, busy}], courses[{course, course_name, module_code, ue, suggested{type:
+ * instructor}}], instructors[{instructor, instructor_name, instructor_type, busy}],
+ * session_types[] }`. `busy` vaut null tant que le créneau n'est pas donné entier ;
+ * `exclude` retire la séance éditée du calcul (C2 : elle n'occupe pas son propre créneau).
+ */
+export const listScheduleOptions = (p) => call(PLAN + 'list_schedule_options', p);
+
+/**
  * La charge d'un enseignant sur une journée.
  * 🟢 `planning_mgmt.py:104` — `get_instructor_day_load(instructor, day)`.
  */

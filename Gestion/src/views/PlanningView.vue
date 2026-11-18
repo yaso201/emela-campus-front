@@ -10,6 +10,9 @@
       </div>
       <div class="flex flex-wrap items-center gap-2">
         <ProgramPicker />
+        <button v-if="can('write:planning')" type="button" class="ln-btn-secondary" @click="openSession('create')">
+          + Nouvelle séance
+        </button>
         <button v-if="can('publish:planning')" type="button" class="ln-btn-primary"
                 :disabled="!draftCount" @click="publishOpen = true">
           Publier la semaine<span v-if="draftCount"> · {{ draftCount }}</span>
@@ -102,11 +105,48 @@
               </p>
             </div>
 
+            <!-- MANDAT-12 (M2 ; Q15 de MANDAT-10, Q2 de VERDICT-MANDAT-12-PC1.md) : la dérogation au
+                 préavis J-7 — conservée ET lisible. -->
+            <div v-if="detail.j7_derogations?.length" class="mt-3 border-t border-ln-gray-100 pt-3">
+              <p class="text-caption text-ln-gray-500">Dérogation au préavis</p>
+              <p v-for="d in detail.j7_derogations" :key="d.at" class="mt-1 text-caption leading-snug text-ln-gray-700">
+                <b class="font-semibold text-ln-gray-900">{{ d.at.slice(8, 10) }}/{{ d.at.slice(5, 7) }}/{{ d.at.slice(0, 4) }}</b>
+                · publiée à {{ d.days_ahead }} jour{{ d.days_ahead > 1 ? 's' : '' }} de l'épreuve · par {{ d.by_label || d.by }}
+                <span class="mt-0.5 block text-ln-gray-600">« {{ d.reason }} »</span>
+              </p>
+            </div>
+            <div v-if="detail.j7_publication?.needs_derogation" class="mt-3 rounded-sm-ln border border-ln-warning bg-ln-warning-bg p-3">
+              <p class="text-caption font-semibold text-[#6B4415]">
+                Épreuve à moins de {{ detail.j7_publication.min_days }} jours : la publier exige la dérogation au préavis.
+              </p>
+              <template v-if="can('derogate:planning')">
+                <p class="mt-1 text-caption leading-snug text-[#6B4415]">
+                  Vous publiez cette épreuve vous-même, avec un motif : il est enregistré sur la séance et reste lisible.
+                </p>
+                <div v-if="derogateOne" class="mt-2">
+                  <label for="pl-derog" class="text-caption font-semibold text-[#6B4415]">Motif de la dérogation <span class="text-ln-error">obligatoire</span></label>
+                  <textarea id="pl-derog" v-model="overrideReason" rows="3"
+                            class="mt-1 w-full rounded-sm-ln border border-ln-gray-300 bg-white p-2.5 text-body-sm text-ln-gray-900"
+                            placeholder="Ce qui justifie de publier cette épreuve à moins de sept jours…" />
+                  <div class="mt-2 flex justify-end gap-2">
+                    <button type="button" class="ln-btn-secondary" @click="derogateOne = false">Renoncer</button>
+                    <button type="button" class="ln-btn-primary" :disabled="!overrideReason.trim() || busy"
+                            @click="publishOneWithDerogation">Publier en dérogation</button>
+                  </div>
+                </div>
+                <button v-else type="button" class="ln-btn-primary mt-2" @click="derogateOne = true">Publier en dérogation…</button>
+              </template>
+              <p v-else class="mt-1 text-caption leading-snug text-[#6B4415]">
+                Cette dérogation appartient au <b class="font-semibold">directeur des études</b> : la publication de la
+                semaine laissera l'épreuve en brouillon, et il la publiera lui-même, avec un motif.
+              </p>
+            </div>
+
             <div v-if="can('write:planning')" class="mt-4 flex flex-wrap gap-2">
-              <!-- ⏸ M2 : modifier une séance suppose la liste des salles et des créneaux
-                   valides (aucune lecture serveur ne les rend) — demande S-9. -->
-              <button type="button" class="ln-btn-secondary"
-                      @click="notBuilt('Modification de la séance — en attente d’une lecture serveur des salles et créneaux (demande M2)')">Modifier…</button>
+              <!-- MANDAT-12 (M2) : S-9 rend les salles, les modules, les enseignants et la disponibilité. -->
+              <button type="button" class="ln-btn-secondary" @click="openSession('edit', detail)">Modifier…</button>
+              <button v-if="!['Annulé', 'Réalisé'].includes(detail.custom_status)" type="button" class="ln-btn-secondary"
+                      @click="openSession('instructor', detail)">Remplacer l'enseignant…</button>
               <button v-if="detail.custom_status !== 'Annulé'" type="button" class="ln-btn-secondary"
                       @click="openCancel(detail)">Annuler la séance…</button>
             </div>
@@ -158,6 +198,10 @@
 
     <StateBanner v-if="actError" variant="error" lead="L'acte a échoué." :text="actError" class="mt-4" />
 
+    <SessionForm v-if="sessionForm" :mode="sessionForm.mode" :initial="sessionForm.initial"
+                 :program="program" :program-label="programLabel" :context="params" :slot="sessionForm.slot"
+                 :error="sessionError" :busy="busy" @cancel="sessionForm = null" @submit="submitSession" />
+
     <!-- Annuler une séance — motif EXIGÉ À L'ÉCRAN (règle d'interface, pas serveur :
          le motif est facultatif côté serveur ; l'écran l'impose pour l'annulation). -->
     <div v-if="cancelOpen" class="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/30 p-6">
@@ -199,7 +243,8 @@
           <!-- C-5 (MANDAT-10) : le composant émet `retry-failed` ; l'écran écoutait `retry`, et la branche de
                dérogation ne s'ouvrait jamais — un bouton qui feignait. Revue MANDAT-10 (constat 3) : le bouton n'est
                RENDU qu'à qui porte `derogate:planning` (règle 3) ; les autres lisent pourquoi, en note. Qu'aucun rôle
-               seul ne puisse aujourd'hui publier ET déroger est un constat du back (Q15). -->
+               seul ne puisse aujourd'hui publier ET déroger était un constat du back (Q15 de MANDAT-10) ; tranchée
+               par VERDICT-MANDAT-10-PC2.md §4 : le DE publie lui-même en dérogation (MANDAT-12). -->
 
 
           <!-- La dérogation : le motif, pas le bouton -->
@@ -277,7 +322,11 @@ import { useSession } from '../composables/useSession.js';
 import { useAcademicContext } from '../composables/useAcademicContext.js';
 import { useProgramScope } from '../composables/useProgramScope.js';
 import { useResource } from '../composables/useResource.js';
-import { listSchedules, listExamSchedules, publishSchedules, setScheduleStatus } from '../api/planning.js';
+import {
+  listSchedules, listExamSchedules, publishSchedules, setScheduleStatus,
+  getSchedule, createSchedule, updateSchedule, assignScheduleInstructor,
+} from '../api/planning.js';
+import SessionForm from './planning/SessionForm.vue';
 
 const { can } = useSession();
 const { params } = useAcademicContext();
@@ -376,7 +425,55 @@ const gridItems = computed(() => sessions.value.map((s) => ({
     : s.custom_planning_status,
 })));
 
-const detail = computed(() => sessions.value.find((s) => s.name === selectedId.value) || null);
+/**
+ * MANDAT-12 (M2) : le détail se LIT par `get_schedule` — il porte ce que la liste ne porte pas :
+ * les dérogations J-7 (motif lisible) et l'état du préavis (`j7_publication`), établis au serveur.
+ */
+const detailRes = useResource(getSchedule, { isEmpty: (d) => !d });
+const detail = computed(() => {
+  const row = sessions.value.find((s) => s.name === selectedId.value) || null;
+  const read = detailRes.data.value;
+  return row && read && read.name === row.name ? { ...row, ...read } : row;
+});
+const derogateOne = ref(false);
+watch(selectedId, (n) => { derogateOne.value = false; if (n) detailRes.load({ name: n }); });
+
+/* ── MANDAT-12 (M2) — créer, modifier, remplacer l'enseignant (S-9) ; dérogation du DE (Q15 de MANDAT-10) ── */
+const sessionForm = ref(null);
+const sessionError = ref('');
+const DATE_OF = Object.fromEntries(DAYS.map((d) => [d.key, '2026-09-' + d.dayNumber]));
+function openSession(mode, s = null) {
+  sessionError.value = '';
+  sessionForm.value = {
+    mode,
+    initial: s ? { ...s, schedule_date: DATE_OF[s.day], from_time: s.from_time, to_time: s.to_time } : null,
+    // K-b (PC1B) : pas de clic sur une case vide — le bouton d'en-tête ouvre un créneau prérempli.
+    slot: s ? null : { schedule_date: DATE_OF.tue, from_time: '14:00', to_time: '16:00' },
+  };
+}
+async function submitSession(values) {
+  sessionError.value = '';
+  const { mode, initial } = sessionForm.value;
+  try {
+    busy.value = true;
+    if (mode === 'create') await createSchedule({ values });
+    else if (mode === 'edit') await updateSchedule({ name: initial.name, values });
+    else await assignScheduleInstructor({ schedules: [initial.name], instructor: values.instructor });
+    sessionForm.value = null;
+    reload();
+  } catch (e) { sessionError.value = e.message || 'Enregistrement refusé.'; }
+  finally { busy.value = false; }
+}
+async function publishOneWithDerogation() {
+  actError.value = '';
+  try {
+    busy.value = true;
+    await publishSchedules({ schedules: [detail.value.name], override_reason: overrideReason.value.trim() });
+    derogateOne.value = false; overrideReason.value = '';
+    reload(); detailRes.load({ name: detail.value.name });
+  } catch (e) { actError.value = e.message || 'Dérogation refusée.'; }
+  finally { busy.value = false; }
+}
 
 const legend = [
   { label: 'Publiée', color: 'var(--ln-blue-800)' },

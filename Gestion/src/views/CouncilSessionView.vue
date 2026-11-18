@@ -2,15 +2,14 @@
   <div>
     <header class="mb-4">
       <p class="mb-2 text-caption text-ln-gray-500">
-        Conseil pédagogique · <b class="font-semibold text-ln-gray-900">Séance du {{ data.date }}</b>
+        Conseil pédagogique · <b class="font-semibold text-ln-gray-900">Séance du {{ dateLabel }}</b>
       </p>
-      <h1 class="text-h1 tracking-tight text-ln-gray-900">Séance du {{ data.date }} — {{ data.program_label }}</h1>
+      <h1 class="text-h1 tracking-tight text-ln-gray-900">Séance du {{ dateLabel }}</h1>
       <p class="mt-1 text-body-sm text-ln-gray-500">{{ subtitle }}</p>
     </header>
 
     <!-- ⚠️ LE SEUL DISPOSITIF DU SYSTÈME QUI INTERVIENT PENDANT QU'ON PEUT ENCORE
-         AGIR — tout le reste constate. L'écran doit donc rester un procès-verbal,
-         et n'offrir aucune forme qui ressemble à une décision. -->
+         AGIR — tout le reste constate. L'écran reste un procès-verbal. -->
     <StateBanner variant="error" lead="Le conseil ne prononce aucune décision.">
       Ni progression, ni redoublement, ni exclusion : il constate, il alerte, il préconise. Les
       décisions appartiennent au jury de fin d'année, à qui <b class="font-semibold">toutes</b> les
@@ -20,210 +19,220 @@
     </StateBanner>
 
     <BlockState v-if="state !== 'ready'" :state="state === 'denied' ? 'loading' : state"
-                title="Aucune séance ouverte"
-                message="Aucune séance n’est ouverte sur cette filière et cette année. La préparation se fait depuis la liste des candidats."
+                title="Aucune séance"
+                message="Aucune séance n’est préparée pour ce semestre. La préparation se fait depuis la liste des candidats."
                 :rows="5" :row-height="56" :skeleton-widths="[180, 240, 120]"
                 @retry="reload" />
 
     <div v-else class="grid items-start gap-5 xl:grid-cols-[392px_1fr]">
       <div>
+        <!-- MANDAT-12 (S-17) : l'ordre du jour est CELUI DU SERVEUR ; il n'y a pas d'heure d'examen
+             (aucun champ ne la porte) : la séance se tient en une fois, à la clôture (Q5 de la PC1). -->
         <WorkQueue title="Ordre du jour" :items="agendaItems" :selected-id="selectedId"
-                   :total="data.convoked" state="ready" @select="select" />
+                   :total="data.agenda.length" state="ready" @select="select" />
         <p class="mt-3 rounded-md-ln border border-ln-gray-200 bg-ln-gray-50 px-4 py-3 text-caption leading-relaxed text-ln-gray-600">
           Une <b class="font-semibold text-ln-gray-900">absence non justifiée</b> à la convocation est
           portée au jury de fin d'année — c'est le seul effet automatique de la séance. La convocation
-          est notifiée dans l'espace de l'étudiant, sans accusé : il la voit et peut justifier son
-          absence. Sans cela, « non justifiée » se constaterait contre quelqu'un qui n'en avait pas
-          les moyens.
+          est notifiée dans l'espace de l'étudiant : il la voit et peut justifier son absence.
         </p>
       </div>
 
-      <ObjectPanel v-if="subject" :title="subject.student_name"
-                   :subtitle="panelSubtitle"
-                   :state="'ready'">
-        <template #header-right>
-          <StatusPill :status="subject.status" :label="subject.status_label" />
-        </template>
+      <div class="flex flex-col gap-4">
+        <!-- L'état de la séance et l'acte qui la fait avancer : convoquer (EM), tenir (DE). -->
+        <section class="overflow-hidden rounded-md-ln border border-ln-gray-200">
+          <header class="flex flex-wrap items-center gap-3 border-b border-ln-gray-200 bg-ln-gray-50 px-4 py-3">
+            <div class="mr-auto">
+              <h3 class="text-[14px] font-semibold text-ln-gray-900">{{ STEP[data.status].title }}</h3>
+              <p class="mt-0.5 text-caption text-ln-gray-500">{{ STEP[data.status].text }}</p>
+            </div>
+            <StatusPill :status="STEP[data.status].tone" :label="data.status" />
+          </header>
 
-        <h4 class="mb-2 text-micro font-bold uppercase tracking-wider text-ln-gray-500">
-          Ce qui est constaté
-          <span class="normal-case tracking-normal text-ln-warning">— résultats calculés, non délibérés</span>
-        </h4>
-        <div class="overflow-hidden rounded-md-ln border border-ln-gray-200">
-          <table class="w-full border-collapse text-body-sm">
-            <thead>
-              <tr>
-                <th :class="headTh" class="!text-left">Constat</th>
-                <th :class="headTh" class="w-[120px]">Valeur</th>
-                <th :class="headTh" class="!text-left">Détail</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="row in subject.rows" :key="row.label" :class="row.flagged ? 'bg-ln-warning-bg' : ''">
-                <td :class="bodyTd" class="!text-left">{{ row.label }}</td>
-                <td :class="bodyTd">
-                  {{ row.value }}<sup v-if="!row.official" class="text-ln-gray-400">°</sup>
-                </td>
-                <td :class="[bodyTd, '!text-left text-caption',
-                             row.flagged ? 'text-ln-warning' : 'text-ln-gray-500']">{{ row.note }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <p class="mt-2 text-caption text-ln-gray-500">
-          <sup>°</sup> valeur calculée, non arrêtée — la délibération se tient en juillet.
-        </p>
+          <div v-if="data.status === 'Brouillon'" class="px-4 py-3">
+            <button v-if="data.can_convoke" type="button" class="ln-btn-primary" :disabled="busy" @click="convoke">
+              Convoquer les {{ data.agenda.length }} étudiants
+            </button>
+            <p v-else class="text-caption text-ln-gray-500">{{ data.convoke_blocked_reason }}</p>
+          </div>
 
-        <h4 class="mb-2 mt-5 text-micro font-bold uppercase tracking-wider text-ln-gray-500">
-          Préconisations rendues en séance
-        </h4>
-        <div v-if="subject.preconisations" class="rounded-md-ln border border-ln-gray-200 px-4 py-3">
-          <p class="text-body-sm font-semibold text-ln-gray-900">
-            {{ subject.preconisations }} préconisation(s) rendue(s) pour cet étudiant
+          <div v-else-if="data.status === 'Convoquée'" class="px-4 py-3">
+            <template v-if="data.can_close">
+              <p class="mb-2 text-caption leading-relaxed text-ln-gray-600">
+                Tenir la séance constate, pour chaque convoqué, sa présence — et pour un absent, si son absence
+                est <b class="font-semibold">non justifiée</b> (portée au jury). Une observation peut accompagner chaque ligne.
+              </p>
+              <table class="w-full table-fixed border-collapse text-body-sm">
+                <thead>
+                  <tr>
+                    <th :class="headTh" class="!text-left">Étudiant</th>
+                    <th :class="headTh" class="!text-left">Présence constatée</th>
+                    <th :class="headTh" class="!text-left">Observation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="a in data.agenda" :key="a.student">
+                    <td :class="bodyTd" class="!text-left">{{ a.student_name }}</td>
+                    <td :class="bodyTd" class="!text-left">
+                      <select v-model="attendance[a.student].presence" :aria-label="'Présence de ' + a.student_name"
+                              class="h-9 w-full rounded-sm-ln border border-ln-gray-300 bg-white px-2 text-caption">
+                        <option value="" disabled>—</option>
+                        <option value="present">Présent</option>
+                        <option value="absent_justifie">Absent, justifié</option>
+                        <option value="absent_non_justifie">Absent, non justifié</option>
+                      </select>
+                    </td>
+                    <td :class="bodyTd" class="!text-left">
+                      <input v-model="attendance[a.student].notes" type="text" :aria-label="'Observation sur ' + a.student_name"
+                             class="h-9 w-full rounded-sm-ln border border-ln-gray-300 px-2 text-caption" placeholder="Facultatif" />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="mt-3 flex items-center gap-3">
+                <p class="mr-auto text-caption text-ln-gray-500">
+                  {{ unset ? unset + ' présence(s) à constater avant de tenir la séance.' : 'Une séance tenue ne se modifie plus : elle est la source que lit le jury.' }}
+                </p>
+                <button type="button" class="ln-btn-primary" :disabled="!!unset || busy" @click="hold">Tenir la séance</button>
+              </div>
+            </template>
+            <p v-else class="text-caption leading-relaxed text-ln-gray-500">
+              <b class="font-semibold text-ln-gray-700">Tenir la séance est indisponible :</b> {{ data.close_blocked_reason }}
+            </p>
+          </div>
+
+          <div v-else class="px-4 py-3 text-caption leading-relaxed text-ln-gray-600">
+            Tenue le {{ frDate(data.held_on) }} par <b class="font-semibold text-ln-gray-900">{{ data.chair?.label }}</b>.
+            {{ absentCount }} absence(s) non justifiée(s) portée(s) au jury.
+          </div>
+        </section>
+
+        <ObjectPanel v-if="subject" :title="subject.student_name" :subtitle="subject.student" :state="'ready'">
+          <template #header-right>
+            <StatusPill :status="PRESENCE[subject.presence || 'none'].tone" :label="PRESENCE[subject.presence || 'none'].label" />
+          </template>
+          <h4 class="mb-2 text-micro font-bold uppercase tracking-wider text-ln-gray-500">
+            Pourquoi il est convoqué
+            <span class="normal-case tracking-normal text-ln-warning">— instantané figé à la préparation, non délibéré</span>
+          </h4>
+          <p class="rounded-md-ln border border-ln-gray-200 bg-ln-gray-50 px-4 py-3 text-body-sm text-ln-gray-900">{{ subject.criteria_snapshot }}</p>
+          <p class="mt-2 text-caption text-ln-gray-500">
+            Les critères sont ceux du jour de la préparation (Art. 32.2) ; le calcul du jour de séance peut différer — l'instantané fait foi.
           </p>
-          <p class="mt-1 text-caption leading-relaxed text-ln-gray-600">
-            Elles vivent dans la liste de l'année, avec leur propriétaire et leur clôture.
-            <router-link :to="{ name: 'council-preconisations' }" class="font-semibold">Les ouvrir</router-link>
+          <h4 class="mb-2 mt-5 text-micro font-bold uppercase tracking-wider text-ln-gray-500">Préconisations rendues pour cette séance</h4>
+          <ul v-if="subject.preconisation_list.length" class="rounded-md-ln border border-ln-gray-200 px-4 py-2">
+            <li v-for="p in subject.preconisation_list" :key="p.name" class="flex items-center gap-3 py-1.5 text-caption">
+              <span class="font-mono text-[11px] text-ln-gray-500">{{ p.name }}</span>
+              <span class="text-ln-gray-900">{{ p.kind }}</span>
+              <StatusPill class="ml-auto" status="propose" :label="p.status" />
+            </li>
+          </ul>
+          <p v-else class="rounded-md-ln border border-dashed border-ln-gray-300 px-4 py-3 text-caption text-ln-gray-500">
+            Aucune préconisation pour cet étudiant. Examiner sans préconiser est un résultat valable — et c'est le cas majoritaire.
           </p>
-        </div>
-        <p v-else class="rounded-md-ln border border-dashed border-ln-gray-300 px-4 py-3 text-caption text-ln-gray-500">
-          Aucune préconisation pour l'instant. Examiner sans préconiser est un résultat valable — et
-          c'est le cas majoritaire.
-        </p>
-
-        <div class="mt-5">
-          <label for="pv" class="text-body-sm font-semibold text-ln-gray-900">Observations portées au procès-verbal</label>
-          <p class="mt-0.5 text-caption text-ln-gray-500">
-            Elles décrivent ce que la séance a entendu. Elles n'emportent aucun effet.
+          <p class="mt-2 text-caption">
+            <router-link :to="{ name: 'council-preconisations' }" class="font-semibold text-ln-blue-600">Ajouter ou suivre une préconisation</router-link>
+            <span class="text-ln-gray-500"> — dans la liste de l'année, rattachée à cette séance.</span>
           </p>
-          <textarea id="pv" v-model="observations" rows="4"
-                    class="mt-2 w-full rounded-sm-ln border border-ln-gray-300 p-3 text-body-sm leading-normal text-ln-gray-900 outline-none focus:border-ln-blue-600"
-                    placeholder="Ce que le conseil a entendu et constaté…"></textarea>
-        </div>
-
-        <template #actions>
-          <ActionBar :actions="actions"
-                     attribution="Présidée par <b>S. Kouassi</b>, directeur des études."
-                     :hint="actionHint" @act="act" />
-        </template>
-      </ObjectPanel>
-
-      <ObjectPanel v-else title="" state="empty"
-                   state-title="Aucun étudiant sélectionné"
-                   state-message="Choisissez un point de l’ordre du jour pour ouvrir son procès-verbal." />
+        </ObjectPanel>
+      </div>
     </div>
 
-    <StateBanner v-if="pending" variant="warning" lead="Acte non disponible." :text="pending" class="mt-4" />
+    <StateBanner v-if="actError" variant="error" lead="L'acte a échoué." :text="actError" class="mt-4" />
   </div>
 </template>
 
 <script setup>
 /**
- * Grappe 8 · écran N9 du lot 7 — la séance.
+ * Grappe 8 · écran N9 du lot 7 — la séance, sur le contrat S-17 (MANDAT-12, maquette M5 validée PC1B).
  *
- * ⚠️ « UN CHOIX GRISÉ QUI EXPLIQUE POURQUOI VAUT MIEUX QU'UN CHOIX ABSENT » — et
- * c'est la seule exception assumée à la règle 3 de ce dépôt.
- *
- * Partout ailleurs, une action indisponible n'est pas rendue : un bouton grisé est
- * une fuite d'information sur ce que d'autres peuvent faire. Ici, l'indisponibilité
- * ne vient PAS d'un droit — le président de séance a bien le droit de clore — mais
- * d'un ÉTAT de la séance qu'il peut lui-même changer. Retirer le bouton lui ferait
- * chercher une action qu'il détient.
- *
- * ⚠️ Et la RAISON vient du serveur (`close_blocked_reason`). Une phrase écrite dans
- * la vue serait une seconde implémentation de la règle de clôture, et divergerait
- * d'elle au premier amendement.
- *
- * 🔴 `get_council_session` n'est pas tranché : voir `api/council.js`.
+ * Ce que l'écran ne fait plus : afficher une heure d'ouverture, une heure d'examen, une filière ou un
+ * président que rien ne porte (Q4 de la PC1 — ils sont déclarés `unavailable` par le serveur, jamais
+ * inventés) ; offrir « Enregistrer et passer au suivant » ou « Examiner sans préconisation », qui
+ * n'avaient aucun verbe serveur (Q5 — la séance se TIENT en une fois, présences de tout l'ordre du jour).
+ * Ce qu'il fait : convoquer (EM, Q6 — l'acte révélé), tenir (DE), et dire pourquoi un acte est
+ * indisponible avec la phrase du SERVEUR (`close_blocked_reason`, `convoke_blocked_reason`) — y compris
+ * avant la date de la séance (C7 de la PC1B).
  */
-import { computed, onMounted, ref, watch } from 'vue';
-import { ActionBar, ObjectPanel, StateBanner, StatusPill, WorkQueue, headTh, bodyTd } from '../components/index.js';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { ObjectPanel, StateBanner, StatusPill, WorkQueue, headTh, bodyTd } from '../components/index.js';
 import BlockState from '../components/internal/BlockState.vue';
 import { useAcademicContext } from '../composables/useAcademicContext.js';
 import { useResource } from '../composables/useResource.js';
-import { getCouncilSession } from '../api/council.js';
+import { getCouncilSession, convokeCouncilSession, closeCouncilSession } from '../api/council.js';
 
 const { params } = useAcademicContext();
 const res = useResource(getCouncilSession, { isEmpty: (d) => !d?.agenda?.length });
 const state = res.state;
-const pending = ref('');
 const selectedId = ref(null);
-const observations = ref('');
+const busy = ref(false);
+const actError = ref('');
+const attendance = reactive({});
 
-const data = computed(() => res.data.value || {});
+const data = computed(() => res.data.value || { agenda: [], status: 'Brouillon' });
 const subject = computed(() => data.value.subject || null);
 
-const agendaItems = computed(() => (data.value.agenda || []).map((a) => ({
-  id: a.name,
-  title: a.student_name,
-  subtitle: 'Convoqué le ' + a.convoked_on
-    + (a.examined_at ? ' · examiné à ' + a.examined_at : ' · à examiner')
-    + ' · ' + a.presence_label,
-  status: a.status,
-  statusLabel: a.status_label,
-  done: !!a.examined_at,
-})));
+const STEP = {
+  Brouillon: { title: 'Séance en préparation', text: 'L’ordre du jour s’ajuste tant que la séance n’est pas convoquée.', tone: 'brouillon' },
+  Convoquée: { title: 'Séance convoquée', text: 'Les étudiants ont été notifiés ; la date ne se modifie plus.', tone: 'propose' },
+  Tenue: { title: 'Séance tenue', text: 'Un fait : le jury lit cette source.', tone: 'valide' },
+};
+const PRESENCE = {
+  present: { label: 'Présent', tone: 'valide' },
+  absent_justifie: { label: 'Absent, justifié', tone: 'brouillon' },
+  absent_non_justifie: { label: 'Absent, non justifié', tone: 'suspendue' },
+  none: { label: 'Présence non constatée', tone: 'brouillon' },
+};
 
+/** Une date ISO (2026-09-10) à la française (10/09/2026) — affichage seul. */
+function frDate(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || '');
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : (iso || '…');
+}
+const dateLabel = computed(() => frDate(data.value.date));
+const agendaItems = computed(() => data.value.agenda.map((a) => ({
+  id: a.student,
+  title: a.student_name,
+  subtitle: (a.convoked_on ? 'Convoqué le ' + frDate(a.convoked_on) : 'Non convoqué') + ' · ' + PRESENCE[a.presence || 'none'].label
+    + (a.preconisations ? ' · ' + a.preconisations + ' préconisation' : ''),
+  status: PRESENCE[a.presence || 'none'].tone,
+  statusLabel: PRESENCE[a.presence || 'none'].label,
+})));
 const subtitle = computed(() => {
   if (state.value !== 'ready') return 'Chargement de la séance';
+  const d = data.value;
   return [
-    data.value.convoked + ' étudiants convoqués',
-    data.value.examined + ' examinés',
-    'ouverte à ' + data.value.opened_at,
-    'présidée par ' + data.value.chair,
-  ].join(' · ');
+    d.convoked ? d.convoked + ' étudiants convoqués' : d.agenda.length + ' étudiants à convoquer',
+    d.status === 'Tenue' ? d.examined_count + ' examinés' : null,
+    d.chair ? 'tenue par ' + d.chair.label : 'présidée par le directeur des études qui tient la séance',
+  ].filter(Boolean).join(' · ');
 });
+const unset = computed(() => data.value.agenda.filter((a) => !attendance[a.student]?.presence).length);
+const absentCount = computed(() => data.value.agenda.filter((a) => a.presence === 'absent_non_justifie').length);
 
-const panelSubtitle = computed(() => {
-  const s = subject.value;
-  if (!s) return '';
-  return [s.student, data.value.program_label, s.presence_label,
-    s.examined_at ? 'examiné à ' + s.examined_at : 'examen en cours'].join(' · ');
-});
+watch(() => data.value.agenda, (rows) => {
+  for (const a of rows) if (!attendance[a.student]) attendance[a.student] = { presence: a.presence || '', notes: '' };
+}, { immediate: true });
 
-/**
- * ⚠️ AUCUNE ISSUE QUI RESSEMBLE À UNE DÉCISION. Les trois actes sont : passer au
- * suivant, préconiser, clore la séance. Ni « faire progresser », ni « ajourner »,
- * ni « exclure » — ces verbes appartiennent au jury.
- */
-const actions = computed(() => [
-  { key: 'preconiser', label: 'Ajouter une préconisation…', kind: 'secondary' },
-  { key: 'sans', label: 'Examiner sans préconisation', kind: 'secondary' },
-  { key: 'suivant', label: 'Enregistrer et passer au suivant', kind: 'primary' },
-  // Le seul bouton DÉSACTIVÉ du dépôt, et il porte sa raison juste dessous.
-  { key: 'clore', label: 'Clôturer la séance', kind: 'secondary',
-    disabled: !data.value.can_close },
-]);
-
-const actionHint = computed(() => {
-  if (data.value.can_close) {
-    return 'Aucune décision de progression, de redoublement ou d’exclusion ne se prend ici.';
-  }
-  return 'Clôturer la séance est indisponible : ' + (data.value.close_blocked_reason || '');
-});
-
-function select(id) {
-  selectedId.value = id;
-  observations.value = '';
-  res.load({ ...params.value, item: id });
+function select(student) { selectedId.value = student; res.load({ ...params.value, name: data.value.name, student }); }
+async function act(fn) {
+  actError.value = '';
+  try { busy.value = true; await fn(); reload(); }
+  catch (e) { actError.value = e.message || 'Acte refusé.'; }
+  finally { busy.value = false; }
 }
-
-function act(key) {
-  const verbs = {
-    preconiser: '`add_council_preconisation`',
-    sans: '`examine_council_student`',
-    suivant: '`examine_council_student`',
-    clore: '`close_council_session`',
-  };
-  pending.value = 'Cet acte appelle ' + verbs[key] + ', dont le point d’entrée n’est pas tranché — '
-    + 'et dont le vocabulaire de préconisation n’a aucune source lue. Rien n’a été enregistré : '
-    + 'les observations saisies restent dans la page et partiront à la navigation.';
+function convoke() { act(() => convokeCouncilSession({ name: data.value.name })); }
+function hold() {
+  act(() => closeCouncilSession({
+    name: data.value.name,
+    attendance: data.value.agenda.map((a) => ({
+      student: a.student,
+      present: attendance[a.student].presence === 'present' ? 1 : 0,
+      unjustified_absence: attendance[a.student].presence === 'absent_non_justifie' ? 1 : 0,
+      notes: attendance[a.student].notes || undefined,
+    })),
+  }));
 }
-
-function reload() { res.load({ ...params.value }); }
-onMounted(() => {
-  if (params.value.term) reload();   // même patron que le planning (§5)
-  selectedId.value = 'CPS-2027-003';
-});
+function reload() { res.load({ ...params.value, name: data.value.name || undefined, student: selectedId.value || undefined }); }
+onMounted(() => { if (params.value.term) reload(); });
 watch(params, reload);
 </script>

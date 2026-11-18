@@ -221,7 +221,8 @@
   "prefill_candidates"
  ],
  "portal_app.api.academic.early_warning.get_cps_session": [
-  "name"
+  "name",
+  "student"
  ],
  "portal_app.api.academic.early_warning.get_my_preconisations": [
   "student_id"
@@ -425,6 +426,9 @@
  "portal_app.api.academic.groups.get_student_groups": [
   "student"
  ],
+ "portal_app.api.academic.groups.list_assignable_instructors": [
+  "group"
+ ],
  "portal_app.api.academic.groups.list_group_candidates": [
   "group"
  ],
@@ -519,6 +523,13 @@
  ],
  "portal_app.api.academic.planning_mgmt.get_schedule": [
   "name"
+ ],
+ "portal_app.api.academic.planning_mgmt.list_schedule_options": [
+  "student_group",
+  "schedule_date",
+  "from_time",
+  "to_time",
+  "exclude"
  ],
  "portal_app.api.academic.planning_mgmt.list_schedules": [
   "student_group",
@@ -765,6 +776,9 @@
   "include_inactive"
  ],
  "portal_app.api.academic.structure.list_structure_options": [],
+ "portal_app.api.academic.structure.list_ue_module_catalogue": [
+  "ue"
+ ],
  "portal_app.api.academic.structure.propose_maquette": [
   "program",
   "academic_term",
@@ -787,7 +801,8 @@
  ],
  "portal_app.api.academic.structure.set_program_active": [
   "program",
-  "is_active"
+  "is_active",
+  "reason"
  ],
  "portal_app.api.academic.structure.update_academic_level": [
   "academic_level",
