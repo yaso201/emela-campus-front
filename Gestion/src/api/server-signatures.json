@@ -97,6 +97,11 @@
  "portal_app.api.academic.deliberation_mgmt.close_deliberation": [
   "name"
  ],
+ "portal_app.api.academic.deliberation_mgmt.compute_semester_results": [
+  "academic_level",
+  "academic_term",
+  "academic_year"
+ ],
  "portal_app.api.academic.deliberation_mgmt.create_deliberation": [
   "program",
   "academic_level",
@@ -492,6 +497,17 @@
  "portal_app.api.academic.module_grade.propose_module_average": [
   "course",
   "student_group"
+ ],
+ "portal_app.api.academic.module_grade.record_retake_grade": [
+  "ue_result",
+  "course",
+  "retake_grade"
+ ],
+ "portal_app.api.academic.module_grade.validate_mhc_enrollment": [
+  "student",
+  "mhc_module",
+  "decision",
+  "comment"
  ],
  "portal_app.api.academic.module_grade.validate_module_average": [
   "course",
