@@ -39,6 +39,9 @@
               Un signal, pas une décision : figurer ici n'emporte rien. Le constat se motive par une catégorie du règlement.
             </p>
             <p v-if="candidatesState === 'loading'" class="mt-2 text-caption text-ln-gray-500">Chargement des candidats…</p>
+            <p v-else-if="candidatesState === 'error'" class="mt-2 rounded-sm-ln bg-ln-error-bg p-3 text-caption text-ln-error">
+              Les candidats de ce semestre ne se lisent pas. Le constat peut s'ouvrir sur un matricule saisi.
+            </p>
             <p v-else-if="!candidates.length" class="mt-2 rounded-sm-ln bg-ln-gray-50 p-3 text-caption text-ln-gray-600">
               Aucun candidat signalé pour ce semestre. Un constat peut quand même s'ouvrir sur un matricule saisi.
             </p>
@@ -142,12 +145,18 @@ function facts(c) {
   if (c.term_absence_percent != null) f.push(c.term_absence_percent + ' % d’absences au semestre');
   return f.join(' · ') || 'signalé';
 }
+// Revue adversariale MANDAT-12 (M7, O-5) : garde de séquence ; un refus se dit, il ne passe pas pour « aucun candidat ».
+let seq = 0;
 async function loadCandidates() {
   if (!term.value) return;
+  const mine = ++seq;
   candidatesState.value = 'loading';
-  try { candidates.value = (await listAbandonmentCandidates({ academic_term: term.value, limit: 50 }))?.candidates || []; }
-  catch { candidates.value = []; }
-  finally { candidatesState.value = 'ready'; }
+  try {
+    const out = (await listAbandonmentCandidates({ academic_term: term.value, limit: 50 }))?.candidates || [];
+    if (mine === seq) { candidates.value = out; candidatesState.value = 'ready'; }
+  } catch {
+    if (mine === seq) { candidates.value = []; candidatesState.value = 'error'; }
+  }
 }
 function submit() {
   const values = { student_id: student.value.trim(), ground_category: ground.value, ground_details: details.value.trim() };

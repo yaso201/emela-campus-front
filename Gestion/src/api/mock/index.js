@@ -102,10 +102,29 @@ const S18 = {
     ],
   },
 };
+// Q19 (VERDICT-MANDAT-12-PC1C §4 ter) — une sanction notifiée dont l'appel attend la Direction : 2 semaines
+// prononcées, 5 jours purgés au dépôt de l'appel → 9 jours au plus à reprendre.
+const S18_BY_NAME = {
+  'DIS-2026-014': {
+    domain: 'discipline', doctype: 'Disciplinary Suspension', status: 'Notifiée', decider_role: 'Directeur des Études',
+    machine: { Brouillon: ['Convoquée'], Convoquée: ['Prononcée', 'Sans sanction'], Prononcée: ['Notifiée'],
+      'Sans sanction': [], Notifiée: [] },
+    detail: { ground_category: 'Fraude ou tentative de fraude', ground_details: 'Fraude à l’épreuve de MAT-118, rapport de deux surveillants.',
+      duration_weeks: 2, is_suspended_sentence: 0, period_start: '2026-07-30', period_end: '2026-08-12',
+      notified_on: '2026-07-30', appeal_deadline: '2026-08-13', appealed_on: '2026-08-04',
+      appeal_grounds: 'Je conteste l’identification : je n’étais pas assis à cette place.', days_served_at_appeal: 5,
+      appeal_decision: null, resume_start: null, resume_days_remaining: null },
+    detail_labels: {},
+    acts: [
+      { act: 'decideSuspensionAppeal', method: 'discipline.decide_suspension_appeal', roles: ['Direction'],
+        outcomes: ['Confirmée', 'Réformée', 'Infirmée'], requires_reason: true },
+    ],
+  },
+};
 function s18Dossier(p = {}) {
   const item = (D.dossiers({}).items || []).find((i) => i.name === p.name);
   if (!item) throw Object.assign(new Error('Dossier introuvable : ' + p.name + '.'), { status: 404 });
-  const spec = S18[item.kind] || { domain: item.kind, status: item.status, machine: {}, detail: {},
+  const spec = S18_BY_NAME[item.name] || S18[item.kind] || { domain: item.kind, status: item.status, machine: {}, detail: {},
     detail_labels: {}, acts: [], decider_role: 'Directeur des Études' };
   const roles = readerRoles();
   const mine = spec.acts.filter((a) => a.roles.some((r) => roles.includes(r)));

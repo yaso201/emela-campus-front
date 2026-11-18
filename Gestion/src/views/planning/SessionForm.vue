@@ -24,6 +24,7 @@
             <option v-for="g in groups" :key="g.name" :value="g.name">{{ g.student_group_name || g.name }}</option>
           </select>
         </div>
+        <StateBanner v-if="optionsError" variant="error" compact lead="Options indisponibles." :text="optionsError" />
 
         <template v-if="mode !== 'instructor'">
           <div class="grid grid-cols-3 gap-4">
@@ -154,12 +155,23 @@ const complete = computed(() => {
     && form.custom_session_type && form.room && (form.instructor || suggested.value));
 });
 
+// Revue adversariale MANDAT-12 (M7, O-5) : la réponse d'un chargement dépassé (autre groupe, autre créneau) ne
+// gagne pas — garde de séquence, comme `useResource` ; un refus se dit au lieu de laisser les anciennes options.
+let seq = 0;
+const optionsError = ref('');
 async function reload() {
+  const mine = ++seq;
+  optionsError.value = '';
   if (!form.student_group) { options.value = null; return; }
   const slot = form.schedule_date && form.from_time && form.to_time
     ? { schedule_date: form.schedule_date, from_time: form.from_time, to_time: form.to_time } : {};
-  options.value = await listScheduleOptions({ student_group: form.student_group, ...slot,
-    exclude: props.initial?.name || null });
+  try {
+    const out = await listScheduleOptions({ student_group: form.student_group, ...slot,
+      exclude: props.initial?.name || null });
+    if (mine === seq) options.value = out;
+  } catch (e) {
+    if (mine === seq) { options.value = null; optionsError.value = e.message || 'Les options de la séance ne se lisent pas.'; }
+  }
 }
 function submit() {
   if (props.mode === 'instructor') { emit('submit', { instructor: form.instructor }); return; }

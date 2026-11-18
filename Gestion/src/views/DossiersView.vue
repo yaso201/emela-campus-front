@@ -309,18 +309,31 @@ const actError = ref('');
 const busy = ref(false);
 /* ── MANDAT-12 (M9, Q17) — les listes d'un acte : l'année et le semestre d'accueil viennent du contexte ;
  * les niveaux, de la filière VISÉE du dossier (`get_program`). ── */
+// Revue adversariale MANDAT-12 (M7, O-5) : garde de séquence — les niveaux d'un dossier précédent ne s'affichent pas.
 const levels = ref([]);
+let levelsSeq = 0;
 watch(() => detailOf.value?.detail?.target_program, async (prog) => {
+  const mine = ++levelsSeq;
   levels.value = [];
   if (!prog) return;
-  try { levels.value = ((await getProgramDetail({ program: prog }))?.levels || []).map((l) => ({ value: l.name, label: l.level_name || l.name })); }
-  catch { levels.value = []; }
+  try {
+    const out = ((await getProgramDetail({ program: prog }))?.levels || []).map((l) => ({ value: l.name, label: l.level_name || l.name }));
+    if (mine === levelsSeq) levels.value = out;
+  } catch { if (mine === levelsSeq) levels.value = []; }
 });
 const choices = computed(() => ({
   years: years.value.map((y) => ({ value: y.id, label: y.label })),
   terms: terms.value.map((t) => ({ value: t.id, label: t.label })),
   levels: levels.value,
+  // Q19 : les jours non purgés au dépôt de l'appel — la durée prononcée moins les jours purgés (faits du dossier) ;
+  // 0 pour un sursis ou une période purgée : la reprise n'a alors rien à fixer.
+  appeal_cap: appealCap.value,
 }));
+const appealCap = computed(() => {
+  const d = detailOf.value?.detail || {};
+  if (d.is_suspended_sentence || !d.duration_weeks) return 0;
+  return Math.max(0, 7 * Number(d.duration_weeks) - Number(d.days_served_at_appeal || 0));
+});
 /** La sanction : les trois sièges deviennent `council_members` ; le sursis, un entier. */
 function shapeValues(act, values) {
   if (act !== 'pronounceDisciplinarySuspension') return values;
@@ -355,7 +368,9 @@ async function onAct({ act, outcome, reason, values }) {
   if (reason) payload[REASON_KEY[act.act] || 'decision_reason'] = reason;
   actError.value = '';
   pending.value = '';
-  try { busy.value = true; await fn(payload); reload(); detailRes.load({ name: selectedId.value }); }
+  // Revue adversariale MANDAT-12 (bas) : le panneau reste occupé jusqu'au détail relu — les actes d'avant l'acte ne
+  // restent pas cliquables pendant ce délai (un second clic aurait rejoué une levée, par exemple).
+  try { busy.value = true; await fn(payload); reload(); await detailRes.load({ name: selectedId.value }); }
   catch (e) { actError.value = e.message || 'Acte refusé.'; }
   finally { busy.value = false; }
 }

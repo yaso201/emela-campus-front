@@ -45,10 +45,11 @@
                   <option v-if="f.choices" value="" disabled>{{ optionsOf(f).length ? 'Choisir…' : 'Aucune valeur lue' }}</option>
                   <option v-for="o in optionsOf(f)" :key="o.value" :value="o.value">{{ o.label }}</option>
                 </select>
-                <input v-else :id="'act-f-' + f.key" v-model="values[f.key]" :type="f.type || 'text'" :min="f.min" :max="f.max"
+                <input v-else :id="'act-f-' + f.key" v-model="values[f.key]" :type="f.type || 'text'" :min="f.min"
+                       :max="f.maxFrom ? choices[f.maxFrom] : f.max"
                        class="mt-1 h-10 w-full rounded-sm-ln border border-ln-gray-300 px-2 text-body-sm" />
               </template>
-              <p v-if="f.hint" class="mt-1 text-caption text-ln-gray-500">{{ f.hint }}</p>
+              <p v-if="f.hint" class="mt-1 text-caption text-ln-gray-500">{{ typeof f.hint === 'function' ? f.hint(choices) : f.hint }}</p>
             </div>
           </template>
           <div v-if="a.requires_reason" class="mt-2">
@@ -93,7 +94,7 @@ const props = defineProps({
   waitingRoles: { type: Array, default: () => [] },   // noms de rôles (chaînes) — S-18 `waiting_for_roles`
   busy: { type: Boolean, default: false },
   // MANDAT-12 (M9) : les listes que la vue lit pour un acte (années, semestres, niveaux d'accueil) —
-  // { years: [{ value, label }], terms: [{ value, label }], levels: [{ value, label }] }
+  // { years: [{ value, label }], terms: [{ value, label }], levels: [{ value, label }], appeal_cap: nombre (Q19) }
   choices: { type: Object, default: () => ({}) },
 });
 const emit = defineEmits(['act']);
@@ -127,18 +128,20 @@ const DECIDES = new Set(['decideCoaRequest', 'arbitrateCoaRequest', 'decideLeave
 const FIELDS = {
   addCommissionMember: [
     // Les options du doctype, À LA LETTRE (apostrophe droite) : une apostrophe typographique serait refusée par le Select.
-    { key: 'member_role', label: 'Siège', options: ['Directeur des Études', "Responsable de la formation d'origine", 'Responsable de la formation visée'] },
-    { key: 'member_user', label: 'Membre (compte)' },
+    // Revue adversariale MANDAT-12 (bas) : les paramètres POSITIONNELS du verbe sont exigés à l'écran (C9) — vides,
+    // ils donnaient l'erreur d'argument manquant du cadre au lieu de garder l'acte inactif.
+    { key: 'member_role', label: 'Siège', options: ['Directeur des Études', "Responsable de la formation d'origine", 'Responsable de la formation visée'], required: true },
+    { key: 'member_user', label: 'Membre (compte)', required: true },
   ],
   addCreditRecognition: [
-    { key: 'source_label', label: 'Acquis reconnu' },
-    { key: 'credits_recognized', label: 'Crédits (ECTS)', type: 'number' },
-    { key: 'basis', label: 'Fondement' },
+    { key: 'source_label', label: 'Acquis reconnu', required: true },
+    { key: 'credits_recognized', label: 'Crédits (ECTS)', type: 'number', required: true },
+    { key: 'basis', label: 'Fondement', required: true },
   ],
-  recordResignationInformation: [{ key: 'info_channel', label: 'Moyen de l’information (écrit, entretien proposé)' }],
+  recordResignationInformation: [{ key: 'info_channel', label: 'Moyen de l’information (écrit, entretien proposé)', required: true }],
   convokeDisciplinaryCouncil: [
-    { key: 'convocation_date', label: 'Convocation le', type: 'date' },
-    { key: 'council_date', label: 'Séance le (au moins cinq jours ouvrables après)', type: 'date' },
+    { key: 'convocation_date', label: 'Convocation le', type: 'date', required: true },
+    { key: 'council_date', label: 'Séance le (au moins cinq jours ouvrables après)', type: 'date', required: true },
   ],
   // MANDAT-12 (M9, Q17) — la sanction : `pronounce_disciplinary_suspension(duration_weeks, pronounce_reason,
   // council_members, is_suspended_sentence, period_start)`. Les trois sièges de l'Art. 18.2, chacun une fois ; un
@@ -151,6 +154,16 @@ const FIELDS = {
     { key: 'seat_presidence', label: 'Présidence (directeur des études)', type: 'seat', seat: 'Présidence (directeur des études)', required: true },
     { key: 'seat_rf', label: 'Responsable de formation', type: 'seat', seat: 'Responsable de formation', required: true },
     { key: 'seat_concerne', label: 'Enseignant ou responsable concerné', type: 'seat', seat: 'Enseignant ou responsable concerné', required: true },
+  ],
+  // MANDAT-12 (Q19, VERDICT-MANDAT-12-PC1C §4 ter) — statuer sur l'appel : « Confirmée » ou « Réformée » FIXE la
+  // reprise dans le même acte (`resume_start`, `resume_days_remaining`), quand il reste des jours à purger ; le
+  // plafond (jours non purgés) se lit au détail. « Infirmée » n'en demande aucune. Rien n'est prérempli (C9).
+  decideSuspensionAppeal: [
+    { key: 'resume_start', label: 'Reprise le', type: 'date', when: ['Confirmée', 'Réformée'], onlyIf: 'appeal_cap',
+      required: true, hint: 'Aujourd’hui au plus tôt.' },
+    { key: 'resume_days_remaining', label: 'Jours restants à purger', type: 'number', min: 1, maxFrom: 'appeal_cap',
+      when: ['Confirmée', 'Réformée'], onlyIf: 'appeal_cap', required: true,
+      hint: (c) => `De 1 à ${c.appeal_cap} jour${c.appeal_cap > 1 ? 's' : ''} : la durée prononcée moins les jours purgés au dépôt de l’appel.` },
   ],
   // MANDAT-12 (M9, Q17 ; C9) — l'acceptation crée l'inscription d'accueil : les TROIS valeurs sont exigées à l'écran
   // (rien n'est prérempli) ; « Rejetée » n'en demande aucune.
@@ -169,7 +182,10 @@ function optionsOf(f) {
 /** Un siège du conseil, dans `values` (posé à l'ouverture de l'acte) : { seat, member_user, is_representative }. */
 function seat(key) { return values[key] || {}; }
 /** Un champ paraît-il, pour l'issue et les valeurs du moment ? */
-function shown(f) { return (!f.when || f.when === outcome.value) && (!f.unless || !values[f.unless]); }
+function shown(f) {
+  const when = !f.when || (Array.isArray(f.when) ? f.when.includes(outcome.value) : f.when === outcome.value);
+  return when && (!f.unless || !values[f.unless]) && (!f.onlyIf || Number(props.choices[f.onlyIf]) > 0);
+}
 /** C9 : un champ exigé et visible qui n'a pas sa valeur garde l'acte inactif. */
 function missing(act) {
   return (FIELDS[act] || []).some((f) => f.required && shown(f)

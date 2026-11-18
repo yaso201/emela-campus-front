@@ -153,7 +153,7 @@
             présence n'a de titulaire. Ce groupe figure dans les orphelins.
           </p>
         </div>
-        <div v-else class="flex flex-wrap gap-2">
+        <div v-else-if="detailState === 'ready'" class="flex flex-wrap gap-2">
           <span v-for="i in instructors" :key="i.instructor"
                 class="inline-flex items-center gap-2 rounded-sm-ln border border-ln-gray-300 px-3 py-1.5 text-caption">
             {{ i.instructor_name }}
@@ -331,7 +331,9 @@ const detailState = detailRes.state;
 const eligibleState = eligibleRes.state;
 
 const groups = computed(() => groupsRes.data.value || []);
-const detail = computed(() => detailRes.data.value || null);
+// Revue adversariale MANDAT-12 (M4, O-5) : le détail est celui du groupe CHOISI, jamais celui du précédent —
+// pendant le chargement de B, les enseignants de A ne s'affichent pas (et ne se retirent pas de B).
+const detail = computed(() => (detailRes.data.value?.name === selectedId.value ? detailRes.data.value : null));
 const members = computed(() => detail.value?.students || []);
 const instructors = computed(() => detail.value?.instructors || []);
 const eligible = computed(() => eligibleRes.data.value || []);

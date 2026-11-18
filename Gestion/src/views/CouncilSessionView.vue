@@ -233,6 +233,9 @@ function hold() {
   }));
 }
 function reload() { res.load({ ...params.value, name: data.value.name || undefined, student: selectedId.value || undefined }); }
-onMounted(() => { if (params.value.term) reload(); });
-watch(params, reload);
+// Revue adversariale MANDAT-12 (M8) : un CHANGEMENT DE CONTEXTE relit la séance du nouveau semestre — sans le nom
+// de la séance affichée (qui appartient à l'ancien), et sans sujet choisi.
+function loadForContext() { selectedId.value = null; res.load({ ...params.value }); }
+onMounted(() => { if (params.value.term) loadForContext(); });
+watch(params, loadForContext);
 </script>

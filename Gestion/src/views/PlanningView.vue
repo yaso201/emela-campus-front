@@ -468,9 +468,13 @@ async function publishOneWithDerogation() {
   actError.value = '';
   try {
     busy.value = true;
-    await publishSchedules({ schedules: [detail.value.name], override_reason: overrideReason.value.trim() });
+    // Revue adversariale MANDAT-12 (M6) : `publish_schedules` répond 200 avec un RAPPORT par ligne ; une ligne
+    // refusée (pas en dérogation, gel, transition) se dit, et le motif saisi n'est pas effacé.
+    const out = await publishSchedules({ schedules: [detail.value.name], override_reason: overrideReason.value.trim() });
+    const line = (out?.lines || [])[0];
+    if (line && line.status !== 'ok') { actError.value = line.reason || 'Publication refusée.'; reload(); return; }
     derogateOne.value = false; overrideReason.value = '';
-    reload(); detailRes.load({ name: detail.value.name });
+    reload();
   } catch (e) { actError.value = e.message || 'Dérogation refusée.'; }
   finally { busy.value = false; }
 }
@@ -583,6 +587,9 @@ function closePublish() {
 
 function reload() {
   weekRes.load({ ...params.value, program: program.value, date_from: '2026-09-14', date_to: '2026-09-18' });
+  // Revue adversariale MANDAT-12 (M5) : un acte relit AUSSI le détail de la séance choisie — sinon la lecture
+  // d'avant l'acte (salle, enseignant, « Brouillon », encart J-7) recouvrait la ligne fraîche de la semaine.
+  if (selectedId.value) detailRes.load({ name: selectedId.value });
 }
 function loadExams() {
   examsRes.load({ ...params.value, program: program.value });

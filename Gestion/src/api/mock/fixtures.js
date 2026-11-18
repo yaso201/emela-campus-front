@@ -92,6 +92,9 @@ const AS = {
   ga: { roles: ['Gestionnaire académique'], drop: ['derogate:planning', 'write:structure', 'instruct:dossiers'] },
   director: { roles: ['Director'], drop: ['write:calendar', 'write:charpente', 'write:structure', 'write:groups',
     'write:planning', 'publish:planning', 'write:modules', 'instruct:dossiers'] },
+  // Q19 : la Direction statue sur l'appel disciplinaire (Art. 18.6).
+  direction: { roles: ['Direction'], drop: ['write:calendar', 'write:charpente', 'write:structure', 'write:groups',
+    'write:planning', 'publish:planning', 'write:modules', 'instruct:dossiers'] },
 };
 export function sessionAs(as) {
   const v = AS[as];
