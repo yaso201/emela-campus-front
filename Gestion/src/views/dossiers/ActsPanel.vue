@@ -126,7 +126,8 @@ const DECIDES = new Set(['decideCoaRequest', 'arbitrateCoaRequest', 'decideLeave
 // Les champs propres à un acte — la signature de son verbe serveur, rien de plus.
 const FIELDS = {
   addCommissionMember: [
-    { key: 'member_role', label: 'Siège', options: ['Directeur des Études', 'Responsable de la formation d’origine', 'Responsable de la formation visée'] },
+    // Les options du doctype, À LA LETTRE (apostrophe droite) : une apostrophe typographique serait refusée par le Select.
+    { key: 'member_role', label: 'Siège', options: ['Directeur des Études', "Responsable de la formation d'origine", 'Responsable de la formation visée'] },
     { key: 'member_user', label: 'Membre (compte)' },
   ],
   addCreditRecognition: [
