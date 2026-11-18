@@ -12,7 +12,7 @@
       <div v-for="a in available" :key="a.act">
         <div v-if="openAct === a.act" class="rounded-md-ln border border-ln-gray-300 p-3">
           <p class="text-body-sm font-semibold text-ln-gray-900">{{ LABEL[a.act] || a.act }}</p>
-          <div v-if="a.outcomes?.length" class="mt-2">
+          <div v-if="DECIDES.has(a.act) && a.outcomes?.length" class="mt-2">
             <label :for="'act-out-' + a.act" class="text-caption font-semibold text-ln-gray-700">Issue</label>
             <select :id="'act-out-' + a.act" v-model="outcome" class="mt-1 h-10 w-full rounded-sm-ln border border-ln-gray-300 bg-white px-2 text-body-sm">
               <option v-for="o in a.outcomes" :key="o" :value="o">{{ o }}</option>
@@ -35,7 +35,7 @@
           <div class="mt-3 flex justify-end gap-2">
             <button type="button" class="ln-btn-secondary" @click="openAct = null">Annuler</button>
             <button type="button" class="ln-btn-primary" :disabled="(a.requires_reason && !reason.trim()) || busy"
-                    @click="emit('act', { act: a, outcome, reason: reason.trim(), values: { ...values } })">
+                    @click="emit('act', { act: a, outcome: DECIDES.has(a.act) ? outcome : '', reason: reason.trim(), values: { ...values } })">
               {{ LABEL[a.act] || a.act }}
             </button>
           </div>
@@ -89,6 +89,13 @@ const LABEL = {
   closeWithoutSanction: 'Clore sans sanction', recordDisciplinaryNotification: 'Tracer la notification',
   decideSuspensionAppeal: 'Statuer sur l’appel', liftSuspension: 'Lever la suspension',
 };
+/**
+ * Les verbes qui PRENNENT une issue (`decision`). Pour les autres, `outcomes` (S-18) n'est que le statut
+ * d'arrivée de l'acte : l'envoyer comme `decision` à `pronounce_disciplinary_suspension`, `convoke_…`, etc.
+ * serait un paramètre que leur signature ne connaît pas (le serveur répond 500).
+ */
+const DECIDES = new Set(['decideCoaRequest', 'arbitrateCoaRequest', 'decideLeaveReturnRequest',
+  'decideReorientation', 'decideSuspensionAppeal']);
 // Les champs propres à un acte — la signature de son verbe serveur, rien de plus.
 const FIELDS = {
   addCommissionMember: [
