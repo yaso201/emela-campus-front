@@ -270,7 +270,7 @@ const probes = [
   ['dossiers', () => fxD.dossiers({}).items.length],
   // ⚠️ Sondée avec un NOM RÉEL : la fixture lève sur un dossier inconnu, donc la
   // sonde garde aussi contre le renommage d'un dossier du jeu d'essai.
-  ['dossier', () => fxD.dossier({ name: 'DIS-2027-014' }).chain.length],
+  ['dossier', () => fxD.dossier({ name: 'DIS-2026-014' }).chain.length],
   ['stepsOf', () => fxD.stepsOf('discipline').length],
   ['activeSuspensions', () => fxD.activeSuspensions({}).length],
   ['suspensionsNeedingReactivation', () => fxD.suspensionsNeedingReactivation({}).length],
@@ -304,6 +304,9 @@ const probes = [
   ['programDetail', () => fxK.programDetail({ program: 'LIS' }).levels.length],
   ['echo', () => fxK.echo.year({ academic_year_name: '2027-2028' }).name],
   ['sessionAs', () => fx.sessionAs('rf').roles.length],
+  // MANDAT-12 — S-7 (enseignants affectables) et S-9 (salles, créneau, cours du groupe).
+  ['assignableInstructors', () => fxG.assignableInstructors({ group: 'SG-L2GL-A' }).instructors.length],
+  ['scheduleOptions', () => fxP.scheduleOptions({ student_group: 'SG-L2GL-A' }).rooms.length],
 ];
 const dead = [];
 for (const [name, fn] of probes) { try { fn(); } catch (e) { dead.push(name + ' → ' + e.message); } }
@@ -2509,7 +2512,12 @@ for (const p of vue) {
      * Une liste d'exclusion est un endroit où un contrôle cesse de regarder : elle
      * se vérifie au moins aussi soigneusement que ce qu'il regarde.
      */
-    if (/^(skeletonWidths|allowed|roles)$/.test(prop)) continue;
+    /*
+     * MANDAT-12 — deux tableaux de CHAÎNES de plus, lus et vérifiés : `ActsPanel.waitingRoles`
+     * (S-18 `waiting_for_roles`, consommé par un seul `.join(', ')`) et `ReasonStep.detailRequiredFor`
+     * (valeurs de motif, consommé par un seul `.includes(reason)`). Aucun n'est itéré ni déréférencé.
+     */
+    if (/^(skeletonWidths|allowed|roles|waitingRoles|detailRequiredFor)$/.test(prop)) continue;
     const hit = CONTRACT_FORMS.map((f) => f(src, prop, m[0])).find(Boolean);
     const label = basename(p, '.vue') + '.' + prop;
     if (!hit || !hit[1] || !/\w/.test(hit[1])) {
@@ -2689,6 +2697,56 @@ const main = read(join(SRC, 'assets/main.css'));
 check('aucun @import après les directives @tailwind',
   main.slice(main.indexOf('@tailwind')).includes('@import')
     ? ['un @import suit une directive — CSS invalide, postcss-import peu fiable'] : []);
+
+// ─── 9. LA RÉPONSE PÉRIMÉE (MANDAT-12, D-FRONT-REPONSE-PERIMEE-01) ───────────
+// La course O-5 de MANDAT-10, rendue DÉTERMINISTE : deux chargements, dont les
+// réponses arrivent dans l'ordre inverse de leur départ. Le premier (sans
+// filtre) rend 6 groupes ; le second (la filière choisie) rend une liste vide.
+// Attendu : l'écran garde la réponse du chargement le plus RÉCENT, quel que soit
+// l'ordre d'arrivée — succès comme échec. Sans la garde de séquence, la réponse
+// périmée arrivée la dernière réécrivait l'état (« 6 groupes », « ready »).
+say('\n9 · La réponse périmée ne gagne pas');
+{
+  const { useResource } = await import(pathToFileURL(join(SRC, 'composables/useResource.js')));
+  const pending = [];
+  const loader = (p) => new Promise((resolve, reject) => pending.push({ p, resolve, reject }));
+  const settle = () => new Promise((r) => setTimeout(r, 0));
+  const six = { items: Array.from({ length: 6 }, (_, i) => ({ name: 'G' + i })) };
+  const problems = [];
+
+  // (a) succès périmé arrivé APRÈS le récent
+  const a = useResource(loader);
+  a.load({ program: null });
+  a.load({ program: 'Bachelor Administration' });
+  pending[1].resolve({ items: [] });
+  await settle();
+  pending[0].resolve(six);
+  await settle();
+  if (a.state.value !== 'empty') problems.push(`(a) état « ${a.state.value} » au lieu de « empty »`);
+  if (a.data.value?.items?.length !== 0) problems.push(`(a) ${a.data.value?.items?.length} lignes au lieu de 0`);
+
+  // (b) échec périmé arrivé APRÈS le récent
+  pending.length = 0;
+  const b = useResource(loader);
+  b.load({ program: null });
+  b.load({ program: 'X' });
+  pending[1].resolve(six);
+  await settle();
+  pending[0].reject(new Error('réseau'));
+  await settle();
+  if (b.state.value !== 'ready') problems.push(`(b) état « ${b.state.value} » au lieu de « ready »`);
+  if (b.error.value) problems.push('(b) une erreur périmée a été retenue');
+
+  // (c) témoin : sans course, la réponse unique est prise
+  pending.length = 0;
+  const c = useResource(loader);
+  c.load({});
+  pending[0].resolve(six);
+  await settle();
+  if (c.state.value !== 'ready' || c.data.value?.items?.length !== 6) problems.push('(c) la réponse unique n’est pas prise');
+
+  check('la réponse d’un chargement dépassé est ignorée (succès et échec)', problems);
+}
 
 // ─── VERDICT ─────────────────────────────────────────────────────────────────
 say('');

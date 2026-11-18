@@ -35,6 +35,157 @@ const GC = 'portal_app.api.academic.grade_control.';
 const MG = 'portal_app.api.academic.module_grade.';
 const DL = 'portal_app.api.academic.deliberation_mgmt.';
 const EW = 'portal_app.api.academic.early_warning.';
+
+/* ── MANDAT-12 (maquettes M5, M6) — `?as=` choisit le lecteur ; `?cps=` l'état de la séance. ── */
+const query = (k) => new URLSearchParams(location.search).get(k);
+const readerRoles = () => (query('as') ? (F.sessionAs(query('as')).roles || [])
+  : ['Gestionnaire académique', 'Education Manager']);
+
+/** S-18 — un dossier par procédure ; les actes sont filtrés par les rôles du lecteur. */
+const S18 = {
+  conge: {
+    domain: 'coa', doctype: 'Academic Leave Request', status: 'Approuvée', decider_role: 'Directeur des Études',
+    machine: { Brouillon: ['Annulée', 'Soumise'], Soumise: ['Annulée', 'En revue'], 'En revue': ['Approuvée', 'Rejetée'],
+      Approuvée: ['Rejetée', 'Réactivée'], Rejetée: ['Approuvée'], Annulée: [], Réactivée: [] },
+    // C11 (PC1C) : dates cohérentes avec le « 10 septembre 2026 » du simulacre — un congé ouvert en mars 2026.
+    detail: { from_date: '2026-03-15', to_date: '2027-03-14', event_date: null, reason: 'Situation familiale documentée',
+      force_majeure_reason: null, previous_academic_status: 'ACT', is_second_leave: 0, instructed_by: 'e.mensah@lanem.bj',
+      instructed_on: '2026-03-09', decision_by: 's.kouassi@lanem.bj', decision_on: '2026-03-16',
+      decision_reason: 'Congé d’un an accordé, premier des deux autorisés.', arbitrated_by: null, arbitrated_on: null,
+      arbitration_reason: null, student_academic_status: 'COA' },
+    detail_labels: { instructed_by: 'Edwige Mensah', decision_by: 'Serge Kouassi',
+      previous_academic_status: 'Actif', student_academic_status: 'Congé académique' },
+    acts: [
+      { act: 'arbitrateCoaRequest', method: 'academic_leave_request.arbitrate_coa_request', roles: ['Director'], outcomes: ['Rejetée'], requires_reason: true },
+      { act: 'reactivateFromCoa', method: 'academic_leave_request.reactivate_from_coa', roles: ['Directeur des Études'], outcomes: null, requires_reason: false },
+    ],
+  },
+  reorientation: {
+    domain: 'reorientation', doctype: 'Reorientation Request', status: 'En commission', decider_role: 'Directeur des Études',
+    machine: { Brouillon: ['Annulée', 'Soumise'], Soumise: ['Annulée', 'En commission'],
+      'En commission': ['Acceptée', 'Rejetée'], Acceptée: [], Rejetée: [], Annulée: [] },
+    detail: { case: 'Demande volontaire de réorientation', origin_program: 'LIS', target_program: 'LRC',
+      motivation: 'Projet professionnel orienté infrastructure.', mutualization_rate: 62, decided_by: null, decided_on: null,
+      decision_reason: null, notified_on: null,
+      commission_members: [{ member_role: 'Directeur des Études', user: 's.kouassi@lanem.bj', user_label: 'Serge Kouassi' },
+        { member_role: 'Responsable de la formation d’origine', user: 'a.hounsou@lanem.bj', user_label: 'Aline Hounsou' },
+        ...(query('reo') === 'complete'
+          ? [{ member_role: 'Responsable de la formation visée', user: 'p.zinsou@lanem.bj', user_label: 'Pascal Zinsou' }] : [])],
+      commission_missing_roles: query('reo') === 'complete' ? [] : ['Responsable de la formation visée'],
+      recognized_credits: [{ source_label: 'UE 2.1 Algorithmique', credits_recognized: 6, basis: 'Programme équivalent' }] },
+    detail_labels: { origin_program: 'Licence Informatique et Systèmes', target_program: 'Licence Réseaux et Cloud' },
+    acts: [
+      { act: 'addCommissionMember', method: 'reorientation.add_commission_member', roles: ['Directeur des Études'], outcomes: null, requires_reason: false },
+      { act: 'addCreditRecognition', method: 'reorientation.add_credit_recognition', roles: ['Directeur des Études'], outcomes: null, requires_reason: false },
+      // M9 : `?reo=complete` — la commission est complète, la décision est ouverte (acceptation : placement).
+      query('reo') === 'complete'
+        ? { act: 'decideReorientation', method: 'reorientation.decide_reorientation', roles: ['Directeur des Études'],
+          outcomes: ['Acceptée', 'Rejetée'], requires_reason: true }
+        : { act: 'decideReorientation', roles: ['Directeur des Études'],
+          blocked: 'Art. 42.13 — la commission n’est pas complète. Manquent : Responsable de la formation visée.' },
+    ],
+  },
+  // MANDAT-12 (M9) — un dossier disciplinaire au conseil convoqué : le DE prononce ou clôt.
+  discipline: {
+    domain: 'discipline', doctype: 'Disciplinary Suspension', status: 'Convoquée', decider_role: 'Directeur des Études',
+    machine: { Brouillon: ['Convoquée'], Convoquée: ['Prononcée', 'Sans sanction'], Prononcée: ['Notifiée'],
+      'Sans sanction': [], Notifiée: [] },
+    detail: { ground_category: 'Comportement répréhensible', ground_details: 'Altercation en salle de TP, rapport du surveillant.',
+      convocation_date: '2026-06-26', council_date: '2026-07-04', duration_weeks: null, pronounce_reason: null,
+      council_members: [] },
+    detail_labels: {},
+    acts: [
+      { act: 'pronounceDisciplinarySuspension', method: 'discipline.pronounce_disciplinary_suspension',
+        roles: ['Directeur des Études'], outcomes: ['Prononcée'], requires_reason: true },
+      { act: 'closeWithoutSanction', method: 'discipline.close_without_sanction',
+        roles: ['Directeur des Études'], outcomes: ['Sans sanction'], requires_reason: true },
+    ],
+  },
+};
+// Q19 (VERDICT-MANDAT-12-PC1C §4 ter) — une sanction notifiée dont l'appel attend la Direction : 2 semaines
+// prononcées, 5 jours purgés au dépôt de l'appel → 9 jours au plus à reprendre.
+const S18_BY_NAME = {
+  'DIS-2026-014': {
+    domain: 'discipline', doctype: 'Disciplinary Suspension', status: 'Notifiée', decider_role: 'Directeur des Études',
+    machine: { Brouillon: ['Convoquée'], Convoquée: ['Prononcée', 'Sans sanction'], Prononcée: ['Notifiée'],
+      'Sans sanction': [], Notifiée: [] },
+    detail: { ground_category: 'Fraude ou tentative de fraude', ground_details: 'Fraude à l’épreuve de MAT-118, rapport de deux surveillants.',
+      duration_weeks: 2, is_suspended_sentence: 0, period_start: '2026-07-30', period_end: '2026-08-12',
+      notified_on: '2026-07-30', appeal_deadline: '2026-08-13', appealed_on: '2026-08-04',
+      appeal_grounds: 'Je conteste l’identification : je n’étais pas assis à cette place.', days_served_at_appeal: 5,
+      appeal_decision: null, resume_start: null, resume_days_remaining: null },
+    detail_labels: {},
+    acts: [
+      { act: 'decideSuspensionAppeal', method: 'discipline.decide_suspension_appeal', roles: ['Direction'],
+        outcomes: ['Confirmée', 'Réformée', 'Infirmée'], requires_reason: true },
+    ],
+  },
+};
+function s18Dossier(p = {}) {
+  const item = (D.dossiers({}).items || []).find((i) => i.name === p.name);
+  if (!item) throw Object.assign(new Error('Dossier introuvable : ' + p.name + '.'), { status: 404 });
+  const spec = S18_BY_NAME[item.name] || S18[item.kind] || { domain: item.kind, status: item.status, machine: {}, detail: {},
+    detail_labels: {}, acts: [], decider_role: 'Directeur des Études' };
+  const roles = readerRoles();
+  const mine = spec.acts.filter((a) => a.roles.some((r) => roles.includes(r)));
+  return {
+    ...item, domain: spec.domain, doctype: spec.doctype, status: spec.status, decider_role: spec.decider_role,
+    machine: spec.machine, detail: spec.detail, detail_labels: spec.detail_labels,
+    available_acts: mine.filter((a) => !a.blocked).map(({ act, method, outcomes, requires_reason }) =>
+      ({ act, method: 'portal_app.api.academic.' + method, outcomes, requires_reason })),
+    blocked_acts: mine.filter((a) => a.blocked).map(({ act, blocked }) => ({ act, reason: blocked })),
+    waiting_for_roles: [...new Set(spec.acts.filter((a) => !a.blocked).flatMap((a) => a.roles))],
+  };
+}
+
+/**
+ * S-17 — une séance du conseil, dans l'état choisi par `?cps=` (brouillon, convoquee, tenue).
+ * C5 : les dates s'accordent au « 10 septembre » du simulacre ; C7 : une séance ne se tient pas avant sa date.
+ */
+function s17Session(p = {}) {
+  const phase = query('cps') || 'convoquee';
+  const status = { brouillon: 'Brouillon', convoquee: 'Convoquée', tenue: 'Tenue' }[phase];
+  const date = { brouillon: '2026-09-17', convoquee: '2026-09-10', tenue: '2026-09-08' }[phase];
+  const roles = readerRoles();
+  const isDe = roles.includes('Directeur des Études');
+  const isEm = roles.includes('Education Manager');
+  const rows = [
+    ['ETU-24-0188', 'Fabrice Ahodékon', 'Retard : 24 ECTS non acquis sur 60 possibles (seuil 20)', [1, 0]],
+    ['ETU-24-0203', 'Yasmine Toko', 'Absences : 12 séances non excusées au semestre 1 (seuil 10)', [1, 0]],
+    ['ETU-23-0091', 'Serge Bocco', 'Détresse : UE 3.4 Systèmes et réseaux à 5,00/20 (plancher 6)', [1, 0]],
+    ['ETU-24-0147', 'Grâce Aïvodji', 'Absences : 16 séances non excusées au semestre 1 (seuil 10)', [0, 1]],
+    ['ETU-24-0112', 'Ange Sossou', 'Retard : 21 ECTS non acquis sur 60 possibles (seuil 20)', [0, 0]],
+  ];
+  const presence = ([pr, un]) => (status !== 'Tenue' ? null
+    : pr ? 'present' : un ? 'absent_non_justifie' : 'absent_justifie');
+  const convokedOn = status === 'Brouillon' ? null : '2026-09-03';
+  const agenda = rows.map(([student, name, , att], i) => ({
+    row: 'PCS-ROW-' + i, student, student_name: name, convoked_on: convokedOn, presence: presence(att),
+    preconisations: student === 'ETU-23-0091' ? 1 : 0,
+  }));
+  const subjectRow = rows.find((r) => r[0] === (p.student || 'ETU-23-0091'));
+  const subject = subjectRow ? {
+    ...agenda.find((a) => a.student === subjectRow[0]), criteria_snapshot: subjectRow[2], notes: null,
+    preconisation_list: subjectRow[0] === 'ETU-23-0091'
+      ? [{ name: 'PRECO-2026-0004', kind: 'Contrat de remédiation', status: 'Ouverte' }] : [],
+  } : null;
+  const closeState = status === 'Tenue' ? [false, 'La séance est tenue : elle ne se modifie plus.']
+    : status === 'Brouillon' ? [false, 'La séance n’est pas convoquée : l’Education Manager la convoque d’abord.']
+      : isDe ? [true, null] : [false, 'Tenir la séance appartient au directeur des études (Art. 32.5).'];
+  const convokeState = status !== 'Brouillon' ? [false, 'La séance est déjà convoquée.']
+    : isEm ? [true, null] : [false, 'La convocation appartient à l’Education Manager.'];
+  return {
+    name: 'PCS-2026-0003', status, academic_term: '2026-2027 (S1)', session_date: date,
+    members: [], examined: [], convoked_on: convokedOn || '', held_on: status === 'Tenue' ? date : '',
+    date, convoked: status === 'Brouillon' ? 0 : rows.length,
+    examined_count: status === 'Tenue' ? rows.length : 0, agenda, subject,
+    chair: status === 'Tenue' ? { user: 'f.ahoyo@lanem.bj', label: 'Florence Ahoyo' } : null,
+    chair_rule: 'Le directeur des études qui tient la séance (Art. 32.5) — connu une fois la séance tenue.',
+    can_close: closeState[0], close_blocked_reason: closeState[1],
+    can_convoke: convokeState[0], convoke_blocked_reason: convokeState[1],
+    unavailable: ['opened_at', 'examined_at', 'program_label'],
+  };
+}
 const SA = 'portal_app.api.academic.service_allocation.';
 
 const HANDLERS = {
@@ -44,7 +195,15 @@ const HANDLERS = {
   // E3' (maquette) : `?as=rf` ou `?as=de` rend un lecteur SANS les droits de charpente — pour voir la règle 3.
   'portal_app.api.identity.session_context.get_session_context': () =>
     F.sessionAs(new URLSearchParams(location.search).get('as')),
-  'portal_app.api.academic.chassis.get_academic_context': () => F.academicContext,
+  // MANDAT-12 (M8) : `?ctx=plusieurs` — deux semestres couvrent aujourd'hui (S1 et un semestre de
+  // parcours, même date de début) ; le serveur n'en choisit aucun et rend les candidats.
+  'portal_app.api.academic.chassis.get_academic_context': () => (
+    query('ctx') === 'plusieurs'
+      ? { ...F.academicContext,
+        terms: [...F.academicContext.terms, { id: 'T-S5-COM', label: 'S5 — parcours COM', parity: 'impair' }],
+        current: { year: 'AY-2026', term: null }, candidates: ['T-1', 'T-S5-COM'],
+        note: 'Année académique 2026-2027 — plusieurs semestres sont en cours aujourd’hui : choisissez celui de votre travail.' }
+      : F.academicContext),
   'portal_app.api.academic.chassis.get_work_queue': (p) => F.workQueue(p),
   'portal_app.api.academic.chassis.get_work_queue_counts': () => F.workQueueCounts,
 
@@ -60,6 +219,23 @@ const HANDLERS = {
   // Actes M2 g2 — forme serveur inline (UE + cycle de maquette).
   [ST + 'create_ue']: (p) => ({ name: 'UE-MOCK-0001', ue_name: (p.values || {}).ue_name }),
   [ST + 'update_ue']: (p) => ({ name: p && p.ue, ue_name: (p.values || {}).ue_name }),
+  // MANDAT-12 (M3) — S-10 et les écritures de module, forme serveur.
+  [ST + 'list_ue_module_catalogue']: (p) => ({
+    ue: p.ue,
+    modules: [
+      ...((F.ueDetail({ ue: p.ue }) || {}).modules || []).map((m) => ({
+        course: m.course, course_name: m.course_name, module_code: m.custom_module_code,
+        coefficient: m.coefficient, module_nature: m.custom_module_nature, attached: true, linked_elsewhere: false })),
+      { course: 'INF-209', course_name: 'Génie logiciel avancé', module_code: 'INF-209', coefficient: 2,
+        module_nature: 'Standard', attached: false, linked_elsewhere: false },
+      { course: 'INF-211', course_name: 'Projet tutoré', module_code: 'INF-211', coefficient: 3,
+        module_nature: 'Stage', attached: false, linked_elsewhere: false },
+    ],
+  }),
+  [ST + 'create_module']: () => ({ name: 'INF-299', custom_module_code: 'INF-299' }),
+  [ST + 'update_module']: (p) => ({ name: p.course }),
+  [ST + 'attach_module_to_ue']: (p) => ({ name: p.ue, validation_status: 'Brouillon' }),
+  [ST + 'detach_module_from_ue']: (p) => ({ name: p.ue, validation_status: 'Brouillon' }),
   [ST + 'propose_maquette']: () => ({ proposed: ['UE-MOCK-0001'], count: 1 }),
   [ST + 'validate_maquette']: () => ({ validated: ['UE-MOCK-0001'], count: 1 }),
   [ST + 'return_maquette_to_draft']: () => ({ returned: ['UE-MOCK-0001'], count: 1 }),
@@ -95,9 +271,18 @@ const HANDLERS = {
   [GR + 'create_group']: (p) => ({ name: 'SG-MOCK-0001', student_group_name: (p.values || {}).student_group_name }),
   [GR + 'add_students_to_group']: (p) => grpAddReport(p),
   [GR + 'deactivate_students_in_group']: (p) => ({ deactivated: (p.students || []) }),
+  // MANDAT-12 (M1) — S-7 et les actes du détail d'un groupe, forme serveur.
+  [GR + 'list_assignable_instructors']: (p) => G.assignableInstructors(p),
+  [GR + 'update_group']: (p) => ({ name: p.name }),
+  [GR + 'set_group_disabled']: (p) => ({ name: p.name, disabled: p.disabled }),
+  [GR + 'transfer_student']: (p) => ({ status: 'transferred', student: p.student, from_group: p.from_group, to_group: p.to_group }),
+  [GR + 'assign_instructor']: (p) => ({ group: p.group, status: 'assigned' }),
+  [GR + 'remove_instructor']: (p) => ({ group: p.group, status: 'removed' }),
   // L'ACTE d'écriture — appelé sur un geste, jamais au chargement d'un écran. (La cascade d'admission
   // `create_student_from_applicant` n'est plus appelée par ce front : MANDAT-10, Q3.)
   [EN + 'replay_enrollment']: (p) => G.enrollmentReport(p),
+  // MANDAT-12 (M7) — la complétion pédagogique, forme serveur.
+  [EN + 'run_pedagogical_enrollment']: (p) => ({ student: p.student, course_enrollments: 3, groups: 1, skipped: 2 }),
   [EN + 'list_incomplete_enrollments']: (p) => G.enrollmentReplayQueue(p),
   [EN + 'list_moodle_orphans']: (p) => G.moodleOrphans(p),
   // La LECTURE du journal — c'est elle que l'écran du rapport consomme.
@@ -110,6 +295,12 @@ const HANDLERS = {
   [PL + 'get_module_planning_summary']: (p) => P.modulePlanningSummary(p),
   [PL + 'check_schedule_conflicts']: (p) => P.scheduleConflicts(p),
   [PL + 'publish_schedules']: (p) => P.publishReport(p),
+  // MANDAT-12 (M2) — S-9 et les écritures de séance, forme serveur.
+  [PL + 'list_schedule_options']: (p) => P.scheduleOptions(p),
+  [PL + 'create_schedule']: (p) => ({ name: 'CS-MOCK-0100', custom_status: 'Planifié', custom_planning_status: 'Brouillon',
+    instructor: (p.values || {}).instructor || null, instructor_source: (p.values || {}).instructor ? 'choisi' : 'répartition' }),
+  [PL + 'update_schedule']: (p) => ({ name: p.name, custom_status: 'Planifié', custom_planning_status: 'Modifié' }),
+  [PL + 'assign_instructor']: (p) => ({ instructor: p.instructor, rows: (p.schedules || []).map((s) => ({ schedule: s, status: 'assigned' })) }),
   // Acte M2 g5 — changement de statut (dont annulation). Forme serveur inline.
   [PL + 'set_schedule_status']: (p) => ({ name: p && p.name, custom_status: p && p.status }),
   [PL + 'get_instructor_day_load']: (p) => P.instructorDayLoad(p),
@@ -142,7 +333,19 @@ const HANDLERS = {
   // 🔴 Les deux lectures transversales sont des manques nommés : aucune surface
   // ne les rend, les lectures serveur sont ÉCLATÉES par procédure.
   'portal_app.api.academic.dossiers_read.list_dossiers': (p) => D.dossiers(p),
-  get_dossier: (p) => D.dossier(p),
+  // MANDAT-12 (S-18) : la clé nue disparaît — la lecture unitaire a son chemin serveur.
+  'portal_app.api.academic.dossiers_read.get_dossier': (p) => s18Dossier(p),
+  // MANDAT-12 (M9) — ouvrir un dossier : les candidats signalés (forme serveur), puis la naissance en Brouillon.
+  'portal_app.api.academic.abandonment.list_abandonment_candidates': (p) => ({
+    as_of: '2026-09-10', academic_term: p.academic_term, note: 'SIGNAL uniquement — figurer n’emporte rien.',
+    candidates: p.__empty ? [] : [
+      { student: 'ETU-24-0164', status: 'ACT', fact_1_four_consecutive_weeks: true, fact_2_no_evaluation_line: false,
+        fact_3_over_20_percent_prolonged: true, fact_4_leave_expired_no_return: false, term_absence_percent: 41, term_sessions: 58, weekly: [] },
+      { student: 'ETU-24-0203', status: 'RED', fact_1_four_consecutive_weeks: false, fact_2_no_evaluation_line: true,
+        fact_3_over_20_percent_prolonged: false, fact_4_leave_expired_no_return: false, term_absence_percent: 12, term_sessions: 58, weekly: [] },
+    ] }),
+  'portal_app.api.academic.abandonment.create_abandonment_finding': () => ({ name: 'ABD-2026-012', status: 'Brouillon' }),
+  'portal_app.api.academic.discipline.create_disciplinary_case': () => ({ name: 'DIS-2026-021', status: 'Brouillon' }),
   'portal_app.api.academic.chassis.list_stalled_dossiers': (p) => D.awaitingOtherDecider(p),
   'portal_app.api.academic.discipline.list_active_suspensions': (p) => D.activeSuspensions(p),
   'portal_app.api.academic.discipline.list_suspensions_needing_moodle_reactivation':
@@ -154,7 +357,9 @@ const HANDLERS = {
   // de conseil pédagogique. Voir `api/council.js` et le relevé des grappes 8-11.
   [EW + 'list_cps_candidates']: (p) => C.councilCandidates(p),
   [EW + 'list_cps_sessions']: (p) => ({ items: [{ name: 'PCS-MOCK-1' }] }),
-  [EW + 'get_cps_session']: (p) => C.councilSession(p),
+  // MANDAT-12 (M5) — la forme S-17 ; `?cps=brouillon|convoquee|tenue` choisit l'état montré.
+  [EW + 'get_cps_session']: (p) => s17Session(p),
+  [EW + 'convoke_cps_session']: (p) => ({ name: p.name, status: 'Convoquée', notified: [] }),
   [EW + 'list_preconisations']: (p) => C.councilPreconisations(p),
   [EW + 'list_absence_threshold_signals']: (p) => C.absenceThresholds(p),
   // Actes M3 g8 — forme serveur inline (non stateful ; le mode branché fait foi).

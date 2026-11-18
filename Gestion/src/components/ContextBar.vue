@@ -14,6 +14,13 @@
       <button v-if="term" type="button" class="ln-ctx-pick" @click="emit('pick', 'term')">
         {{ term.label }} <span class="text-[10px] text-ln-gray-400">▾</span>
       </button>
+      <!-- MANDAT-12 (M8, Q8 b) : plusieurs semestres en cours — le serveur n'en choisit aucun ; le
+           lecteur choisit, et son choix vit dans l'adresse comme tout contexte. -->
+      <span v-else-if="candidates.length" class="inline-flex items-center gap-2 rounded-sm-ln bg-ln-warning-bg px-2.5 py-1 text-caption text-[#6B4415]"
+            role="group" aria-label="Choisir le semestre">
+        <b class="font-semibold">Plusieurs semestres en cours :</b>
+        <button v-for="t in candidates" :key="t.id" type="button" class="ln-ctx-pick !h-[26px]" @click="emit('choose', t.id)">{{ t.label }}</button>
+      </span>
       <p v-if="note" class="ml-auto truncate text-caption text-ln-gray-500">{{ note }}</p>
     </template>
   </div>
@@ -35,8 +42,9 @@ const props = defineProps({
   term: { type: Object, default: null },
   note: { type: String, default: '' },
   loading: { type: Boolean, default: false },
+  candidates: { type: Array, default: () => [] },   // [{ id, label }] — MANDAT-12 (Q8 b) : semestres à choisir
 });
-const emit = defineEmits(['pick']);
+const emit = defineEmits(['pick', 'choose']);
 
 const yearLabel = computed(() => (props.year ? 'Année ' + props.year.label : 'Année —'));
 </script>

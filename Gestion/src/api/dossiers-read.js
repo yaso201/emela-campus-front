@@ -48,10 +48,12 @@ import { call } from './client.js';
  */
 export const listDossiers = (p) => call('portal_app.api.academic.dossiers_read.list_dossiers', p);
 
-/** 🔴 M (RF-G-01 S-2, ACCEPTÉ pour BACK-G-01) — le détail transversal n'existe pas
- *  au serveur (list_dossiers, lui, est construit et branché). Clé nue conservée :
- *  le simulacre la sert, le branchement attendra la fonction. */
-export const getDossier = (p) => call('get_dossier', p);
+/** 🟢 COMBLÉ (MANDAT-12, S-18) — le détail transversal, lu par nom (`dossiers_read.get_dossier`). */
+export const getDossier = (p) => call('portal_app.api.academic.dossiers_read.get_dossier', p);
+// MANDAT-12 (S-18) : le détail PAR PROCÉDURE existe — lu par nom, clos compris. Il rend `detail`
+// (champs du doctype) et `detail_labels` (noms, libellés de statut — C3), `machine` (les transitions
+// du contrôleur), `available_acts` (méthode, issues, motif exigé) et `blocked_acts` (la phrase du fait
+// qui bloque) pour le lecteur.
 
 /* ─── Lectures RÉELLES, par procédure ──────────────────────────────────── */
 

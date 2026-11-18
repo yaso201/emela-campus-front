@@ -30,7 +30,7 @@
 
       <div>
         <label :for="name + '-detail'" class="flex items-center gap-1.5 text-body-sm font-semibold text-ln-gray-900">
-          {{ detailLabel }} <span v-if="detailRequired" class="font-bold text-ln-error">obligatoire</span>
+          {{ detailLabel }} <span v-if="detailNeeded" class="font-bold text-ln-error">obligatoire</span>
         </label>
         <textarea :id="name + '-detail'" v-model="detail" rows="4"
                   class="mt-2 w-full rounded-sm-ln border border-ln-gray-300 p-3 text-body-sm leading-normal text-ln-gray-900 outline-none focus:border-ln-blue-600"
@@ -82,6 +82,7 @@ const props = defineProps({
   detailPlaceholder: { type: String, default: '' },
   detailHint: { type: String, default: '' },
   detailRequired: { type: Boolean, default: true },
+  detailRequiredFor: { type: Array, default: null },   // [valeur de motif] — MANDAT-12, M4
   confirmLabel: { type: String, default: 'Confirmer' },
   confirmKind: { type: String, default: 'primary' },
   footnote: { type: String, default: '' },
@@ -93,7 +94,11 @@ const emit = defineEmits(['submit', 'cancel']);
 const reason = ref(null);
 const detail = ref('');
 
-const complete = computed(() => !!reason.value && (!props.detailRequired || detail.value.trim().length > 0));
+// MANDAT-12 (VERDICT-MANDAT-12-PC1B, décision M4) : `detailRequiredFor` restreint l'obligation de la
+// précision à certains motifs (« Autre ») ; sans lui, `detailRequired` vaut pour tous.
+const detailNeeded = computed(() => (props.detailRequiredFor
+  ? props.detailRequiredFor.includes(reason.value) : props.detailRequired));
+const complete = computed(() => !!reason.value && (!detailNeeded.value || detail.value.trim().length > 0));
 
 function submit() {
   if (!complete.value) return;

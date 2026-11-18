@@ -115,7 +115,7 @@ const SESSIONS = [
     instructor: 'Mme Estelle Lawson',
     // ⚠️ MODIFIÉE après publication : les étudiants avaient déjà vu la séance.
     custom_status: 'Planifié', custom_planning_status: 'Modifié' },
-  { name: 'CS-0007', day: 'thu', from_time: '08:00', to_time: '11:00',
+  { name: 'CS-0007', day: 'thu', from_time: '08:00', to_time: '10:00',
     course: 'MAT-118', course_name: 'Probabilités', custom_session_type: 'Examen',
     student_group: 'SG-L2GL-PROMO', room: 'Amphi A',
     instructor: 'Pr. Célestine Ahouandjinou',
@@ -191,7 +191,66 @@ export function schedule(params = {}) {
     throw Object.assign(new Error('Séance introuvable : ' + params.name + '.'),
       { code: 'NOT_FOUND', status: 404 });
   }
-  return { ...enrich(s), program: 'L2 Génie logiciel', custom_j7_override_reason: null };
+  // MANDAT-12 (M2) : le motif d'une dérogation J-7 reste lisible ; et l'écran LIT si publier
+  // maintenant exige la dérogation (le serveur l'établit, le front ne compte pas les jours).
+  const j7Late = !!s.is_exam && ['mon', 'tue', 'wed'].includes(s.day);
+  return {
+    ...enrich(s), program: 'L2 Génie logiciel', custom_j7_override_reason: null,
+    j7_derogations: J7_DEROGATIONS[s.name] || [],
+    j7_publication: s.custom_planning_status === 'Publié' ? null : { needs_derogation: j7Late, min_days: 7 },
+  };
+}
+
+const J7_DEROGATIONS = {
+  'CS-0007': [{ at: '2026-09-11 10:14:02', by: 'f.ahoyo@lanem.bj', by_label: 'Félicité Ahoyo', days_ahead: 6,
+    reason: 'Report imposé : l’amphi A était réquisitionné la semaine prévue ; épreuve maintenue au jeudi 17.' }],
+};
+
+/** S-9 (MANDAT-12) — le simulacre de `list_schedule_options`. */
+const ROOMS = [
+  { name: 'Amphi A', room_name: 'Amphi A', room_number: 'A-001', seating_capacity: '220' },
+  { name: 'Amphi B', room_name: 'Amphi B', room_number: 'B-001', seating_capacity: '160' },
+  { name: 'Salle 4', room_name: 'Salle 4', room_number: 'C-104', seating_capacity: '40' },
+  { name: 'Salle 7', room_name: 'Salle 7', room_number: 'C-107', seating_capacity: '40' },
+  { name: 'Salle 12', room_name: 'Salle 12', room_number: 'C-212', seating_capacity: '36' },
+  { name: 'Labo 1', room_name: 'Labo 1', room_number: 'L-001', seating_capacity: '24' },
+];
+const OPTION_INSTRUCTORS = [
+  ['Pr. Léonard Hounkpatin', 'Permanent'], ['M. Firmin Dossou', 'Vacataire'], ['M. Cyrille Adjovi', 'Permanent'],
+  ['Pr. Célestine Ahouandjinou', 'Permanent'], ['Mme Estelle Lawson', 'Vacataire'], ['Pr. Bernard Soglo', 'Permanent'],
+];
+const DATE_OF_DAY = { mon: '2026-09-14', tue: '2026-09-15', wed: '2026-09-16', thu: '2026-09-17', fri: '2026-09-18' };
+/**
+ * L'occupation est calculée sur les séances du simulacre, comme au serveur (même jour, non annulée,
+ * intervalles qui se recouvrent) ; `exclude` retire la séance éditée (C2).
+ */
+function busyOn(field, params) {
+  return new Set(SESSIONS.filter((s) => s.name !== params.exclude
+    && DATE_OF_DAY[s.day] === params.schedule_date && s.custom_status !== 'Annulé'
+    && s.from_time < params.to_time.slice(0, 5) && s.to_time > params.from_time.slice(0, 5))
+    .map((s) => s[field]));
+}
+export function scheduleOptions(params = {}) {
+  const slot = params.schedule_date && params.from_time && params.to_time;
+  const busyRooms = slot ? busyOn('room', params) : null;
+  const busyInstr = slot ? busyOn('instructor', params) : null;
+  return {
+    student_group: params.student_group,
+    slot: slot ? { schedule_date: params.schedule_date, from_time: params.from_time, to_time: params.to_time } : null,
+    group_busy: slot ? busyOn('student_group', params).has(params.student_group) : null,
+    rooms: ROOMS.map((r) => ({ ...r, busy: busyRooms ? busyRooms.has(r.name) : null })),
+    courses: [
+      { course: 'INF-204', course_name: 'Programmation objet', module_code: 'INF-204', ue: 'UE-INF2',
+        suggested: { CM: 'Pr. Léonard Hounkpatin', TD: 'M. Firmin Dossou', TP: null } },
+      { course: 'RES-102', course_name: 'Réseaux', module_code: 'RES-102', ue: 'UE-RES1',
+        suggested: { CM: 'M. Firmin Dossou', TD: null, TP: 'M. Cyrille Adjovi' } },
+      { course: 'MAT-118', course_name: 'Probabilités', module_code: 'MAT-118', ue: 'UE-MAT2',
+        suggested: { CM: 'Pr. Célestine Ahouandjinou', TD: 'Pr. Célestine Ahouandjinou', TP: null } },
+    ],
+    instructors: OPTION_INSTRUCTORS.map(([n, t]) => ({ instructor: n, instructor_name: n, instructor_type: t,
+      busy: busyInstr ? busyInstr.has(n) : null })),
+    session_types: ['CM', 'TD', 'TP', 'PJ', 'EXM', 'DS', 'CC'],
+  };
 }
 
 /** La semaine, pour la grille temporelle. Les jours viennent d'ici, pas de l'écran. */
@@ -358,9 +417,14 @@ export function examSchedules(params = {}) {
   if (params.__empty) return [];
   return [
     { name: 'EX-0044', course: 'MAT-118', course_name: 'Probabilités',
-      schedule_date: '2026-09-17', from_time: '08:00', to_time: '11:00',
+      schedule_date: '2026-09-17', from_time: '08:00', to_time: '10:00',
       room: 'Amphi A', exam_type: 'Écrit', student_count: 44,
       custom_planning_status: 'Publié', custom_status: 'Confirmé' },
+    // MANDAT-12 (C5) : l'épreuve de la grille (CS-0012, mercredi 16) figure aussi ici.
+    { name: 'EX-0046', course: 'RES-102', course_name: 'Réseaux',
+      schedule_date: '2026-09-16', from_time: '10:00', to_time: '12:00',
+      room: 'Amphi A', exam_type: 'Pratique', student_count: 44,
+      custom_planning_status: 'Brouillon', custom_status: 'Planifié' },
     { name: 'EX-0045', course: 'INF-204', course_name: 'Programmation objet',
       schedule_date: '2026-09-24', from_time: '08:00', to_time: '10:00',
       room: 'Amphi B', exam_type: 'Écrit', student_count: 0,

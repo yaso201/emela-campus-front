@@ -167,6 +167,14 @@ export const updateUe = (p) => call(ST + 'update_ue', p);
 export const createModule = (p) => call(ST + 'create_module', p);
 export const updateModule = (p) => call(ST + 'update_module', p);
 
+/**
+ * S-10 (MANDAT-12) — le catalogue des modules d'une UE : rattachés (`Course.custom_ue`) ou
+ * composés, avec `attached`. 🟢 `structure.list_ue_module_catalogue(ue)` — lecture staff,
+ * portée RF/PM. Rend `{ ue, modules: [{ course, course_name, module_code, coefficient,
+ * module_nature, attached, linked_elsewhere }] }`.
+ */
+export const listUeModuleCatalogue = (ue) => call(ST + 'list_ue_module_catalogue', { ue });
+
 /** 🟢 `structure.py:770` — `attach_module_to_ue(ue, course, coefficient)`. */
 export const attachModuleToUe = (p) => call(ST + 'attach_module_to_ue', p);
 

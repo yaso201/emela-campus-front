@@ -27,6 +27,8 @@
 
     <GroupForm v-if="createOpen" :program="program" :year-label="year?.label || ''"
                :error="createError" :busy="busy" @cancel="createOpen = false" @submit="submitGroup" />
+    <GroupForm v-if="editOpen && selected" :program="program" :year-label="year?.label || ''" :initial="selected"
+               :error="createError" :busy="busy" @cancel="editOpen = false" @submit="submitEdit" />
 
     <div class="grid items-start gap-5 xl:grid-cols-[352px_1fr]">
       <WorkQueue title="Groupes de la filière" :items="queueItems" :selected-id="selectedId"
@@ -37,6 +39,26 @@
                  @select="selectedId = $event" @retry="loadGroups" />
 
       <section v-if="selected">
+        <!-- MANDAT-12 (M1) : le groupe se modifie et se désactive ici — la désactivation est la seule
+             sortie d'un groupe créé par erreur (list_groups masque les désactivés). -->
+        <div class="mb-3 flex flex-wrap items-center gap-2">
+          <h2 class="mr-auto text-h3 text-ln-gray-900">{{ selected.student_group_name || selected.name }}</h2>
+          <template v-if="can('write:groups')">
+            <button type="button" class="ln-btn-secondary" @click="openEdit">Modifier…</button>
+            <button type="button" class="ln-btn-secondary" @click="confirm = { kind: 'disable' }">Désactiver le groupe…</button>
+          </template>
+        </div>
+        <div v-if="confirm?.kind === 'disable'" class="mb-4 rounded-md-ln border border-ln-gray-300 bg-white p-4" role="alertdialog">
+          <p class="text-body-sm font-semibold text-ln-gray-900">Désactiver « {{ selected.student_group_name || selected.name }} » ?</p>
+          <p class="mt-1 text-caption leading-relaxed text-ln-gray-500">
+            Le groupe quitte les listes de l'année ; ses membres, ses enseignants et leur historique restent
+            attachés au groupe désactivé. Rien n'est supprimé. Le serveur ne demande pas de motif pour cet acte.
+          </p>
+          <div class="mt-3 flex gap-2">
+            <button type="button" class="ln-btn-secondary" @click="confirm = null">Annuler</button>
+            <button type="button" class="ln-btn-danger" :disabled="busy" @click="disableGroup">Désactiver le groupe</button>
+          </div>
+        </div>
         <!-- Un effectif au-delà de la capacité n'est pas une erreur : le serveur
              l'accepte, et c'est parfois voulu. L'écran le signale. -->
         <StateBanner v-if="overCapacity" variant="warning"
@@ -83,9 +105,14 @@
               <td :class="bodyTd">
                 <!-- « Retirer du groupe » désactive (l'étudiant RESTE membre, historique) —
                      jamais « effacer ». Offert sur un membre actif seulement. -->
-                <button v-if="can('write:groups') && s.active" type="button"
-                        class="h-[26px] rounded-sm-ln border border-ln-gray-300 px-2 text-caption font-semibold text-ln-gray-700"
-                        @click="deactivateMember(s)">Retirer</button>
+                <span v-if="can('write:groups') && s.active" class="inline-flex gap-1.5">
+                  <button type="button"
+                          class="h-[26px] rounded-sm-ln border border-ln-gray-300 px-2 text-caption font-semibold text-ln-gray-700"
+                          @click="openTransfer(s)">Transférer…</button>
+                  <button type="button"
+                          class="h-[26px] rounded-sm-ln border border-ln-gray-300 px-2 text-caption font-semibold text-ln-gray-700"
+                          @click="deactivateMember(s)">Retirer</button>
+                </span>
               </td>
             </tr>
           </template>
@@ -94,6 +121,27 @@
               produit des présences et des notes. Le masquer ferait disparaître son historique du groupe.</span>
           </template>
         </DenseTable>
+
+        <!-- MANDAT-12 (M1) : le transfert compose deux actes prouvés — ajout au groupe cible, puis
+             retrait d'ici. L'étudiant reste membre DÉSACTIVÉ de ce groupe : son historique y reste. -->
+        <div v-if="transferFor" class="mt-3 rounded-md-ln border border-ln-gray-300 bg-white p-4" role="dialog"
+             aria-label="Transférer un étudiant">
+          <p class="text-body-sm font-semibold text-ln-gray-900">Transférer {{ transferFor.student_name }}</p>
+          <p class="mt-1 text-caption leading-relaxed text-ln-gray-500">
+            L'étudiant est ajouté au groupe choisi, puis désactivé ici — il reste dans cette liste, avec ses
+            présences et ses notes. L'éligibilité au groupe cible est jugée par le serveur.
+          </p>
+          <label for="grp-transfer-to" class="mt-3 block text-body-sm font-semibold text-ln-gray-900">Groupe cible</label>
+          <select id="grp-transfer-to" v-model="transferTo"
+                  class="mt-2 h-11 w-full max-w-md rounded-sm-ln border border-ln-gray-300 bg-white px-3 text-body-sm text-ln-gray-900">
+            <option value="" disabled>—</option>
+            <option v-for="g in transferTargets" :key="g.name" :value="g.name">{{ g.student_group_name || g.name }}</option>
+          </select>
+          <div class="mt-3 flex gap-2">
+            <button type="button" class="ln-btn-secondary" @click="transferFor = null">Annuler</button>
+            <button type="button" class="ln-btn-primary" :disabled="!transferTo || busy" @click="transfer">Transférer</button>
+          </div>
+        </div>
 
         <h4 class="mb-2 mt-6 text-micro font-bold uppercase tracking-wider text-ln-gray-500">Enseignants affectés</h4>
         <div v-if="detailState === 'ready' && !instructors.length"
@@ -105,18 +153,60 @@
             présence n'a de titulaire. Ce groupe figure dans les orphelins.
           </p>
         </div>
-        <div v-else class="flex flex-wrap gap-2">
+        <div v-else-if="detailState === 'ready'" class="flex flex-wrap gap-2">
           <span v-for="i in instructors" :key="i.instructor"
                 class="inline-flex items-center gap-2 rounded-sm-ln border border-ln-gray-300 px-3 py-1.5 text-caption">
             {{ i.instructor_name }}
             <span class="font-mono text-[11px] text-ln-gray-500">{{ i.instructor }}</span>
+            <button v-if="can('write:groups')" type="button" class="font-semibold text-ln-gray-500 hover:text-ln-error"
+                    :aria-label="'Retirer ' + i.instructor_name" @click="confirm = { kind: 'unassign', instructor: i }">×</button>
           </span>
-          <!-- ⏸ M2 : l'affectation existe côté serveur (assign_instructor) mais AUCUNE
-               lecture ne rend la liste des enseignants assignables — sans source, pas
-               d'identifiant à envoyer (rapport M2 §4, demande serveur). -->
+          <!-- MANDAT-12 (M1) : S-7 rend les enseignants affectables — la liste vient du serveur. -->
           <button v-if="can('write:groups')" type="button"
                   class="inline-flex items-center rounded-sm-ln border border-dashed border-ln-gray-300 px-3 py-1.5 text-caption font-semibold text-ln-blue-600"
-                  @click="notBuilt('Affectation d’un enseignant — en attente d’une lecture serveur des enseignants assignables (demande M2)')">+ Affecter</button>
+                  @click="openAssign">+ Affecter</button>
+        </div>
+        <div v-if="confirm?.kind === 'unassign'" class="mt-3 rounded-md-ln border border-ln-gray-300 bg-white p-4" role="alertdialog">
+          <p class="text-body-sm font-semibold text-ln-gray-900">Retirer {{ confirm.instructor.instructor_name }} de ce groupe ?</p>
+          <p class="mt-1 text-caption leading-relaxed text-ln-gray-500">
+            Les séances déjà planifiées gardent leur enseignant ; les feuilles de présence à venir n'auront plus ce
+            titulaire. Sa ligne de service, si elle existe, n'est pas touchée.
+          </p>
+          <div class="mt-3 flex gap-2">
+            <button type="button" class="ln-btn-secondary" @click="confirm = null">Annuler</button>
+            <button type="button" class="ln-btn-danger" :disabled="busy" @click="unassign(confirm.instructor)">Retirer l'enseignant</button>
+          </div>
+        </div>
+        <div v-if="assignOpen" class="mt-3 overflow-hidden rounded-md-ln border border-ln-gray-300 bg-white" role="dialog"
+             aria-label="Affecter un enseignant">
+          <header class="flex items-center gap-3 border-b border-ln-gray-200 bg-ln-gray-50 px-4 py-3">
+            <div class="mr-auto">
+              <h3 class="text-[14px] font-semibold text-ln-gray-900">Affecter un enseignant</h3>
+              <p class="mt-0.5 text-caption text-ln-gray-500">
+                Les enseignants actifs. Ceux qu'une ligne de service validée rattache à ce groupe ou à sa promotion
+                viennent d'abord.
+              </p>
+            </div>
+            <button type="button" class="ln-btn-secondary" @click="assignOpen = false">Fermer</button>
+          </header>
+          <BlockState v-if="assignableRes.state.value !== 'ready'" :state="assignableRes.state.value === 'denied' ? 'loading' : assignableRes.state.value"
+                      title="Aucun enseignant actif" message="Aucun enseignant actif n'est enregistré."
+                      :rows="4" :skeleton-widths="[220, 90, 160]" :row-height="36" class="m-4"
+                      @retry="loadAssignable" />
+          <ul v-else class="px-4 py-2">
+            <li v-for="i in assignable" :key="i.instructor"
+                class="flex items-center gap-3 border-b border-ln-gray-100 py-2 text-caption last:border-0">
+              <span class="text-ln-gray-900">{{ i.instructor_name }}</span>
+              <span class="font-mono text-[11px] text-ln-gray-500">{{ i.instructor }}</span>
+              <span v-if="i.instructor_type" class="text-ln-gray-500">· {{ i.instructor_type }}</span>
+              <StatusPill class="ml-auto" :status="i.has_service_line ? 'valide' : 'brouillon'"
+                          :label="i.service_match === 'groupe' ? 'Ligne de service · ce groupe'
+                            : i.service_match === 'promotion' ? 'Ligne de service · la promotion' : 'Sans ligne de service'" />
+              <StatusPill v-if="i.assigned" status="propose" label="Déjà affecté" />
+              <button v-else type="button" class="ln-btn-secondary !h-[28px] !px-3" :disabled="busy"
+                      @click="assign(i)">Affecter</button>
+            </li>
+          </ul>
         </div>
 
         <!-- Le peuplement : éligibles à gauche du geste, rapport ligne à ligne
@@ -129,10 +219,12 @@
                 Les étudiants inscrits au programme, éligibles à ce groupe.
               </p>
             </div>
+            <!-- C8 (VERDICT-MANDAT-12-PC1B) : le compte dit ce qu'on peut AJOUTER — les candidats qui
+                 ne sont pas déjà membres —, ou ce qui est coché. -->
             <button v-if="can('write:groups')" type="button" class="ln-btn-primary ml-auto"
                     :disabled="!selectedStudents.length || busy"
                     @click="populate">
-              Peupler · {{ selectedStudents.length || eligible.length }} candidats
+              Peupler · {{ selectedStudents.length || addable.length }} candidat{{ (selectedStudents.length || addable.length) > 1 ? 's' : '' }}
             </button>
           </header>
           <BlockState v-if="eligibleState !== 'ready'" :state="eligibleState === 'denied' ? 'loading' : eligibleState"
@@ -143,7 +235,8 @@
           <div v-else class="px-4 py-3">
             <label v-for="s in eligible" :key="s.student"
                    class="flex cursor-pointer items-center gap-3 border-b border-ln-gray-100 py-2 text-caption last:border-0">
-              <input type="checkbox" class="h-4 w-4 accent-ln-blue-800"
+              <!-- C8 : les cases ne sont rendues qu'à qui peuple (règle 3) ; un lecteur lit la liste. -->
+              <input v-if="can('write:groups')" type="checkbox" class="h-4 w-4 accent-ln-blue-800"
                      :value="s.student" :checked="picked.has(s.student)"
                      :disabled="memberIds.has(s.student)"
                      @change="togglePick(s.student, $event.target.checked)" />
@@ -196,6 +289,8 @@ import { useResource } from '../composables/useResource.js';
 import {
   listGroups, getGroup, listGroupCandidates,
   createGroup, addStudentsToGroup, deactivateStudentsInGroup,
+  updateGroup, setGroupDisabled, transferStudent,
+  listAssignableInstructors, assignGroupInstructor, removeGroupInstructor,
 } from '../api/groups.js';
 import { useProgramScope } from '../composables/useProgramScope.js';
 import ProgramPicker from './planning/ProgramPicker.vue';
@@ -236,7 +331,9 @@ const detailState = detailRes.state;
 const eligibleState = eligibleRes.state;
 
 const groups = computed(() => groupsRes.data.value || []);
-const detail = computed(() => detailRes.data.value || null);
+// Revue adversariale MANDAT-12 (M4, O-5) : le détail est celui du groupe CHOISI, jamais celui du précédent —
+// pendant le chargement de B, les enseignants de A ne s'affichent pas (et ne se retirent pas de B).
+const detail = computed(() => (detailRes.data.value?.name === selectedId.value ? detailRes.data.value : null));
 const members = computed(() => detail.value?.students || []);
 const instructors = computed(() => detail.value?.instructors || []);
 const eligible = computed(() => eligibleRes.data.value || []);
@@ -262,9 +359,70 @@ const queueItems = computed(() => groups.value.map((g) => ({
 const BASIS = { Batch: 'par promotion', Course: 'par module', Activity: 'par activité' };
 function basis(k) { return BASIS[k] || k; }
 
-const subtitle = computed(() =>
-  groupsState.value !== 'ready' ? 'Chargement des groupes'
-    : groups.value.length + ' groupes · année ' + (year.value?.label || '—'));
+/**
+ * D-GROUPES-SOUSTITRE-VIDE-01 (MANDAT-12) : le sous-titre suit l'état — une filière
+ * sans groupe ne dit plus « Chargement des groupes » pour toujours.
+ */
+const SUBTITLE = {
+  loading: () => 'Chargement des groupes',
+  empty: () => 'Aucun groupe · année ' + (year.value?.label || '—'),
+  error: () => 'Les groupes n’ont pas pu être lus',
+  denied: () => 'Lecture des groupes refusée',
+};
+const subtitle = computed(() => (SUBTITLE[groupsState.value]
+  || (() => groups.value.length + ' groupe' + (groups.value.length > 1 ? 's' : '') + ' · année ' + (year.value?.label || '—')))());
+
+/* ── MANDAT-12 (M1) — modifier, désactiver, transférer, affecter et retirer un enseignant ── */
+const editOpen = ref(false);
+const confirm = ref(null);
+const transferFor = ref(null);
+const transferTo = ref('');
+const assignOpen = ref(false);
+const assignableRes = useResource(listAssignableInstructors, { isEmpty: (d) => !d?.instructors?.length });
+const assignable = computed(() => [...(assignableRes.data.value?.instructors || [])].sort((a, b) =>
+  (b.service_match === 'groupe') - (a.service_match === 'groupe')
+  || (b.has_service_line - a.has_service_line)
+  || a.instructor_name.localeCompare(b.instructor_name)));
+const transferTargets = computed(() => groups.value.filter((g) => g.name !== selectedId.value));
+// C8 : les candidats qu'on peut ajouter — ceux qui ne sont pas déjà membres.
+const addable = computed(() => eligible.value.filter((s) => !memberIds.value.has(s.student)));
+
+function openEdit() { createError.value = ''; editOpen.value = true; }
+async function submitEdit(values) {
+  createError.value = '';
+  try {
+    busy.value = true;
+    await updateGroup({ name: selectedId.value, values });
+    editOpen.value = false;
+    loadGroups();
+  } catch (e) { createError.value = e.message || 'Modification refusée.'; }
+  finally { busy.value = false; }
+}
+async function act(fn, after) {
+  actError.value = ''; pending.value = '';
+  try { busy.value = true; await fn(); after(); }
+  catch (e) { actError.value = e.message || 'Acte refusé.'; }
+  finally { busy.value = false; }
+}
+function disableGroup() {
+  act(() => setGroupDisabled({ name: selectedId.value, disabled: 1 }),
+    () => { confirm.value = null; selectedId.value = null; loadGroups(); });
+}
+function openTransfer(s) { transferFor.value = s; transferTo.value = ''; }
+function transfer() {
+  act(() => transferStudent({ from_group: selectedId.value, to_group: transferTo.value, student: transferFor.value.student }),
+    () => { transferFor.value = null; loadDetail(); loadGroups(); });
+}
+function loadAssignable() { if (selectedId.value) assignableRes.load({ group: selectedId.value }); }
+function openAssign() { assignOpen.value = true; loadAssignable(); }
+function assign(i) {
+  act(() => assignGroupInstructor({ group: selectedId.value, instructor: i.instructor }),
+    () => { loadDetail(); loadAssignable(); });
+}
+function unassign(i) {
+  act(() => removeGroupInstructor({ group: selectedId.value, instructor: i.instructor }),
+    () => { confirm.value = null; loadDetail(); });
+}
 
 const totals = computed(() => {
   const g = selected.value;
@@ -323,7 +481,8 @@ async function deactivateMember(s) {
   finally { busy.value = false; }
 }
 
-function loadGroups() { groupsRes.load({ ...params.value, program: program.value }); }
+// O-5 (MANDAT-12) : sans filière, aucun chargement — une demande sans `program` rend TOUS les groupes.
+function loadGroups() { if (program.value) groupsRes.load({ ...params.value, program: program.value }); }
 /**
  * ⚠️ `include_inactive: 1` : un membre désactivé RESTE au groupe, avec son rang.
  * Le masquer ferait croire qu'il a été retiré, et l'écran dit précisément le
@@ -385,5 +544,8 @@ onMounted(async () => { await loadProgram(); loadGroups(); });
  */
 watch([params, program], () => { selectedId.value = null; loadGroups(); });
 watch(groups, (g) => { if (g.length && !selectedId.value) selectedId.value = g[0].name; });
-watch(selectedId, () => { loadDetail(); loadEligible(); }, { immediate: true });
+watch(selectedId, () => {
+  confirm.value = null; transferFor.value = null; assignOpen.value = false;
+  loadDetail(); loadEligible();
+}, { immediate: true });
 </script>

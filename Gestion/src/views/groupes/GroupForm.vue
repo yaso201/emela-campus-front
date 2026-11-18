@@ -4,9 +4,9 @@
        du contexte ; le découpage est un Select fermé. -->
   <div class="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/30 p-6">
     <div class="w-full max-w-lg overflow-hidden rounded-lg-ln border border-ln-gray-300 bg-white shadow-elevated"
-         role="dialog" aria-modal="true" aria-label="Créer un groupe">
+         role="dialog" aria-modal="true" :aria-label="editing ? 'Modifier le groupe' : 'Créer un groupe'">
       <header class="border-b border-ln-gray-200 p-5">
-        <h3 class="text-[17px] font-semibold text-ln-gray-900">Créer un groupe</h3>
+        <h3 class="text-[17px] font-semibold text-ln-gray-900">{{ editing ? 'Modifier le groupe' : 'Créer un groupe' }}</h3>
         <p class="mt-1 text-body-sm leading-normal text-ln-gray-500">
           Filière <b class="font-semibold">{{ program }}</b> · année <b class="font-semibold">{{ yearLabel }}</b>
         </p>
@@ -37,12 +37,12 @@
                    class="mt-2 h-11 w-full rounded-sm-ln border border-ln-gray-300 px-3 text-body-sm text-ln-gray-900 outline-none focus:border-ln-blue-600" />
           </div>
         </div>
-        <StateBanner v-if="error" variant="error" lead="Création refusée." :text="error" />
+        <StateBanner v-if="error" variant="error" :lead="editing ? 'Modification refusée.' : 'Création refusée.'" :text="error" />
       </div>
       <footer class="flex items-center gap-3 border-t border-ln-gray-200 bg-ln-gray-50 px-5 py-4">
         <p class="mr-auto text-caption text-ln-gray-500">Un effectif au-delà de la capacité est signalé, jamais refusé.</p>
         <button type="button" class="ln-btn-secondary" @click="emit('cancel')">Annuler</button>
-        <button type="button" class="ln-btn-primary" :disabled="!complete || busy" @click="submit">Créer le groupe</button>
+        <button type="button" class="ln-btn-primary" :disabled="!complete || busy" @click="submit">{{ editing ? 'Enregistrer' : 'Créer le groupe' }}</button>
       </footer>
     </div>
   </div>
@@ -57,20 +57,28 @@ import { StateBanner } from '../../components/index.js';
  * qu'il possède (nom, découpage, capacité). C'est la vue-parente, seule
  * détentrice du contexte, qui ajoute `program` et `academic_year` avant l'appel.
  */
-defineProps({
+const props = defineProps({
   program: { type: String, default: '' },
   yearLabel: { type: String, default: '' },
   error: { type: String, default: '' },
   busy: { type: Boolean, default: false },
+  // MANDAT-12 (M1) : en modification, le formulaire part des valeurs du groupe ;
+  // il n'émet que les champs qu'il possède (update_group(name, values)).
+  initial: { type: Object, default: null },
 });
 const emit = defineEmits(['cancel', 'submit']);
+const editing = computed(() => !!props.initial);
 
 const BASES = [
   { value: 'Batch', label: 'Par promotion' },
   { value: 'Course', label: 'Par module' },
   { value: 'Activity', label: 'Par activité' },
 ];
-const form = reactive({ student_group_name: '', group_based_on: '', max_strength: null });
+const form = reactive({
+  student_group_name: props.initial?.student_group_name || '',
+  group_based_on: props.initial?.group_based_on || '',
+  max_strength: props.initial?.max_strength ?? null,
+});
 const complete = computed(() => !!form.student_group_name.trim() && !!form.group_based_on);
 
 function submit() {

@@ -59,8 +59,11 @@
               <p class="mt-0.5 text-caption text-ln-gray-500">{{ [program.custom_filiere_acronym, program.custom_program_type || 'type non renseigné'].filter(Boolean).join(' · ') }}</p>
             </div>
             <button v-if="editable" type="button" class="ln-btn-secondary ml-auto" @click="open('edit')">Modifier…</button>
-            <button v-if="editable" type="button" class="ln-btn-secondary" :disabled="busy" @click="toggleActive">
-              {{ program.custom_is_active ? 'Désactiver la filière' : 'Réactiver la filière' }}
+            <!-- MANDAT-12 (M4, D-FILIERE-DESACTIVATION-MOTIF-01) : désactiver passe par un motif, tracé sur
+                 la filière ; réactiver reste un geste direct (le serveur n'en exige pas). -->
+            <button v-if="editable" type="button" class="ln-btn-secondary" :disabled="busy"
+                    @click="program.custom_is_active ? (deactivateOpen = true) : toggleActive()">
+              {{ program.custom_is_active ? 'Désactiver la filière…' : 'Réactiver la filière' }}
             </button>
           </header>
           <dl class="grid grid-cols-2 gap-x-6 gap-y-3 px-4 py-3 text-body-sm md:grid-cols-4">
@@ -136,6 +139,21 @@
         </DenseTable>
       </section>
     </div>
+
+    <div v-if="deactivateOpen && program" class="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/30 p-6">
+      <ReasonStep class="w-full max-w-xl" name="program-deactivate"
+                  :title="'Désactiver ' + program.program_name"
+                  subtitle="La filière cesse d'être proposée aux nouvelles inscriptions. Ses étudiants, ses niveaux et sa maquette restent ; rien n'est supprimé."
+                  reason-label="Motif"
+                  :reason-groups="deactivateReasons"
+                  detail-label="Précision"
+                  :detail-required-for="['autre']"
+                  detail-hint="Le motif est tracé sur la filière et reste lisible. La précision n'est exigée que pour « Autre »."
+                  confirm-label="Désactiver la filière"
+                  confirm-kind="danger"
+                  footnote="La réactivation est un geste direct : elle ne demande pas de motif."
+                  @cancel="deactivateOpen = false" @submit="submitDeactivate" />
+    </div>
   </div>
 </template>
 
@@ -152,7 +170,7 @@
  * lecture seule (Q1-bis c, choix de la MOA).
  */
 import { computed, onMounted, ref, watch } from 'vue';
-import { WorkQueue, DenseTable, StatusPill, StateBanner, headTh, bodyTd } from '../components/index.js';
+import { WorkQueue, DenseTable, StatusPill, StateBanner, ReasonStep, headTh, bodyTd } from '../components/index.js';
 import CharpenteForm from './structure/CharpenteForm.vue';
 import StructureTabs from './structure/StructureTabs.vue';
 import { useSession } from '../composables/useSession.js';
@@ -266,6 +284,33 @@ const editFields = computed(() => [
   { key: 'custom_total_ects_required', label: 'Crédits requis (ECTS)', type: 'number', min: 0,
     initial: program.value?.custom_total_ects_required },
 ]);
+
+/* ── MANDAT-12 (M4) — la désactivation porte son motif (D-FILIERE-DESACTIVATION-MOTIF-01). ── */
+const deactivateOpen = ref(false);
+const DEACTIVATE_LABELS = {
+  fermeture: 'Fermeture décidée de la filière',
+  suspension: 'Suspension temporaire du recrutement',
+  erreur: 'Filière créée par erreur',
+  autre: 'Autre',
+};
+const deactivateReasons = [{
+  key: 'main',
+  options: Object.entries(DEACTIVATE_LABELS).map(([value, label]) => ({
+    value, label: value === 'autre' ? 'Autre — à préciser' : label })),
+}];
+/** Le motif tracé est la PHRASE du motif (jamais sa clé), suivie de la précision si elle est donnée. */
+async function submitDeactivate({ reason, detail }) {
+  deactivateOpen.value = false;
+  formError.value = '';
+  try {
+    busy.value = true;
+    await setProgramActive({ program: program.value.name, is_active: 0,
+      reason: [DEACTIVATE_LABELS[reason], detail].filter(Boolean).join(' — ') });
+    done.value = 'La filière est désactivée ; le motif est tracé sur la filière.';
+    loadList();
+  } catch (e) { done.value = ''; formError.value = e.message || 'Refusé.'; }
+  finally { busy.value = false; }
+}
 
 /** Activer ou désactiver : un acte à part (`set_program_active`), pas un champ du formulaire. */
 async function toggleActive() {

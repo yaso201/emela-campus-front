@@ -128,6 +128,15 @@ export const deactivateStudentsInGroup = (p) =>
 /** 🟢 `groups.py:87` — `transfer_student(from_group, to_group, student)`. */
 export const transferStudent = (p) => call(GROUPS + 'transfer_student', p);
 
+/**
+ * S-7 (MANDAT-12) — les enseignants qu'on peut affecter au groupe.
+ * 🟢 `groups.list_assignable_instructors(group)` — garde GA (+SM).
+ * Rend `{ group, instructors: [{ instructor, instructor_name, instructor_type,
+ * assigned, service_match, has_service_line }] }` ; `service_match` vaut
+ * « groupe », « promotion » ou null (aucune ligne de service validée).
+ */
+export const listAssignableInstructors = (p) => call(GROUPS + 'list_assignable_instructors', p);
+
 /** 🟢 `groups.py:93` — `assign_instructor(group, instructor)`. */
 export const assignGroupInstructor = (p) => call(GROUPS + 'assign_instructor', p);
 

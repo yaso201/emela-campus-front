@@ -59,6 +59,9 @@ function adaptContext(c) {
   return {
     ...c, years, terms,
     current: { year: c.current_academic_year || null, term: c.current_term || null },
+    // MANDAT-12 (Q8 b) : plusieurs semestres couvrent aujourd'hui → le serveur n'en choisit aucun et
+    // rend les candidats ; l'écran fait choisir (jamais « le premier de la liste »).
+    candidates: c.current_term_candidates || [],
     note: c.note || c.context_phrase || '',
   };
 }
