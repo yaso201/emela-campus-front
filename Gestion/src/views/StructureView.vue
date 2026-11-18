@@ -96,8 +96,15 @@
               </div>
               <button type="button" class="ln-btn-secondary" @click="catalogueOpen = false">Fermer</button>
             </header>
-            <ul class="px-4 py-2">
-              <li v-for="m in catalogue" :key="m.course" class="flex items-center gap-3 border-b border-ln-gray-100 py-2 text-caption last:border-0">
+            <!-- Audit de conception MANDAT-12 (haut 2) et revue de code (bas 9) : le catalogue a ses états — un
+                 squelette pendant la lecture (jamais la liste de l'unité d'avant, dont les boutons auraient composé
+                 un module d'ailleurs), le vide nommé, l'erreur et « Réessayer ». -->
+            <BlockState v-if="catalogueState !== 'ready'" :state="catalogueState === 'denied' ? 'loading' : catalogueState"
+                        :rows="3" class="m-4" title="Aucun module rattaché à cette unité"
+                        message="Un module se compose dans l'unité qui le porte : créez-le d'abord (+ Créer un module), ou vérifiez son rattachement."
+                        @retry="catalogueRes.load({ ue: selectedUeId })" />
+            <ul v-else class="px-4 py-2">
+              <li v-for="m in catalogue" :key="m.course" class="flex flex-wrap items-center gap-3 border-b border-ln-gray-100 py-2 text-caption last:border-0">
                 <span class="font-mono text-[11.5px] text-ln-gray-500">{{ m.module_code }}</span>
                 <span class="text-ln-gray-900">{{ m.course_name }}</span>
                 <span class="text-ln-gray-500">· coefficient {{ m.coefficient }} · {{ m.module_nature }}</span>
@@ -114,7 +121,7 @@
             composé : la maquette repasse en brouillon et se repropose à la validation.
             <span class="mt-2 flex gap-2">
               <button type="button" class="ln-btn-secondary !h-[28px]" @click="detachTarget = null">Annuler</button>
-              <button type="button" class="ln-btn-primary !h-[28px]" :disabled="busy" @click="detach(detachTarget)">Retirer de l'unité</button>
+              <button type="button" class="ln-btn-danger !h-[28px]" :disabled="busy" @click="detach(detachTarget)">Retirer de l'unité</button>
             </span>
           </div>
           <DenseTable :state="detailState === 'denied' ? 'loading' : detailState" :row-height="44"
@@ -254,6 +261,7 @@ import {
   listUeModuleCatalogue, createModule, updateModule, attachModuleToUe, detachModuleFromUe,
 } from '../api/structure.js';
 import ProgramPicker from './planning/ProgramPicker.vue';
+import BlockState from '../components/internal/BlockState.vue';
 import ModuleForm from './structure/ModuleForm.vue';
 import UeForm from './structure/UeForm.vue';
 import StructureTabs from './structure/StructureTabs.vue';
@@ -527,6 +535,7 @@ watch(selectedUeId, (id) => {
 const catalogueOpen = ref(false);
 const catalogueRes = useResource((p) => listUeModuleCatalogue(p.ue), { isEmpty: (d) => !d?.modules?.length });
 const catalogue = computed(() => catalogueRes.data.value?.modules || []);
+const catalogueState = catalogueRes.state;
 const detachTarget = ref(null);
 const moduleForm = ref(null);
 const moduleError = ref('');

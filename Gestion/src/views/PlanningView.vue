@@ -115,6 +115,10 @@
                 <span class="mt-0.5 block text-ln-gray-600">« {{ d.reason }} »</span>
               </p>
             </div>
+            <!-- Audit de conception MANDAT-12 (moyen 4) : si `get_schedule` échoue, la ligne de la semaine reste, mais
+                 l'écran le DIT — sinon l'avis de dérogation J-7 manquerait sans un mot. -->
+            <StateBanner v-if="detailState === 'error'" class="mt-3" variant="error" compact lead="Détail de la séance illisible."
+                         text="Les dérogations J-7 et l'état du préavis n'ont pas pu être lus ; seule la ligne de la semaine est affichée." />
             <div v-if="detail.j7_publication?.needs_derogation" class="mt-3 rounded-sm-ln border border-ln-warning bg-ln-warning-bg p-3">
               <p class="text-caption font-semibold text-[#6B4415]">
                 Épreuve à moins de {{ detail.j7_publication.min_days }} jours : la publier exige la dérogation au préavis.
@@ -430,6 +434,7 @@ const gridItems = computed(() => sessions.value.map((s) => ({
  * les dérogations J-7 (motif lisible) et l'état du préavis (`j7_publication`), établis au serveur.
  */
 const detailRes = useResource(getSchedule, { isEmpty: (d) => !d });
+const detailState = detailRes.state;
 const detail = computed(() => {
   const row = sessions.value.find((s) => s.name === selectedId.value) || null;
   const read = detailRes.data.value;

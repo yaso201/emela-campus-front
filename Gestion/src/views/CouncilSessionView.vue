@@ -209,7 +209,11 @@ const subtitle = computed(() => {
 const unset = computed(() => data.value.agenda.filter((a) => !attendance[a.student]?.presence).length);
 const absentCount = computed(() => data.value.agenda.filter((a) => a.presence === 'absent_non_justifie').length);
 
-watch(() => data.value.agenda, (rows) => {
+// Revue de code MANDAT-12 (bas 10) : les présences saisies appartiennent à UNE séance — un changement de séance (autre
+// semestre, autre nom) les efface, sinon une présence constatée en S1 se reporterait sur le même étudiant en S2.
+const attendanceFor = ref(null);
+watch(() => [data.value.name, data.value.agenda], ([name, rows]) => {
+  if (name !== attendanceFor.value) { for (const k of Object.keys(attendance)) delete attendance[k]; attendanceFor.value = name; }
   for (const a of rows) if (!attendance[a.student]) attendance[a.student] = { presence: a.presence || '', notes: '' };
 }, { immediate: true });
 

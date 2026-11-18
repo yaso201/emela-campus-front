@@ -56,7 +56,7 @@
           </p>
           <div class="mt-3 flex gap-2">
             <button type="button" class="ln-btn-secondary" @click="confirm = null">Annuler</button>
-            <button type="button" class="ln-btn-primary" :disabled="busy" @click="disableGroup">Désactiver le groupe</button>
+            <button type="button" class="ln-btn-danger" :disabled="busy" @click="disableGroup">Désactiver le groupe</button>
           </div>
         </div>
         <!-- Un effectif au-delà de la capacité n'est pas une erreur : le serveur
@@ -174,7 +174,7 @@
           </p>
           <div class="mt-3 flex gap-2">
             <button type="button" class="ln-btn-secondary" @click="confirm = null">Annuler</button>
-            <button type="button" class="ln-btn-primary" :disabled="busy" @click="unassign(confirm.instructor)">Retirer l'enseignant</button>
+            <button type="button" class="ln-btn-danger" :disabled="busy" @click="unassign(confirm.instructor)">Retirer l'enseignant</button>
           </div>
         </div>
         <div v-if="assignOpen" class="mt-3 overflow-hidden rounded-md-ln border border-ln-gray-300 bg-white" role="dialog"

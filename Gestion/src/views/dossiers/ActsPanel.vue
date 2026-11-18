@@ -28,7 +28,7 @@
               </label>
               <!-- Un siège du conseil (Art. 18.2) : le compte qui le tient, et s'il y est représenté. -->
               <div v-else-if="f.type === 'seat'" class="rounded-sm-ln border border-ln-gray-200 p-2">
-                <label :for="'act-f-' + f.key" class="text-caption font-semibold text-ln-gray-700">{{ f.label }}</label>
+                <label :for="'act-f-' + f.key" class="text-caption font-semibold text-ln-gray-700">{{ f.label }} <span v-if="f.required" class="text-ln-error">obligatoire</span></label>
                 <input :id="'act-f-' + f.key" v-model="seat(f.key).member_user" type="text" placeholder="compte (courriel)"
                        class="mt-1 h-10 w-full rounded-sm-ln border border-ln-gray-300 px-2 text-body-sm" />
                 <label class="mt-1.5 inline-flex items-center gap-2 text-caption text-ln-gray-700">
@@ -38,7 +38,7 @@
                 </label>
               </div>
               <template v-else>
-                <label :for="'act-f-' + f.key" class="text-caption font-semibold text-ln-gray-700">{{ f.label }}</label>
+                <label :for="'act-f-' + f.key" class="text-caption font-semibold text-ln-gray-700">{{ f.label }} <span v-if="f.required" class="text-ln-error">obligatoire</span></label>
                 <select v-if="f.options || f.choices" :id="'act-f-' + f.key" v-model="values[f.key]"
                         class="mt-1 h-10 w-full rounded-sm-ln border border-ln-gray-300 bg-white px-2 text-body-sm">
                   <!-- C9 (PC1C) : rien n'est prérempli — une liste lue s'ouvre sur un choix vide. -->
@@ -60,7 +60,8 @@
           <div class="mt-3 flex justify-end gap-2">
             <button type="button" class="ln-btn-secondary" @click="openAct = null">Annuler</button>
             <button type="button" class="ln-btn-primary" :disabled="(a.requires_reason && !reason.trim()) || missing(a.act) || busy"
-                    @click="emit('act', { act: a, outcome: DECIDES.has(a.act) ? outcome : '', reason: reason.trim(), values: { ...values } })">
+                    @click="emit('act', { act: a, outcome: DECIDES.has(a.act) ? outcome : '', reason: reason.trim(),
+                                          values: Object.fromEntries((FIELDS[a.act] || []).filter(shown).map((f) => [f.key, values[f.key]])) })">
               {{ LABEL[a.act] || a.act }}
             </button>
           </div>
@@ -181,7 +182,11 @@ function optionsOf(f) {
 }
 /** Un siège du conseil, dans `values` (posé à l'ouverture de l'acte) : { seat, member_user, is_representative }. */
 function seat(key) { return values[key] || {}; }
-/** Un champ paraît-il, pour l'issue et les valeurs du moment ? */
+/**
+ * Un champ paraît-il, pour l'issue et les valeurs du moment ? Revue de code MANDAT-12 (bas 6) : seuls les champs
+ * qui paraissent sont ENVOYÉS — une reprise saisie sous « Confirmée » puis l'issue changée en « Infirmée » ne part
+ * pas au serveur (qui la refuserait), un placement saisi puis une issue « Rejetée » non plus.
+ */
 function shown(f) {
   const when = !f.when || (Array.isArray(f.when) ? f.when.includes(outcome.value) : f.when === outcome.value);
   return when && (!f.unless || !values[f.unless]) && (!f.onlyIf || Number(props.choices[f.onlyIf]) > 0);

@@ -71,7 +71,7 @@
           </p>
           <div class="mt-3 flex flex-wrap gap-2">
             <button type="button" class="ln-btn-secondary" @click="deleteTarget = null">Annuler</button>
-            <button type="button" class="ln-btn-primary" :disabled="busy" @click="removeLine(deleteTarget)">Supprimer la ligne</button>
+            <button type="button" class="ln-btn-danger" :disabled="busy" @click="removeLine(deleteTarget)">Supprimer la ligne</button>
           </div>
         </div>
 

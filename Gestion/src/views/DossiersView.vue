@@ -16,7 +16,8 @@
         <button v-if="can('instruct:dossiers')" type="button" class="ln-btn-primary" @click="openForm = true; openError = ''">
           Ouvrir un dossier…
         </button>
-        <router-link :to="{ name: 'awaiting-decider' }" class="ln-btn-secondary">
+        <!-- Revue de code MANDAT-12 (bas 8) : la route exige `read:stalled_dossiers` ; le lien n'existe que pour qui la porte. -->
+        <router-link v-if="can('read:stalled_dossiers')" :to="{ name: 'awaiting-decider' }" class="ln-btn-secondary">
           En attente d'un autre décideur
         </router-link>
       </div>
@@ -24,6 +25,10 @@
 
     <StateBanner v-if="pending" variant="warning" lead="Acte non disponible." :text="pending" />
     <StateBanner v-if="opened" variant="success" lead="Dossier ouvert." :text="opened" />
+    <!-- Revue de code MANDAT-12 (moyen 2), R3 : le serveur dit quand une procédure a atteint sa borne de lecture ;
+         l'écran le répète, il ne le tait pas. -->
+    <StateBanner v-if="truncated.length" variant="warning" lead="Liste peut-être incomplète."
+                 :text="'Le serveur a atteint sa borne de lecture pour : ' + truncated.join(', ') + '. Les dossiers les plus anciens de ces procédures peuvent manquer à la liste.'" />
     <OpenDossierForm v-if="openForm" :terms="terms" :term-id="termId" :busy="busy" :error="openError"
                      @cancel="openForm = false" @submit="onOpen" />
 
@@ -71,9 +76,18 @@
             <!-- MANDAT-12 (S-18) : les faits du dossier (le motif de la décision compris), puis LES ACTES
                  DU LECTEUR — dérivés au serveur de la machine de la procédure. Remplacent l'acte de tronc et
                  les panneaux qui lisaient des champs absents (K-d de la PC1B). -->
-            <FactsPanel v-if="detailOf" :detail="detailOf.detail" :labels="detailOf.detail_labels || {}" />
-            <ActsPanel v-if="detailOf" :available="detailOf.available_acts" :blocked="detailOf.blocked_acts"
-                       :waiting-roles="detailOf.waiting_for_roles" :busy="busy" :choices="choices" @act="onAct" />
+            <!-- Audit de conception MANDAT-12 (haut 1) : le détail a ses états — un squelette pendant la lecture,
+                 l'erreur et « Réessayer » en échec. Deux panneaux qui disparaissent en silence faisaient croire
+                 qu'il n'y avait rien à faire. -->
+            <BlockState v-if="!detailOf" :state="detailState === 'error' ? 'error' : detailState === 'empty' ? 'empty' : 'loading'"
+                        :rows="3" class="mb-4" title="Le détail du dossier ne s'est pas lu"
+                        message="Sans lui, ni les faits ni vos actes ne s'affichent. Réessayez ; si le refus persiste, le dossier est hors de votre portée."
+                        safeguard="Rien n'a été enregistré." @retry="detailRes.load({ name: selectedId })" />
+            <template v-else>
+              <FactsPanel :detail="detailOf.detail" :labels="detailOf.detail_labels || {}" />
+              <ActsPanel :available="detailOf.available_acts" :blocked="detailOf.blocked_acts"
+                         :waiting-roles="detailOf.waiting_for_roles" :busy="busy" :choices="choices" @act="onAct" />
+            </template>
             <StateBanner v-if="actError" variant="error" lead="L'acte a échoué." :text="actError" />
           </div>
 
@@ -93,7 +107,7 @@
                   {{ decisionActor || 'à prendre' }}
                   <span class="block text-caption text-ln-gray-500">{{ detailOf?.decider_role || current.decider_role }}</span>
                 </p>
-                <router-link :to="{ name: 'awaiting-decider' }" class="mt-3 block text-caption font-semibold text-ln-blue-600">
+                <router-link v-if="can('read:stalled_dossiers')" :to="{ name: 'awaiting-decider' }" class="mt-3 block text-caption font-semibold text-ln-blue-600">
                   Les dossiers dont le seul décideur a instruit
                 </router-link>
               </div>
@@ -149,6 +163,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import {
   WorkQueue, StatusPill, StateBanner, ProcedureChain,
 } from '../components/index.js';
+import BlockState from '../components/internal/BlockState.vue';
 import FactsPanel from './dossiers/FactsPanel.vue';
 import ActsPanel from './dossiers/ActsPanel.vue';
 import OpenDossierForm from './dossiers/OpenDossierForm.vue';
@@ -164,6 +179,7 @@ const termId = computed(() => term.value?.id || null);
 const { can } = useSession();
 const res = useResource(listDossiers, { isEmpty: (d) => !d?.items?.length });
 const listState = res.state;
+const truncated = computed(() => res.data.value?.may_be_truncated || []);
 
 const kind = ref('all');
 const selectedId = ref(null);
@@ -184,19 +200,21 @@ const filters = computed(() => {
       .map((k) => ({ key: k, label: KINDS[k], count: counts[k] }))];
 });
 
+// Revue de code MANDAT-12 (bas 7) : la liste ne lit que ce que `list_dossiers` REND. `opened_on`, `suspended_by_appeal`,
+// `sole_decider` et `waiting_days` n'existaient que dans le simulacre : ils ne sont plus lus. L'appel pendant se lit
+// dans les faits du dossier (S-18) ; le retard d'un dossier sans décideur, sur « En attente d'un autre décideur ».
+// `status_tone` n'est pas servi non plus : la pastille retombe sur le ton « brouillon », le libellé est le statut.
 const queueItems = computed(() => items.value.map((c) => ({
   id: c.name,
   title: c.student_name + ' · ' + c.kind_label,
-  subtitle: c.name + ' · ouvert le ' + frDate(c.opened_on || c.created),
-  status: c.suspended_by_appeal ? 'suspendue' : (c.status_tone || 'brouillon'),
-  statusLabel: c.suspended_by_appeal ? 'Appel en cours' : c.status,
-  // Un dossier sans décideur disponible attend : c'est un retard, pas un état.
-  due: c.sole_decider ? 'depuis ' + plural(c.waiting_days, 'jour') : null,
-  overdue: !!c.sole_decider,
+  subtitle: c.name + ' · ouvert le ' + frDate(c.created),
+  status: c.status_tone || 'brouillon',
+  statusLabel: c.status,
 })));
 
 /* ── MANDAT-12 (S-18) — le détail lu par nom ; jamais celui d'un autre dossier. ── */
 const detailRes = useResource(getDossier, { isEmpty: (d) => !d });
+const detailState = detailRes.state;
 const detailOf = computed(() => (detailRes.data.value?.name === selectedId.value ? detailRes.data.value : null));
 watch(selectedId, (n) => { if (n) detailRes.load({ name: n }); });
 
@@ -251,7 +269,7 @@ const identity = computed(() => {
   return [
     { k: 'Procédure', v: c.kind_label },
     { k: 'Étudiant', v: c.student_name + ' · ' + c.student },
-    { k: 'Ouvert le', v: frDate(c.opened_on || c.created || detailOf.value?.created) },
+    { k: 'Ouvert le', v: frDate(c.created || detailOf.value?.created) },
     ...(c.ground ? [{ k: 'Catégorie', v: c.ground }] : []),
     ...(outcomes.length ? [{ k: 'Issues possibles', v: outcomes.join(' ou ') }] : []),
   ];
@@ -285,7 +303,7 @@ const subtitle = computed(() => {
   const c = current.value;
   if (!c) return plural(items.value.length, 'dossier') + ' ouvert' + (items.value.length > 1 ? 's' : '')
     + ' · six procédures';
-  return [c.name, c.ground, c.suspended_by_appeal ? 'appel en cours' : c.status].filter(Boolean).join(' · ');
+  return [c.name, c.ground, c.status].filter(Boolean).join(' · ');
 });
 
 function plural(n, w) { const v = Number(n) || 0; return v + ' ' + w + (v > 1 ? 's' : ''); }

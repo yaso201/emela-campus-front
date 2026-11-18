@@ -181,7 +181,10 @@ function submit() {
 }
 onMounted(async () => {
   if (props.mode === 'create' && props.program) {
-    groups.value = (await listGroups({ ...props.context, program: props.program })) || [];
+    // Audit de conception MANDAT-12 (moyen 3) : un échec de la lecture des groupes (K-a) est DIT, dans le même
+    // bandeau que celui des options — la liste ne reste pas muette sur « — ».
+    try { groups.value = (await listGroups({ ...props.context, program: props.program })) || []; }
+    catch (e) { groups.value = []; optionsError.value = e.message || 'Les groupes de la filière ne se lisent pas.'; }
   }
   reload();
 });

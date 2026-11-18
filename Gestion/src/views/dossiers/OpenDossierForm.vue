@@ -4,11 +4,13 @@
        suivants passent par le panneau des actes du dossier (M6). Rien n'est deviné : les catégories sont les options
        du doctype, les candidats à l'abandon sont ceux que le serveur calcule (`list_abandonment_candidates`, un signal,
        jamais une décision). L'étudiant se saisit par son matricule, que le serveur vérifie (K-f). -->
-  <div class="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-[rgba(15,23,42,0.35)] px-4 py-10">
-    <section class="w-full max-w-[720px] overflow-hidden rounded-md-ln border border-ln-gray-200 bg-white shadow-lg"
+  <!-- Audit de conception MANDAT-12 (moyen 5) : la même coque que les autres fenêtres de l'application (SessionForm,
+       ModuleForm) — voile, arrondi, ombre et titre identiques. -->
+  <div class="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/30 p-6">
+    <section class="w-full max-w-2xl overflow-hidden rounded-lg-ln border border-ln-gray-300 bg-white shadow-elevated"
              role="dialog" aria-modal="true" aria-label="Ouvrir un dossier">
-      <header class="border-b border-ln-gray-200 px-5 py-4">
-        <h2 class="text-h3 text-ln-gray-900">Ouvrir un dossier</h2>
+      <header class="border-b border-ln-gray-200 p-5">
+        <h2 class="text-[17px] font-semibold text-ln-gray-900">Ouvrir un dossier</h2>
         <p class="mt-1 text-caption text-ln-gray-500">Le dossier naît en brouillon. Il ne produit aucun effet sur l'étudiant tant qu'aucun acte n'est posé.</p>
       </header>
 
@@ -60,12 +62,12 @@
         </template>
 
         <div>
-          <label for="od-student" class="text-caption font-semibold text-ln-gray-700">Étudiant (matricule)</label>
+          <label for="od-student" class="text-caption font-semibold text-ln-gray-700">Étudiant (matricule) <span class="text-ln-error">obligatoire</span></label>
           <input id="od-student" v-model="student" type="text" :class="field" placeholder="ETU-2026-00001" />
           <p class="mt-1 text-caption text-ln-gray-500">Aucune liste d'étudiants n'est lue ici : le serveur vérifie le matricule.</p>
         </div>
         <div>
-          <label for="od-ground" class="text-caption font-semibold text-ln-gray-700">Catégorie du motif</label>
+          <label for="od-ground" class="text-caption font-semibold text-ln-gray-700">Catégorie du motif <span class="text-ln-error">obligatoire</span></label>
           <select id="od-ground" v-model="ground" :class="field">
             <option value="" disabled>Choisir la catégorie</option>
             <option v-for="g in GROUNDS[kind]" :key="g" :value="g">{{ g }}</option>
