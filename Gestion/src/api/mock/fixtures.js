@@ -82,14 +82,16 @@ export const session = {
  * Un simulacre de lecteur, pas une politique : les clés retirées sont celles que la matrice serveur ne lui donne pas.
  */
 const AS = {
-  rf: { roles: ['Responsable de formation'], drop: ['write:calendar', 'write:charpente', 'write:groups', 'publish:planning'] },
+  // M9 : `instruct:dossiers` = {EM} (matrice ; K-e) — ni le RF, ni le DE, ni le GA, ni le Director n'ouvrent un dossier.
+  rf: { roles: ['Responsable de formation'], drop: ['write:calendar', 'write:charpente', 'write:groups', 'publish:planning',
+    'instruct:dossiers'] },
   de: { roles: ['Directeur des Études'], drop: ['write:calendar', 'write:charpente', 'write:structure', 'write:groups',
-    'write:planning', 'publish:planning', 'write:modules'] },
+    'write:planning', 'publish:planning', 'write:modules', 'instruct:dossiers'] },
   // MANDAT-12 (maquettes) : le gestionnaire seul — il publie, il ne déroge pas (Q15 de MANDAT-10,
   // VERDICT-MANDAT-10-PC2.md §4).
-  ga: { roles: ['Gestionnaire académique'], drop: ['derogate:planning', 'write:structure'] },
+  ga: { roles: ['Gestionnaire académique'], drop: ['derogate:planning', 'write:structure', 'instruct:dossiers'] },
   director: { roles: ['Director'], drop: ['write:calendar', 'write:charpente', 'write:structure', 'write:groups',
-    'write:planning', 'publish:planning', 'write:modules'] },
+    'write:planning', 'publish:planning', 'write:modules', 'instruct:dossiers'] },
 };
 export function sessionAs(as) {
   const v = AS[as];

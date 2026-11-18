@@ -270,7 +270,7 @@ const probes = [
   ['dossiers', () => fxD.dossiers({}).items.length],
   // ⚠️ Sondée avec un NOM RÉEL : la fixture lève sur un dossier inconnu, donc la
   // sonde garde aussi contre le renommage d'un dossier du jeu d'essai.
-  ['dossier', () => fxD.dossier({ name: 'DIS-2027-014' }).chain.length],
+  ['dossier', () => fxD.dossier({ name: 'DIS-2026-014' }).chain.length],
   ['stepsOf', () => fxD.stepsOf('discipline').length],
   ['activeSuspensions', () => fxD.activeSuspensions({}).length],
   ['suspensionsNeedingReactivation', () => fxD.suspensionsNeedingReactivation({}).length],

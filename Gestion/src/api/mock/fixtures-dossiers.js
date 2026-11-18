@@ -130,31 +130,31 @@ export function stepsOf(kind) {
  * écrit dossier par dossier divergerait de la table des procédures.
  */
 const CASES = [
-  { name: 'CNG-2027-014', kind: 'conge', student: 'ETU-24-0203',
+  { name: 'CNG-2026-014', kind: 'conge', student: 'ETU-24-0203',
     student_name: 'Yasmine Toko', reached: 'decision', status: 'Accordé',
-    opened_on: '2027-03-02', ground: 'Motif personnel',
+    opened_on: '2026-03-02', ground: 'Motif personnel',
     instructed_by: 'E. Mensah', decided_by: 'S. Kouassi',
     decision_reason: 'Situation familiale documentée ; congé d’un an accordé, premier des deux autorisés.',
     step_dates: { depot: '2 mars', instruction: '9 mars', decision: '16 mars' },
     // Arbitrage EN COURS : la décision n'est pas définitive.
-    arbitration: { status: 'En cours', requested_on: '2027-03-18',
+    arbitration: { status: 'En cours', requested_on: '2026-03-18',
                    requested_by: 'la famille', decided_by: null, reason: null } },
-  { name: 'CNG-2027-021', kind: 'conge', student: 'ETU-24-0129',
+  { name: 'CNG-2026-021', kind: 'conge', student: 'ETU-24-0129',
     student_name: 'Ibrahim Salifou', reached: 'notification', status: 'Refusé',
-    opened_on: '2027-02-14', ground: 'Motif économique',
+    opened_on: '2026-02-14', ground: 'Motif économique',
     instructed_by: 'E. Mensah', decided_by: 'S. Kouassi',
     decision_reason: 'Le motif invoqué relève d’une aide financière, non d’une interruption d’études. Orienté vers le service social.',
     arbitration: null },
-  { name: 'RET-2027-004', kind: 'retour', student: 'ETU-23-0088',
+  { name: 'RET-2026-004', kind: 'retour', student: 'ETU-23-0088',
     student_name: 'Josué Kpadonou', reached: 'instruction', status: 'En instruction',
-    opened_on: '2027-06-11', ground: 'Retour après congé 2026-2027',
+    opened_on: '2026-06-11', ground: 'Retour après congé 2025-2026',
     // ⚠️ Instruit par le SEUL titulaire du rôle décideur : ce dossier est celui
     // que l'écran « en attente d'un autre décideur » doit porter.
     instructed_by: 'E. Mensah', decided_by: null, decision_reason: null,
     sole_decider: true, waiting_days: 34, arbitration: null },
-  { name: 'REO-2027-009', kind: 'reorientation', student: 'ETU-24-0164',
+  { name: 'REO-2026-009', kind: 'reorientation', student: 'ETU-24-0164',
     student_name: 'Rachid Ouédraogo', reached: 'instruction', status: 'En commission',
-    opened_on: '2027-03-14', ground: 'Vers L2 Informatique de gestion',
+    opened_on: '2026-03-14', ground: 'Vers la Licence Réseaux et Cloud (L1)',
     instructed_by: null, decided_by: null, decision_reason: null,
     commission: [
       { member_role: 'Président', member_user: 'S. Kouassi' },
@@ -168,46 +168,46 @@ const CASES = [
         basis: 'Mutualisée entre les deux filières.' },
     ],
     arbitration: null },
-  { name: 'DEM-2027-002', kind: 'demission', student: 'ETU-24-0210',
+  { name: 'DEM-2026-002', kind: 'demission', student: 'ETU-24-0210',
     student_name: 'Josué Kpadonou', reached: 'instruction', status: 'Information faite',
-    opened_on: '2027-04-02', ground: 'Démission volontaire',
+    opened_on: '2026-04-02', ground: 'Démission volontaire',
     instructed_by: 'E. Mensah', decided_by: null, decision_reason: null,
-    information: { channel: 'Entretien en présence', recorded_on: '2027-04-04' },
+    information: { channel: 'Entretien en présence', recorded_on: '2026-04-04' },
     // La fenêtre de rétractation court : l'écran la montre, il ne l'actionne pas.
-    retraction: { open: true, until: '2027-04-17' },
+    retraction: { open: true, until: '2026-04-17' },
     // Contrat D-05 pour la fenêtre de rétractation. `remaining` serveur.
     retraction_deadline: {
-      term: '2027-04-17', unit: 'jours', remaining: 9, opened_on: '2027-04-08',
+      term: '2026-04-17', unit: 'jours', remaining: 9, opened_on: '2026-04-08',
       stages: [], will: [], can: [], at_term: 'expire_seule',
     },
     retraction_total_days: 15,
     arbitration: null },
-  { name: 'ABD-2027-007', kind: 'abandon', student: 'ETU-24-0188',
+  { name: 'ABD-2026-007', kind: 'abandon', student: 'ETU-24-0188',
     student_name: 'Fabrice Ahodékon', reached: 'instruction', status: 'Mise en demeure',
-    opened_on: '2027-05-06', ground: 'Absence prolongée sans justificatif',
+    opened_on: '2026-05-06', ground: 'Absence prolongée sans justificatif',
     instructed_by: 'E. Mensah', decided_by: null, decision_reason: null,
-    notice: { issued_on: '2027-05-08', response: null, response_on: null },
+    notice: { issued_on: '2026-05-08', response: null, response_on: null },
     sole_decider: true, waiting_days: 6, arbitration: null },
-  { name: 'ABD-2027-011', kind: 'abandon', student: 'ETU-24-0301',
+  { name: 'ABD-2026-011', kind: 'abandon', student: 'ETU-24-0301',
     student_name: 'Paul Zannou', reached: 'decision', status: 'Écarté',
-    opened_on: '2027-05-02', ground: 'Absence prolongée',
+    opened_on: '2026-05-02', ground: 'Absence prolongée',
     instructed_by: 'E. Mensah', decided_by: 'E. Mensah',
     decision_reason: 'L’étudiant a répondu : hospitalisation documentée. Le constat est écarté, les absences seront justifiées.',
-    notice: { issued_on: '2027-05-04', response: 'Certificat d’hospitalisation du 12 avril au 3 mai.',
-              response_on: '2027-05-09' },
+    notice: { issued_on: '2026-05-04', response: 'Certificat d’hospitalisation du 12 avril au 3 mai.',
+              response_on: '2026-05-09' },
     arbitration: null },
-  { name: 'DIS-2027-014', kind: 'discipline', student: 'ETU-24-0112',
+  { name: 'DIS-2026-014', kind: 'discipline', student: 'ETU-24-0112',
     student_name: 'Ange Sossou', reached: 'notification', status: 'Suspension',
-    opened_on: '2027-07-12', ground: 'Fraude à une épreuve',
+    opened_on: '2026-07-12', ground: 'Fraude à une épreuve',
     instructed_by: 'E. Mensah', decided_by: 'S. Kouassi',
     decision_reason: 'Fraude établie par deux surveillants et un rapport écrit. Suspension de quinze jours.',
     step_dates: { depot: '12 juil.', instruction: '18 juil.', decision: '28 juil.',
                   notification: '30 juil.' },
-    council: { convocation_date: '2027-07-18', council_date: '2027-07-26', members: 3 },
-    suspension: { duration_weeks: 2, days: 15, notified_on: '2027-07-30',
-                  effective_from: '2027-07-30', effective_to: '2027-08-14' },
+    council: { convocation_date: '2026-07-18', council_date: '2026-07-26', members: 3 },
+    suspension: { duration_weeks: 2, days: 15, notified_on: '2026-07-30',
+                  effective_from: '2026-07-30', effective_to: '2026-08-14' },
     // ⚠️ L'APPEL EST DÉPOSÉ, donc les effets sont SUSPENDUS.
-    appeal: { appealed_on: '2027-08-04', appeal_grounds:
+    appeal: { appealed_on: '2026-08-04', appeal_grounds:
                 'Absence d’antécédent, et la durée retenue ne tient pas compte du contexte de l’épreuve.',
               days_served_at_appeal: 7, appeal_decision: null,
               resume_start: null, resume_days_remaining: null, resume_end: null },
@@ -223,7 +223,7 @@ const CASES = [
      * suspension sous appel, elles disent ce qui est ARRÊTÉ et ce qui a REPRIS.
      */
     deadline: {
-      term: '2027-08-14', unit: 'jours', remaining: 8, opened_on: '2027-07-30',
+      term: '2026-08-14', unit: 'jours', remaining: 8, opened_on: '2026-07-30',
       stages: [],
       will: ['Le décompte des jours de suspension reprendra à la date fixée',
              'La date de reprise sera notifiée à l’étudiant'],
@@ -232,13 +232,14 @@ const CASES = [
       at_term: 'acte_necessaire',
     },
     arbitration: null },
-  { name: 'DIS-2027-019', kind: 'discipline', student: 'ETU-24-0147',
-    student_name: 'Grâce Aïvodji', reached: 'decision', status: 'Classé sans sanction',
-    opened_on: '2027-06-20', ground: 'Trouble en séance',
-    instructed_by: 'E. Mensah', decided_by: 'S. Kouassi',
-    decision_reason: 'Les faits ne sont pas établis : les deux témoignages se contredisent sur l’auteur. Classé sans sanction.',
-    step_dates: { depot: '20 juin', instruction: '26 juin', decision: '4 juil.' },
-    council: { convocation_date: '2027-06-26', council_date: '2027-07-04', members: 3 },
+  { name: 'DIS-2026-019', kind: 'discipline', student: 'ETU-24-0147',
+    // MANDAT-12 (M9) : le conseil est convoqué — le DE prononce la sanction ou clôt sans sanction.
+    student_name: 'Grâce Aïvodji', reached: 'instruction', status: 'Conseil convoqué',
+    opened_on: '2026-06-20', ground: 'Comportement répréhensible',
+    instructed_by: 'E. Mensah', decided_by: null,
+    decision_reason: null,
+    step_dates: { depot: '20 juin', instruction: '26 juin' },
+    council: { convocation_date: '2026-06-26', council_date: '2026-07-04', members: 3 },
     arbitration: null },
 ];
 
@@ -357,9 +358,9 @@ export function suspensionsNeedingReactivation(params = {}) {
   if (params.__empty) return [];
   return [
     { name: 'DIS-2026-031', student: 'ETU-23-0044', student_name: 'Aïcha Bello',
-      effective_to: '2027-01-18', days_since_expiry: 22 },
+      effective_to: '2026-01-18', days_since_expiry: 22 },
     { name: 'DIS-2026-038', student: 'ETU-24-0077', student_name: 'Serge Dagba',
-      effective_to: '2027-02-02', days_since_expiry: 7 },
+      effective_to: '2026-02-02', days_since_expiry: 7 },
   ];
 }
 
@@ -405,7 +406,7 @@ export function statusCause(params = {}) {
     decided_on: '2026-09-03',
     decided_by: 'la direction des études',
     effective_from: '2026-09-15',
-    effective_to: '2027-09-14',
+    effective_to: '2027-09-14',   // un congé d'un an (C11 : la date de fin suit le début)
     // ⚠️ Le champ des FAITS est ABSENT, jamais vide : ils restent au dossier.
     documented: true,
   };

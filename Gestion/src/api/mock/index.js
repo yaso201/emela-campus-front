@@ -47,9 +47,10 @@ const S18 = {
     domain: 'coa', doctype: 'Academic Leave Request', status: 'Approuvée', decider_role: 'Directeur des Études',
     machine: { Brouillon: ['Annulée', 'Soumise'], Soumise: ['Annulée', 'En revue'], 'En revue': ['Approuvée', 'Rejetée'],
       Approuvée: ['Rejetée', 'Réactivée'], Rejetée: ['Approuvée'], Annulée: [], Réactivée: [] },
-    detail: { from_date: '2027-03-15', to_date: '2028-03-14', event_date: null, reason: 'Situation familiale documentée',
+    // C11 (PC1C) : dates cohérentes avec le « 10 septembre 2026 » du simulacre — un congé ouvert en mars 2026.
+    detail: { from_date: '2026-03-15', to_date: '2027-03-14', event_date: null, reason: 'Situation familiale documentée',
       force_majeure_reason: null, previous_academic_status: 'ACT', is_second_leave: 0, instructed_by: 'e.mensah@lanem.bj',
-      instructed_on: '2027-03-09', decision_by: 's.kouassi@lanem.bj', decision_on: '2027-03-16',
+      instructed_on: '2026-03-09', decision_by: 's.kouassi@lanem.bj', decision_on: '2026-03-16',
       decision_reason: 'Congé d’un an accordé, premier des deux autorisés.', arbitrated_by: null, arbitrated_on: null,
       arbitration_reason: null, student_academic_status: 'COA' },
     detail_labels: { instructed_by: 'Edwige Mensah', decision_by: 'Serge Kouassi',
@@ -63,19 +64,41 @@ const S18 = {
     domain: 'reorientation', doctype: 'Reorientation Request', status: 'En commission', decider_role: 'Directeur des Études',
     machine: { Brouillon: ['Annulée', 'Soumise'], Soumise: ['Annulée', 'En commission'],
       'En commission': ['Acceptée', 'Rejetée'], Acceptée: [], Rejetée: [], Annulée: [] },
-    detail: { case: 'Demande volontaire de réorientation', origin_program: 'L2 Génie logiciel', target_program: 'L2 Réseaux',
+    detail: { case: 'Demande volontaire de réorientation', origin_program: 'LIS', target_program: 'LRC',
       motivation: 'Projet professionnel orienté infrastructure.', mutualization_rate: 62, decided_by: null, decided_on: null,
       decision_reason: null, notified_on: null,
       commission_members: [{ member_role: 'Directeur des Études', user: 's.kouassi@lanem.bj', user_label: 'Serge Kouassi' },
-        { member_role: 'Responsable de la formation d’origine', user: 'a.hounsou@lanem.bj', user_label: 'Aline Hounsou' }],
-      commission_missing_roles: ['Responsable de la formation visée'],
+        { member_role: 'Responsable de la formation d’origine', user: 'a.hounsou@lanem.bj', user_label: 'Aline Hounsou' },
+        ...(query('reo') === 'complete'
+          ? [{ member_role: 'Responsable de la formation visée', user: 'p.zinsou@lanem.bj', user_label: 'Pascal Zinsou' }] : [])],
+      commission_missing_roles: query('reo') === 'complete' ? [] : ['Responsable de la formation visée'],
       recognized_credits: [{ source_label: 'UE 2.1 Algorithmique', credits_recognized: 6, basis: 'Programme équivalent' }] },
-    detail_labels: {},
+    detail_labels: { origin_program: 'Licence Informatique et Systèmes', target_program: 'Licence Réseaux et Cloud' },
     acts: [
       { act: 'addCommissionMember', method: 'reorientation.add_commission_member', roles: ['Directeur des Études'], outcomes: null, requires_reason: false },
       { act: 'addCreditRecognition', method: 'reorientation.add_credit_recognition', roles: ['Directeur des Études'], outcomes: null, requires_reason: false },
-      { act: 'decideReorientation', roles: ['Directeur des Études'],
-        blocked: 'Art. 42.13 — la commission n’est pas complète. Manquent : Responsable de la formation visée.' },
+      // M9 : `?reo=complete` — la commission est complète, la décision est ouverte (acceptation : placement).
+      query('reo') === 'complete'
+        ? { act: 'decideReorientation', method: 'reorientation.decide_reorientation', roles: ['Directeur des Études'],
+          outcomes: ['Acceptée', 'Rejetée'], requires_reason: true }
+        : { act: 'decideReorientation', roles: ['Directeur des Études'],
+          blocked: 'Art. 42.13 — la commission n’est pas complète. Manquent : Responsable de la formation visée.' },
+    ],
+  },
+  // MANDAT-12 (M9) — un dossier disciplinaire au conseil convoqué : le DE prononce ou clôt.
+  discipline: {
+    domain: 'discipline', doctype: 'Disciplinary Suspension', status: 'Convoquée', decider_role: 'Directeur des Études',
+    machine: { Brouillon: ['Convoquée'], Convoquée: ['Prononcée', 'Sans sanction'], Prononcée: ['Notifiée'],
+      'Sans sanction': [], Notifiée: [] },
+    detail: { ground_category: 'Comportement répréhensible', ground_details: 'Altercation en salle de TP, rapport du surveillant.',
+      convocation_date: '2026-06-26', council_date: '2026-07-04', duration_weeks: null, pronounce_reason: null,
+      council_members: [] },
+    detail_labels: {},
+    acts: [
+      { act: 'pronounceDisciplinarySuspension', method: 'discipline.pronounce_disciplinary_suspension',
+        roles: ['Directeur des Études'], outcomes: ['Prononcée'], requires_reason: true },
+      { act: 'closeWithoutSanction', method: 'discipline.close_without_sanction',
+        roles: ['Directeur des Études'], outcomes: ['Sans sanction'], requires_reason: true },
     ],
   },
 };
@@ -293,6 +316,17 @@ const HANDLERS = {
   'portal_app.api.academic.dossiers_read.list_dossiers': (p) => D.dossiers(p),
   // MANDAT-12 (S-18) : la clé nue disparaît — la lecture unitaire a son chemin serveur.
   'portal_app.api.academic.dossiers_read.get_dossier': (p) => s18Dossier(p),
+  // MANDAT-12 (M9) — ouvrir un dossier : les candidats signalés (forme serveur), puis la naissance en Brouillon.
+  'portal_app.api.academic.abandonment.list_abandonment_candidates': (p) => ({
+    as_of: '2026-09-10', academic_term: p.academic_term, note: 'SIGNAL uniquement — figurer n’emporte rien.',
+    candidates: p.__empty ? [] : [
+      { student: 'ETU-24-0164', status: 'ACT', fact_1_four_consecutive_weeks: true, fact_2_no_evaluation_line: false,
+        fact_3_over_20_percent_prolonged: true, fact_4_leave_expired_no_return: false, term_absence_percent: 41, term_sessions: 58, weekly: [] },
+      { student: 'ETU-24-0203', status: 'RED', fact_1_four_consecutive_weeks: false, fact_2_no_evaluation_line: true,
+        fact_3_over_20_percent_prolonged: false, fact_4_leave_expired_no_return: false, term_absence_percent: 12, term_sessions: 58, weekly: [] },
+    ] }),
+  'portal_app.api.academic.abandonment.create_abandonment_finding': () => ({ name: 'ABD-2026-012', status: 'Brouillon' }),
+  'portal_app.api.academic.discipline.create_disciplinary_case': () => ({ name: 'DIS-2026-021', status: 'Brouillon' }),
   'portal_app.api.academic.chassis.list_stalled_dossiers': (p) => D.awaitingOtherDecider(p),
   'portal_app.api.academic.discipline.list_active_suspensions': (p) => D.activeSuspensions(p),
   'portal_app.api.academic.discipline.list_suspensions_needing_moodle_reactivation':

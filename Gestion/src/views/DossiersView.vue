@@ -11,6 +11,11 @@
         <p class="mt-1 text-body-sm text-ln-gray-500">{{ subtitle }}</p>
       </div>
       <div class="flex flex-wrap items-center gap-2">
+        <!-- MANDAT-12 (M9, Q16 ; K-e) : ouvrir un constat d'abandon ou un dossier disciplinaire — l'acte de
+             l'instructeur (`instruct:dossiers` = EM) ; le bouton n'existe pas pour les autres lecteurs (règle 3). -->
+        <button v-if="can('instruct:dossiers')" type="button" class="ln-btn-primary" @click="openForm = true; openError = ''">
+          Ouvrir un dossier…
+        </button>
         <router-link :to="{ name: 'awaiting-decider' }" class="ln-btn-secondary">
           En attente d'un autre décideur
         </router-link>
@@ -18,6 +23,9 @@
     </header>
 
     <StateBanner v-if="pending" variant="warning" lead="Acte non disponible." :text="pending" />
+    <StateBanner v-if="opened" variant="success" lead="Dossier ouvert." :text="opened" />
+    <OpenDossierForm v-if="openForm" :terms="terms" :term-id="termId" :busy="busy" :error="openError"
+                     @cancel="openForm = false" @submit="onOpen" />
 
     <div class="mb-3 flex flex-wrap items-center gap-2">
       <button v-for="f in filters" :key="f.key" type="button"
@@ -65,7 +73,7 @@
                  les panneaux qui lisaient des champs absents (K-d de la PC1B). -->
             <FactsPanel v-if="detailOf" :detail="detailOf.detail" :labels="detailOf.detail_labels || {}" />
             <ActsPanel v-if="detailOf" :available="detailOf.available_acts" :blocked="detailOf.blocked_acts"
-                       :waiting-roles="detailOf.waiting_for_roles" :busy="busy" @act="onAct" />
+                       :waiting-roles="detailOf.waiting_for_roles" :busy="busy" :choices="choices" @act="onAct" />
             <StateBanner v-if="actError" variant="error" lead="L'acte a échoué." :text="actError" />
           </div>
 
@@ -143,12 +151,17 @@ import {
 } from '../components/index.js';
 import FactsPanel from './dossiers/FactsPanel.vue';
 import ActsPanel from './dossiers/ActsPanel.vue';
+import OpenDossierForm from './dossiers/OpenDossierForm.vue';
 import { useAcademicContext } from '../composables/useAcademicContext.js';
 import { useResource } from '../composables/useResource.js';
+import { useSession } from '../composables/useSession.js';
 import { listDossiers, getDossier } from '../api/dossiers-read.js';
+import { getProgramDetail } from '../api/charpente.js';
 import * as DOS from '../api/dossiers.js';
 
-const { params } = useAcademicContext();
+const { params, years, terms, term } = useAcademicContext();
+const termId = computed(() => term.value?.id || null);
+const { can } = useSession();
 const res = useResource(listDossiers, { isEmpty: (d) => !d?.items?.length });
 const listState = res.state;
 
@@ -294,10 +307,50 @@ const REASON_KEY = {
 };
 const actError = ref('');
 const busy = ref(false);
+/* ── MANDAT-12 (M9, Q17) — les listes d'un acte : l'année et le semestre d'accueil viennent du contexte ;
+ * les niveaux, de la filière VISÉE du dossier (`get_program`). ── */
+const levels = ref([]);
+watch(() => detailOf.value?.detail?.target_program, async (prog) => {
+  levels.value = [];
+  if (!prog) return;
+  try { levels.value = ((await getProgramDetail({ program: prog }))?.levels || []).map((l) => ({ value: l.name, label: l.level_name || l.name })); }
+  catch { levels.value = []; }
+});
+const choices = computed(() => ({
+  years: years.value.map((y) => ({ value: y.id, label: y.label })),
+  terms: terms.value.map((t) => ({ value: t.id, label: t.label })),
+  levels: levels.value,
+}));
+/** La sanction : les trois sièges deviennent `council_members` ; le sursis, un entier. */
+function shapeValues(act, values) {
+  if (act !== 'pronounceDisciplinarySuspension') return values;
+  const { seat_presidence: p, seat_rf: r, seat_concerne: c, is_suspended_sentence: s, ...rest } = values;
+  return { ...rest, is_suspended_sentence: s ? 1 : 0,
+    council_members: [p, r, c].filter(Boolean).map((m) => ({ seat: m.seat, member_user: (m.member_user || '').trim(), is_representative: m.is_representative ? 1 : 0 })) };
+}
+
+/* ── MANDAT-12 (M9, Q16 ; K-e) — ouvrir un dossier : un constat d'abandon ou un dossier disciplinaire. ── */
+const openForm = ref(false);
+const openError = ref('');
+const opened = ref('');
+async function onOpen({ kind: k, values }) {
+  openError.value = '';
+  try {
+    busy.value = true;
+    const out = k === 'abandon' ? await DOS.createAbandonmentFinding(values) : await DOS.createDisciplinaryCase(values);
+    openForm.value = false;
+    opened.value = (k === 'abandon' ? 'Constat ' : 'Dossier ') + (out?.name || '') + ' ouvert en brouillon pour '
+      + values.student_id + '. Les actes suivants se posent depuis son détail.';
+    reload();
+    if (out?.name) selectedId.value = out.name;
+  } catch (e) { openError.value = e.message || 'Ouverture refusée.'; }
+  finally { busy.value = false; }
+}
+
 async function onAct({ act, outcome, reason, values }) {
   const fn = DOS[act.act];
   if (!fn) { pending.value = 'Aucune fonction d’appel pour ' + act.act + '. Rien n’a été enregistré.'; return; }
-  const payload = { name: selectedId.value, ...values };
+  const payload = { name: selectedId.value, ...shapeValues(act.act, values) };
   if (outcome) payload[OUTCOME_KEY[act.act] || 'decision'] = outcome;
   if (reason) payload[REASON_KEY[act.act] || 'decision_reason'] = reason;
   actError.value = '';

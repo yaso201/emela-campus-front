@@ -18,15 +18,39 @@
               <option v-for="o in a.outcomes" :key="o" :value="o">{{ o }}</option>
             </select>
           </div>
-          <div v-for="f in FIELDS[a.act] || []" :key="f.key" class="mt-2">
-            <label :for="'act-f-' + f.key" class="text-caption font-semibold text-ln-gray-700">{{ f.label }}</label>
-            <select v-if="f.options" :id="'act-f-' + f.key" v-model="values[f.key]"
-                    class="mt-1 h-10 w-full rounded-sm-ln border border-ln-gray-300 bg-white px-2 text-body-sm">
-              <option v-for="o in f.options" :key="o" :value="o">{{ o }}</option>
-            </select>
-            <input v-else :id="'act-f-' + f.key" v-model="values[f.key]" :type="f.type || 'text'"
-                   class="mt-1 h-10 w-full rounded-sm-ln border border-ln-gray-300 px-2 text-body-sm" />
-          </div>
+          <template v-for="f in FIELDS[a.act] || []" :key="f.key">
+            <!-- MANDAT-12 (M9) : un champ ne paraît que pour l'issue qui l'exige (`when`), ou tant qu'un autre
+                 ne l'annule pas (`unless`) — le placement d'une acceptation, la date d'une sanction sans sursis. -->
+            <div v-if="shown(f)" class="mt-2">
+              <label v-if="f.type === 'checkbox'" class="inline-flex items-center gap-2 text-body-sm text-ln-gray-900">
+                <input :id="'act-f-' + f.key" v-model="values[f.key]" type="checkbox" class="accent-ln-blue-900" />
+                {{ f.label }}
+              </label>
+              <!-- Un siège du conseil (Art. 18.2) : le compte qui le tient, et s'il y est représenté. -->
+              <div v-else-if="f.type === 'seat'" class="rounded-sm-ln border border-ln-gray-200 p-2">
+                <label :for="'act-f-' + f.key" class="text-caption font-semibold text-ln-gray-700">{{ f.label }}</label>
+                <input :id="'act-f-' + f.key" v-model="seat(f.key).member_user" type="text" placeholder="compte (courriel)"
+                       class="mt-1 h-10 w-full rounded-sm-ln border border-ln-gray-300 px-2 text-body-sm" />
+                <label class="mt-1.5 inline-flex items-center gap-2 text-caption text-ln-gray-700">
+                  <input v-model="seat(f.key).is_representative" type="checkbox" class="accent-ln-blue-900"
+                         :aria-label="'Représenté — ' + f.label" />
+                  représenté(e)
+                </label>
+              </div>
+              <template v-else>
+                <label :for="'act-f-' + f.key" class="text-caption font-semibold text-ln-gray-700">{{ f.label }}</label>
+                <select v-if="f.options || f.choices" :id="'act-f-' + f.key" v-model="values[f.key]"
+                        class="mt-1 h-10 w-full rounded-sm-ln border border-ln-gray-300 bg-white px-2 text-body-sm">
+                  <!-- C9 (PC1C) : rien n'est prérempli — une liste lue s'ouvre sur un choix vide. -->
+                  <option v-if="f.choices" value="" disabled>{{ optionsOf(f).length ? 'Choisir…' : 'Aucune valeur lue' }}</option>
+                  <option v-for="o in optionsOf(f)" :key="o.value" :value="o.value">{{ o.label }}</option>
+                </select>
+                <input v-else :id="'act-f-' + f.key" v-model="values[f.key]" :type="f.type || 'text'" :min="f.min" :max="f.max"
+                       class="mt-1 h-10 w-full rounded-sm-ln border border-ln-gray-300 px-2 text-body-sm" />
+              </template>
+              <p v-if="f.hint" class="mt-1 text-caption text-ln-gray-500">{{ f.hint }}</p>
+            </div>
+          </template>
           <div v-if="a.requires_reason" class="mt-2">
             <label :for="'act-r-' + a.act" class="text-caption font-semibold text-ln-gray-700">Motif <span class="text-ln-error">obligatoire</span></label>
             <textarea :id="'act-r-' + a.act" v-model="reason" rows="3"
@@ -34,7 +58,7 @@
           </div>
           <div class="mt-3 flex justify-end gap-2">
             <button type="button" class="ln-btn-secondary" @click="openAct = null">Annuler</button>
-            <button type="button" class="ln-btn-primary" :disabled="(a.requires_reason && !reason.trim()) || busy"
+            <button type="button" class="ln-btn-primary" :disabled="(a.requires_reason && !reason.trim()) || missing(a.act) || busy"
                     @click="emit('act', { act: a, outcome: DECIDES.has(a.act) ? outcome : '', reason: reason.trim(), values: { ...values } })">
               {{ LABEL[a.act] || a.act }}
             </button>
@@ -68,6 +92,9 @@ const props = defineProps({
   blocked: { type: Array, default: () => [] },     // [{ act, reason }]
   waitingRoles: { type: Array, default: () => [] },   // noms de rôles (chaînes) — S-18 `waiting_for_roles`
   busy: { type: Boolean, default: false },
+  // MANDAT-12 (M9) : les listes que la vue lit pour un acte (années, semestres, niveaux d'accueil) —
+  // { years: [{ value, label }], terms: [{ value, label }], levels: [{ value, label }] }
+  choices: { type: Object, default: () => ({}) },
 });
 const emit = defineEmits(['act']);
 const openAct = ref(null);
@@ -112,7 +139,41 @@ const FIELDS = {
     { key: 'convocation_date', label: 'Convocation le', type: 'date' },
     { key: 'council_date', label: 'Séance le (au moins cinq jours ouvrables après)', type: 'date' },
   ],
+  // MANDAT-12 (M9, Q17) — la sanction : `pronounce_disciplinary_suspension(duration_weeks, pronounce_reason,
+  // council_members, is_suspended_sentence, period_start)`. Les trois sièges de l'Art. 18.2, chacun une fois ; un
+  // compte mal saisi est refusé au serveur par une phrase qui nomme le siège (C10).
+  pronounceDisciplinarySuspension: [
+    { key: 'duration_weeks', label: 'Durée (semaines)', type: 'number', min: 1, max: 4, required: true, hint: 'De 1 à 4 semaines.' },
+    { key: 'is_suspended_sentence', label: 'Avec sursis — aucune période ne court', type: 'checkbox' },
+    { key: 'period_start', label: 'Début de la période', type: 'date', unless: 'is_suspended_sentence',
+      hint: 'Aujourd’hui si vide. La période court sur 7 jours par semaine prononcée.' },
+    { key: 'seat_presidence', label: 'Présidence (directeur des études)', type: 'seat', seat: 'Présidence (directeur des études)', required: true },
+    { key: 'seat_rf', label: 'Responsable de formation', type: 'seat', seat: 'Responsable de formation', required: true },
+    { key: 'seat_concerne', label: 'Enseignant ou responsable concerné', type: 'seat', seat: 'Enseignant ou responsable concerné', required: true },
+  ],
+  // MANDAT-12 (M9, Q17 ; C9) — l'acceptation crée l'inscription d'accueil : les TROIS valeurs sont exigées à l'écran
+  // (rien n'est prérempli) ; « Rejetée » n'en demande aucune.
+  decideReorientation: [
+    { key: 'target_academic_year', label: 'Année d’accueil', choices: 'years', when: 'Acceptée', required: true },
+    { key: 'target_academic_term', label: 'Semestre d’accueil', choices: 'terms', when: 'Acceptée', required: true },
+    { key: 'target_level', label: 'Niveau d’accueil (filière visée)', choices: 'levels', when: 'Acceptée', required: true,
+      hint: 'L’acceptation inscrit l’étudiant dans la filière visée : la décision et l’inscription sont un seul acte.' },
+  ],
 };
+/** Les options d'un champ : écrites (`options`) ou lues par la vue (`choices`). */
+function optionsOf(f) {
+  const raw = f.options || props.choices[f.choices] || [];
+  return raw.map((o) => (typeof o === 'string' ? { value: o, label: o } : o));
+}
+/** Un siège du conseil, dans `values` (posé à l'ouverture de l'acte) : { seat, member_user, is_representative }. */
+function seat(key) { return values[key] || {}; }
+/** Un champ paraît-il, pour l'issue et les valeurs du moment ? */
+function shown(f) { return (!f.when || f.when === outcome.value) && (!f.unless || !values[f.unless]); }
+/** C9 : un champ exigé et visible qui n'a pas sa valeur garde l'acte inactif. */
+function missing(act) {
+  return (FIELDS[act] || []).some((f) => f.required && shown(f)
+    && (f.type === 'seat' ? !(values[f.key]?.member_user || '').trim() : (values[f.key] === undefined || values[f.key] === '')));
+}
 const intro = computed(() => (props.available.length
   ? 'Ce que la procédure permet à votre rôle, à ce statut. Le serveur fait foi à l’acte.'
   : 'Rien ne vous revient à ce statut.'));
@@ -121,5 +182,9 @@ const waiting = computed(() => (props.waitingRoles.length
 function start(a) {
   openAct.value = a.act; outcome.value = (a.outcomes || [])[0] || ''; reason.value = '';
   for (const k of Object.keys(values)) delete values[k];
+  for (const f of FIELDS[a.act] || []) {
+    if (f.type === 'seat') values[f.key] = { seat: f.seat, member_user: '', is_representative: false };
+    if (f.choices) values[f.key] = '';   // C9 : une liste lue s'ouvre sur « Choisir… »
+  }
 }
 </script>
