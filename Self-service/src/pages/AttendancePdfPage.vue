@@ -70,7 +70,7 @@ async function loadDashboard() {
   error.value = '';
   success.value = '';
   try {
-    dashboard.value = await callApi('portal_app.api.attendance_pdf.get_attendance_pdf_dashboard', filters);
+    dashboard.value = await callApi('attendance_app.lanem_attendance.api.attendance_pdf.get_attendance_pdf_dashboard', filters);
     selectedChain.value = null;
   } catch (err) {
     dashboard.value = null;
@@ -95,7 +95,7 @@ async function loadChain(row) {
   error.value = '';
   success.value = '';
   try {
-    selectedChain.value = await callApi('portal_app.api.attendance_pdf.get_attendance_pdf_chain', {
+    selectedChain.value = await callApi('attendance_app.lanem_attendance.api.attendance_pdf.get_attendance_pdf_chain', {
       pdf_document_id: row.pdf_document_id,
     });
   } catch (err) {
@@ -111,7 +111,7 @@ async function verifyPdf(row) {
   error.value = '';
   success.value = '';
   try {
-    const integrity = await callApi('portal_app.api.attendance_pdf.verify_pdf_document_integrity', {
+    const integrity = await callApi('attendance_app.lanem_attendance.api.attendance_pdf.verify_pdf_document_integrity', {
       pdf_document_id: row.pdf_document_id,
     });
     updateRowIntegrity(row.pdf_document_id, integrity);

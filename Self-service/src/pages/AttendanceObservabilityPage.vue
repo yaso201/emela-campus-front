@@ -70,7 +70,7 @@ async function loadDashboard() {
   error.value = '';
   success.value = '';
   try {
-    dashboard.value = await callApi('portal_app.api.attendance_observability.get_attendance_observability_dashboard', filters);
+    dashboard.value = await callApi('attendance_app.lanem_attendance.api.attendance_observability.get_attendance_observability_dashboard', filters);
   } catch (err) {
     dashboard.value = null;
     error.value = err.message;
@@ -84,7 +84,7 @@ async function runChecks() {
   error.value = '';
   success.value = '';
   try {
-    const result = await callApi('portal_app.api.attendance_observability.run_attendance_observability_checks', filters);
+    const result = await callApi('attendance_app.lanem_attendance.api.attendance_observability.run_attendance_observability_checks', filters);
     const n16 = result.notifications?.heartbeat_prolonged?.created || 0;
     const n17 = result.notifications?.sync_failed_prolonged?.created || 0;
     success.value = `${n16} alerte(s) N-16 et ${n17} alerte(s) N-17 créées.`;

@@ -118,7 +118,7 @@ async function loadPendingSessions() {
   loadingList.value = true;
   error.value = '';
   try {
-    const payload = await callApi('portal_app.api.attendance_paper_mode.list_pending_paper_sessions');
+    const payload = await callApi('attendance_app.lanem_attendance.api.attendance_paper_mode.list_pending_paper_sessions');
     pendingSessions.value = payload.sessions || [];
   } catch (err) {
     error.value = err.message;
@@ -139,7 +139,7 @@ async function loadCandidateSessions() {
   loadingCandidates.value = true;
   error.value = '';
   try {
-    const payload = await callApi('portal_app.api.attendance_paper_mode.list_paper_candidate_sessions');
+    const payload = await callApi('attendance_app.lanem_attendance.api.attendance_paper_mode.list_paper_candidate_sessions');
     candidateSessions.value = payload.sessions || [];
   } catch (err) {
     candidateSessions.value = [];
@@ -169,8 +169,8 @@ async function loadSession(name) {
   manualSessionName.value = name;
   try {
     const method = canReenter.value
-      ? 'portal_app.api.attendance_paper_mode.get_paper_reentry_session'
-      : 'portal_app.api.attendance_paper_mode.get_paper_sheet_session';
+      ? 'attendance_app.lanem_attendance.api.attendance_paper_mode.get_paper_reentry_session'
+      : 'attendance_app.lanem_attendance.api.attendance_paper_mode.get_paper_sheet_session';
     const payload = await callApi(method, {
       attendance_session: name,
     });
@@ -267,7 +267,7 @@ async function printSheet() {
   error.value = '';
   success.value = '';
   try {
-    const payload = await callApi('portal_app.api.attendance_paper_mode.generate_paper_sheet', {
+    const payload = await callApi('attendance_app.lanem_attendance.api.attendance_paper_mode.generate_paper_sheet', {
       attendance_session: selectedSessionName.value,
       reason: form.reason || 'assistant_print',
       force: 1,
@@ -306,7 +306,7 @@ async function submitRows() {
       status: row.status,
       punctuality_status: row.status === 'Present' ? row.punctuality_status : 'N/A',
     }));
-    const result = await callApi('portal_app.api.attendance_paper_mode.submit_paper_attendance', {
+    const result = await callApi('attendance_app.lanem_attendance.api.attendance_paper_mode.submit_paper_attendance', {
       attendance_session: selectedSessionName.value,
       entries: JSON.stringify(payloadEntries),
       reason: form.reason.trim(),

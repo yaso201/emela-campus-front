@@ -69,7 +69,7 @@ async function loadDashboard() {
   loading.value = true;
   error.value = '';
   try {
-    dashboard.value = await callApi('portal_app.api.attendance_kpi.get_attendance_kpi_dashboard', filters);
+    dashboard.value = await callApi('attendance_app.lanem_attendance.api.attendance_kpi.get_attendance_kpi_dashboard', filters);
   } catch (err) {
     dashboard.value = null;
     error.value = err.message;
@@ -82,7 +82,7 @@ async function exportCsv() {
   exporting.value = true;
   error.value = '';
   try {
-    const payload = await callApi('portal_app.api.attendance_kpi.export_attendance_kpis_csv', filters);
+    const payload = await callApi('attendance_app.lanem_attendance.api.attendance_kpi.export_attendance_kpis_csv', filters);
     downloadTextFile(payload.filename || 'attendance_kpis.csv', payload.content || '');
   } catch (err) {
     error.value = err.message;

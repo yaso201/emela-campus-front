@@ -92,7 +92,7 @@ async function loadDashboard() {
   error.value = '';
   success.value = '';
   try {
-    dashboard.value = await callApi('portal_app.api.attendance_corrections.get_attendance_correction_dashboard', filters);
+    dashboard.value = await callApi('attendance_app.lanem_attendance.api.attendance_corrections.get_attendance_correction_dashboard', filters);
   } catch (err) {
     dashboard.value = null;
     error.value = err.message;
@@ -126,7 +126,7 @@ async function applyTeacherCorrection(row) {
   }
 
   await runAction(`teacher:${row.student_attendance}`, async () => {
-    const result = await callApi('portal_app.api.attendance_corrections.apply_teacher_correction', {
+    const result = await callApi('attendance_app.lanem_attendance.api.attendance_corrections.apply_teacher_correction', {
       attendance_session: row.attendance_session,
       student: row.student,
       reason: teacherForm.reason,
@@ -145,7 +145,7 @@ async function applyAdminCorrection(row) {
   }
 
   await runAction(`admin:${row.student_attendance}`, async () => {
-    const result = await callApi('portal_app.api.attendance_corrections.apply_admin_correction', {
+    const result = await callApi('attendance_app.lanem_attendance.api.attendance_corrections.apply_admin_correction', {
       attendance_session: row.attendance_session,
       student: row.student,
       requested_status: adminForm.requested_status,
@@ -170,7 +170,7 @@ async function createTicket() {
   error.value = '';
   success.value = '';
   try {
-    const result = await callApi('portal_app.api.attendance_corrections.create_attendance_modification_request', ticketForm);
+    const result = await callApi('attendance_app.lanem_attendance.api.attendance_corrections.create_attendance_modification_request', ticketForm);
     success.value = `Ticket ${result.name} créé`;
     ticketForm.reason = '';
     ticketForm.evidence_ref = '';
@@ -234,7 +234,7 @@ async function decideTicket(row, decision) {
   if (!reason?.trim()) return;
 
   await runAction(`ticket:${row.name}:${decision}`, async () => {
-    const result = await callApi('portal_app.api.attendance_corrections.decide_attendance_modification_request', {
+    const result = await callApi('attendance_app.lanem_attendance.api.attendance_corrections.decide_attendance_modification_request', {
       request_name: row.name,
       decision,
       decision_reason: reason,

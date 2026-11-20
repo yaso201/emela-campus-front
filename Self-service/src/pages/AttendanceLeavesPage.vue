@@ -98,7 +98,7 @@ async function loadDashboard() {
   error.value = '';
   success.value = '';
   try {
-    dashboard.value = await callApi('portal_app.api.attendance_leaves.get_attendance_leave_dashboard', filters);
+    dashboard.value = await callApi('attendance_app.lanem_attendance.api.attendance_leaves.get_attendance_leave_dashboard', filters);
   } catch (err) {
     dashboard.value = null;
     error.value = err.message;
@@ -247,7 +247,7 @@ async function createLeave() {
   error.value = '';
   success.value = '';
   try {
-    const result = await callApi('portal_app.api.attendance_leaves.create_student_leave_request', requestForm);
+    const result = await callApi('attendance_app.lanem_attendance.api.attendance_leaves.create_student_leave_request', requestForm);
     success.value = `Demande ${result.name} soumise`;
     requestForm.reason = '';
     requestForm.attendance_sessions = '';
@@ -300,7 +300,7 @@ async function decideLeave(row, decision) {
   error.value = '';
   success.value = '';
   try {
-    const result = await callApi('portal_app.api.attendance_leaves.decide_student_leave_request', {
+    const result = await callApi('attendance_app.lanem_attendance.api.attendance_leaves.decide_student_leave_request', {
       leave_application: row.name,
       decision,
       decision_reason: reason,

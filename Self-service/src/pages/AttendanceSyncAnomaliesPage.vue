@@ -80,7 +80,7 @@ async function loadDashboard() {
   error.value = '';
   success.value = '';
   try {
-    dashboard.value = await callApi('portal_app.api.attendance_sync_reconciliation.get_attendance_sync_anomaly_dashboard', filters);
+    dashboard.value = await callApi('attendance_app.lanem_attendance.api.attendance_sync_reconciliation.get_attendance_sync_anomaly_dashboard', filters);
   } catch (err) {
     dashboard.value = null;
     error.value = err.message;
@@ -108,17 +108,17 @@ async function act(row, action) {
   try {
     let result;
     if (action === 'Replay') {
-      result = await callApi('portal_app.api.attendance_sync_reconciliation.replay_attendance_sync_anomaly', {
+      result = await callApi('attendance_app.lanem_attendance.api.attendance_sync_reconciliation.replay_attendance_sync_anomaly', {
         anomaly: row.name,
         notes,
       });
     } else if (action === 'Request Local Replay') {
-      result = await callApi('portal_app.api.attendance_sync_reconciliation.request_local_replay_for_anomaly', {
+      result = await callApi('attendance_app.lanem_attendance.api.attendance_sync_reconciliation.request_local_replay_for_anomaly', {
         anomaly: row.name,
         notes,
       });
     } else {
-      result = await callApi('portal_app.api.attendance_sync_reconciliation.resolve_attendance_sync_anomaly', {
+      result = await callApi('attendance_app.lanem_attendance.api.attendance_sync_reconciliation.resolve_attendance_sync_anomaly', {
         anomaly: row.name,
         action,
         notes,

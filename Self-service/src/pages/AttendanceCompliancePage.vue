@@ -70,7 +70,7 @@ async function loadLogs() {
   loadingLogs.value = true;
   error.value = '';
   try {
-    logs.value = await callApi('portal_app.api.attendance_compliance.get_attendance_compliance_export_logs', {
+    logs.value = await callApi('attendance_app.lanem_attendance.api.attendance_compliance.get_attendance_compliance_export_logs', {
       limit: 50,
     });
   } catch (err) {
@@ -82,11 +82,11 @@ async function loadLogs() {
 }
 
 async function exportAudit() {
-  await runExport('audit', 'portal_app.api.attendance_compliance.export_attendance_audit_package');
+  await runExport('audit', 'attendance_app.lanem_attendance.api.attendance_compliance.export_attendance_audit_package');
 }
 
 async function exportAnonymized() {
-  await runExport('anonymized', 'portal_app.api.attendance_compliance.export_anonymized_attendance_reporting');
+  await runExport('anonymized', 'attendance_app.lanem_attendance.api.attendance_compliance.export_anonymized_attendance_reporting');
 }
 
 async function runExport(kind, method) {
