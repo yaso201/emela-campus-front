@@ -46,3 +46,13 @@ test('ChangePasswordPage : succès reste dans la SPA (router.push, pas de hard-r
   // Blocage nouveau == ancien
   assert.ok(source.includes('isSameAsOld'), 'garde isSameAsOld manquant');
 });
+
+// MANDAT-14 (lot 6) : la tuile d'une page SERVEUR de l'espace (`/app-emela/attendance-scan`) est un lien ordinaire ;
+// en router-link, elle menait à `/app-emela/app-emela/…` (la tuile « Scanner pour émarger » ne menait nulle part).
+test('ServiceTile : une page serveur de l’espace s’ouvre par un lien ordinaire, jamais par le routeur', () => {
+  const source = src('components/ui/ServiceTile.vue');
+  const decl = source.split('\n').find((l) => l.includes('const isServerPage = computed(')) || '';
+  assert.ok(decl.includes("startsWith('/app-emela/')"), 'isServerPage manquant');
+  assert.ok(source.includes('!isServerPage.value'), 'une page serveur ne doit pas passer par router-link');
+  assert.ok(/v-else-if="isServerPage"\s*:href="url"/.test(source), 'le lien ordinaire de la page serveur manque');
+});

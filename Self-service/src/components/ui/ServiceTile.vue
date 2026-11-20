@@ -12,7 +12,12 @@ const props = defineProps({
 });
 
 const isExternal = computed(() => props.external && props.url && !props.disabled);
-const isInternal = computed(() => !props.external && props.url && !props.disabled);
+// MANDAT-14 (lot 6) : une PAGE SERVEUR de l'espace (`/app-emela/attendance-scan`, `/app-emela/attendance-session`…)
+// n'est pas une route de la SPA (`normalizePortalRoute` lui laisse son préfixe). Un router-link la préfixait une
+// seconde fois (`/app-emela/app-emela/attendance-scan`) : la tuile « Scanner pour émarger » ne menait nulle part.
+// Elle s'ouvre par un lien ordinaire, dans le même onglet.
+const isServerPage = computed(() => !props.external && !props.disabled && (props.url || '').startsWith('/app-emela/'));
+const isInternal = computed(() => !props.external && props.url && !props.disabled && !isServerPage.value);
 const isDisabled = computed(() => props.disabled || !props.url);
 </script>
 
@@ -52,6 +57,22 @@ const isDisabled = computed(() => props.disabled || !props.url);
     </div>
     <slot name="subtitle" />
   </router-link>
+
+  <!-- Page serveur de l'espace : lien ordinaire, même onglet -->
+  <a
+    v-else-if="isServerPage"
+    :href="url"
+    class="bg-white rounded-lg border border-ln-gray-200 p-4 text-center block relative min-h-[44px] focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25 cursor-pointer hover:border-ln-gray-200 transition-colors"
+  >
+    <div class="w-9 h-9 rounded-md flex items-center justify-center mx-auto mb-2 bg-ln-blue-50">
+      <slot name="icon" />
+    </div>
+
+    <div class="text-xs font-medium text-ln-gray-900">
+      {{ title }}
+    </div>
+    <slot name="subtitle" />
+  </a>
 
   <!-- Lien externe -->
   <a
