@@ -46,7 +46,7 @@
 
     <!-- C4 (PC1B) : `minmax(0,1fr)` — un `1fr` nu grandissait jusqu'à la table (w-max) et portait la page à
          2 017 px ; la table défile désormais DANS son cadre. -->
-    <div class="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_356px]">
+    <div class="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_356px]">
       <section>
         <div class="mb-3 flex flex-wrap items-center gap-2">
           <button v-for="f in filters" :key="f.key" type="button"
@@ -61,11 +61,11 @@
         <!-- MANDAT-12 (M7) · C4 : la confirmation de suppression, HORS du tableau — dans une cellule de la table
              (large, défilante), sa phrase était coupée par le cadre. -->
         <div v-if="deleteLine" class="mb-3 rounded-md-ln border border-ln-gray-300 bg-ln-warning-bg p-4" role="alertdialog">
-          <p class="text-body-sm font-semibold text-[#6B4415]">
+          <p class="text-body-sm font-semibold text-[var(--ln-warning-ink)]">
             Supprimer la ligne {{ String(deleteLine.activity || '').toUpperCase() }} · {{ deleteLine.code }} — {{ deleteLine.teacher || 'à attribuer' }}
             · {{ deleteLine.group || 'Promotion' }} · {{ deleteLine.hours }} h ?
           </p>
-          <p class="mt-1 text-caption leading-relaxed text-[#6B4415]">
+          <p class="mt-1 text-caption leading-relaxed text-[var(--ln-warning-ink)]">
             Elle est en brouillon : elle n'a jamais été proposée, rien n'en dépend. Une ligne proposée ou validée ne se
             supprime pas — le serveur le refuse.
           </p>
@@ -154,7 +154,7 @@
                 <tr v-if="mod.over_norm_note" class="bg-ln-warning-bg">
                   <td :class="stuckTd" class="!h-auto !bg-ln-warning-bg"></td>
                   <!-- C4 (PC1B) : la note passe à la ligne — sur une ligne, elle portait la page à 2 017 px. -->
-                  <td colspan="5" class="whitespace-normal border-b border-ln-gray-100 px-3 pb-3 text-caption leading-relaxed text-[#6B4415]">
+                  <td colspan="5" class="whitespace-normal border-b border-ln-gray-100 px-3 pb-3 text-caption leading-relaxed text-[var(--ln-warning-ink)]">
                     {{ mod.over_norm_note }}
                   </td>
                 </tr>

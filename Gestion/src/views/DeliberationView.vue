@@ -254,12 +254,14 @@
       </div>
 
       <!-- ⚠️ Ce que le point d'entrée ne rend pas, dit à l'écran. -->
-      <p v-if="missingRoster" class="mt-4 flex items-start gap-3 rounded-md-ln border border-dashed border-ln-warning bg-ln-warning-bg p-4 text-caption leading-relaxed text-[#6B4415]">
+      <p v-if="missingRoster" class="mt-4 flex items-start gap-3 rounded-md-ln border border-dashed border-ln-warning bg-ln-warning-bg p-4 text-caption leading-relaxed text-[var(--ln-warning-ink)]">
         <svg class="mt-0.5 h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4 2.5 20h19z" /><path d="M12 10v4.5M12 17.4v.2" /></svg>
         <span>
-          <b class="font-semibold">{{ instructed }} décisions instruites sur {{ total }} étudiants.</b>
+          <b class="font-semibold">{{ instructed }} {{ instructed >= 2 ? 'décisions instruites' : 'décision instruite' }}
+            sur {{ total }} {{ total >= 2 ? 'étudiants' : 'étudiant' }}.</b>
           Le tableau du jury est alimenté par les décisions <b class="font-semibold">déjà instruites</b> :
-          les {{ total - instructed }} autres étudiants n'y figureraient pas. Ils sont affichés ici depuis
+          {{ total - instructed >= 2 ? 'les ' + (total - instructed) + ' autres étudiants n’y figureraient pas.'
+            : 'l’autre étudiant n’y figurerait pas.' }} Ils sont affichés ici depuis
           une lecture <b class="font-semibold">qui n'existe pas encore côté serveur</b> — sans elle, cet écran
           liste ce qui est fait au lieu de ce qui reste à décider, ce qui est l'inverse de son usage.
         </span>
@@ -274,7 +276,8 @@
           <h3 class="mt-0.5 text-h3 text-ln-gray-900">{{ panel.title }}</h3>
           <p class="mt-0.5 text-caption text-ln-gray-500">{{ panel.student_name }}</p>
         </div>
-        <button type="button" class="ml-auto text-ln-gray-500" aria-label="Fermer" @click="panel = null">✕</button>
+        <!-- D-FRONT-LARGEURS-ETROITES-01 : une cible de 24 px au moins. -->
+        <button type="button" class="ml-auto inline-flex h-6 w-6 items-center justify-center text-ln-gray-500" aria-label="Fermer" @click="panel = null">✕</button>
       </header>
 
       <div v-if="panel.kind === 'ue'" class="px-5 py-4">
@@ -336,7 +339,7 @@
             <b class="font-semibold text-ln-gray-900">Constat :</b> {{ p.finding }}
             <span class="text-ln-gray-500">— posé le {{ p.closed_on }}</span>
           </p>
-          <p v-else-if="p.kind.includes('Contrat')" class="mt-2 border-t border-ln-gray-100 pt-2 text-caption leading-relaxed text-[#6B4415]">
+          <p v-else-if="p.kind.includes('Contrat')" class="mt-2 border-t border-ln-gray-100 pt-2 text-caption leading-relaxed text-[var(--ln-warning-ink)]">
             <b class="font-semibold">Aucun constat n'a été posé.</b> Le contrat a été rendu ; son constat
             manque. Le jury le lit <b class="font-semibold">tel quel</b> — ce n'est pas un blocage, et le
             propriétaire du contrat peut encore le poser.
@@ -381,10 +384,10 @@
           <!-- ⚠️ La dérogation d'assiduité est exigée À LA CLÔTURE, pas à
                l'instruction — deux moments distincts. -->
           <div v-if="attendanceCases.length" class="mt-4 rounded-md-ln border border-ln-warning bg-ln-warning-bg p-4">
-            <p class="text-body-sm font-semibold text-[#6B4415]">
+            <p class="text-body-sm font-semibold text-[var(--ln-warning-ink)]">
               {{ plural(attendanceCases.length, 'passage') }} en dépassement d'absences
             </p>
-            <p class="mt-1 text-caption leading-relaxed text-[#6B4415]">
+            <p class="mt-1 text-caption leading-relaxed text-[var(--ln-warning-ink)]">
               {{ attendanceCases.map((r) => r.student_name).join(', ') }} —
               un motif de dérogation est exigé à la clôture pour chacun. Le jury reste souverain
               (Art. 31.2) : le dépassement ne refuse pas le passage, il refuse un passage sans motif.

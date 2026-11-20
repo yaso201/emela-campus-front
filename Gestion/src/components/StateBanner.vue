@@ -38,7 +38,7 @@ const props = defineProps({
 const TONES = {
   info:    { wrap: 'border-ln-blue-200 bg-ln-blue-100/60 text-ln-gray-700', icon: 'text-ln-blue-700', lead: 'text-ln-blue-900' },
   success: { wrap: 'border-[#BFE5D5] bg-ln-success-bg text-[#0B5341]',      icon: 'text-ln-success',  lead: 'text-ln-success' },
-  warning: { wrap: 'border-[#F3D9A6] bg-ln-warning-bg text-[#6B4415]',      icon: 'text-ln-warning',  lead: 'text-ln-warning' },
+  warning: { wrap: 'border-[#F3D9A6] bg-ln-warning-bg text-[var(--ln-warning-ink)]',      icon: 'text-ln-warning',  lead: 'text-ln-warning' },
   error:   { wrap: 'border-[#F3C6C6] bg-ln-error-bg text-[#7A2020]',        icon: 'text-ln-error',    lead: 'text-ln-error' },
 };
 const tone = computed(() => TONES[props.variant] ?? TONES.info);

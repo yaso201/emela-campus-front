@@ -30,7 +30,7 @@
     <GroupForm v-if="editOpen && selected" :program="program" :year-label="year?.label || ''" :initial="selected"
                :error="createError" :busy="busy" @cancel="editOpen = false" @submit="submitEdit" />
 
-    <div class="grid items-start gap-5 xl:grid-cols-[352px_1fr]">
+    <div class="grid grid-cols-1 items-start gap-5 xl:grid-cols-[352px_1fr]">
       <WorkQueue title="Groupes de la filière" :items="queueItems" :selected-id="selectedId"
                  :total="queueItems.length"
                  :state="groupsState === 'denied' ? 'loading' : groupsState"
@@ -145,7 +145,7 @@
 
         <h4 class="mb-2 mt-6 text-micro font-bold uppercase tracking-wider text-ln-gray-500">Enseignants affectés</h4>
         <div v-if="detailState === 'ready' && !instructors.length"
-             class="flex items-start gap-3 rounded-md-ln border border-dashed border-ln-gray-300 bg-ln-warning-bg p-4 text-caption leading-relaxed text-[#6B4415]">
+             class="flex items-start gap-3 rounded-md-ln border border-dashed border-ln-gray-300 bg-ln-warning-bg p-4 text-caption leading-relaxed text-[var(--ln-warning-ink)]">
           <span class="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-ln-warning"></span>
           <p>
             <b class="font-semibold">Aucun enseignant n'est affecté à ce groupe.</b> Les séances peuvent
@@ -158,7 +158,8 @@
                 class="inline-flex items-center gap-2 rounded-sm-ln border border-ln-gray-300 px-3 py-1.5 text-caption">
             {{ i.instructor_name }}
             <span class="font-mono text-[11px] text-ln-gray-500">{{ i.instructor }}</span>
-            <button v-if="can('write:groups')" type="button" class="font-semibold text-ln-gray-500 hover:text-ln-error"
+            <!-- D-FRONT-LARGEURS-ETROITES-01 : une cible de 24 px au moins. -->
+            <button v-if="can('write:groups')" type="button" class="inline-flex h-6 w-6 items-center justify-center font-semibold text-ln-gray-500 hover:text-ln-error"
                     :aria-label="'Retirer ' + i.instructor_name" @click="confirm = { kind: 'unassign', instructor: i }">×</button>
           </span>
           <!-- MANDAT-12 (M1) : S-7 rend les enseignants affectables — la liste vient du serveur. -->

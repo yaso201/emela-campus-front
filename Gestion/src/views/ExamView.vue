@@ -34,7 +34,7 @@
       peut ajouter, retirer et recomposer sans qu'aucun étudiant ne le sache.
     </StateBanner>
 
-    <div class="grid items-start gap-5 xl:grid-cols-[368px_1fr]">
+    <div class="grid grid-cols-1 items-start gap-5 xl:grid-cols-[368px_1fr]">
       <WorkQueue title="Épreuves de la filière" :items="queueItems" :selected-id="selectedId"
                  :total="queueItems.length"
                  :state="listState === 'denied' ? 'loading' : listState"
@@ -60,8 +60,9 @@
           <!-- Deux états, deux phrases — et elles ne se ressemblent pas. -->
           <p v-if="published"
              class="border-t border-ln-gray-200 bg-ln-success-bg px-4 py-3 text-caption leading-relaxed text-[#0B5341]">
-            <b class="font-semibold">Publiée le {{ exam.published_on }} — les {{ exam.student_count }} candidats
-            inscrits ont été convoqués.</b> Ajouter un candidat maintenant le convoque à son tour ; en
+            <b class="font-semibold">Publiée le {{ exam.published_on }} —
+            {{ exam.student_count >= 2 ? 'les ' + exam.student_count + ' candidats inscrits ont été convoqués.'
+              : exam.student_count === 1 ? 'le candidat inscrit a été convoqué.' : 'aucun candidat inscrit.' }}</b> Ajouter un candidat maintenant le convoque à son tour ; en
             retirer un ne le décommande pas automatiquement. À partir d'ici, chaque modification de la
             liste a un effet visible pour un étudiant.
           </p>
@@ -69,7 +70,7 @@
                une épreuve SANS séance liée n'est pas « non publiée » : son
                canal de convocation n'existe pas encore. -->
           <p v-else-if="exam.has_linked_schedule === false"
-             class="border-t border-ln-gray-200 bg-ln-warning-bg px-4 py-3 text-caption leading-relaxed text-[#6B4415]">
+             class="border-t border-ln-gray-200 bg-ln-warning-bg px-4 py-3 text-caption leading-relaxed text-[var(--ln-warning-ink)]">
             <b class="font-semibold">Aucune séance liée — le statut de publication n'existe pas.</b>
             La convocation passe par la publication d'une séance de planning ;
             cette épreuve n'en a pas encore. Lier une séance d'abord, publier
@@ -142,7 +143,7 @@
           <p class="mt-1 text-body-sm leading-relaxed text-ln-gray-500">
             Les étudiants du groupe sont ajoutés à la liste des candidats.
             <template v-if="published">
-              <b class="font-semibold text-[#6B4415]">L'épreuve est publiée : chaque ajout convoque.</b>
+              <b class="font-semibold text-[var(--ln-warning-ink)]">L'épreuve est publiée : chaque ajout convoque.</b>
             </template>
             <template v-else>L'épreuve est en brouillon — personne ne sera prévenu.</template>
           </p>

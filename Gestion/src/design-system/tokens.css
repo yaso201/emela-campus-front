@@ -10,6 +10,9 @@
   --ln-gray-400:#9CA3AF;--ln-gray-500:#6B7280;--ln-gray-600:#4B5563;--ln-gray-700:#374151;--ln-gray-900:#111827;
   --ln-success:#047857;--ln-success-bg:#ECFDF5;
   --ln-warning:#B45309;--ln-warning-bg:#FFFBEB;
+  /* MANDAT-14 (D-FRONT-LARGEURS-ETROITES-01) : l'encre d'un texte d'avertissement sur fond --ln-warning-bg, écrite
+     en dur 31 fois (`text-[#6B4415]`). JETON LOCAL au front de gestion — absent de la source partagée, à y reverser. */
+  --ln-warning-ink:#6B4415;
   --ln-error:#B91C1C;--ln-error-bg:#FEF2F2;
   --ln-row-compact:36px;--ln-row-default:44px;--ln-row-comfort:52px;--ln-touch:44px;
 }

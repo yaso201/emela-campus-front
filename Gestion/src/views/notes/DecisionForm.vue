@@ -45,8 +45,8 @@
                     placeholder="Ce qui fonde la décision du jury…" />
         </div>
         <div v-if="row.attendance_exceeded" class="rounded-md-ln border border-ln-warning bg-ln-warning-bg p-4">
-          <p class="text-body-sm font-semibold text-[#6B4415]">Dépassement d'absences — dérogation exigée</p>
-          <p class="mt-1 text-caption leading-relaxed text-[#6B4415]">
+          <p class="text-body-sm font-semibold text-[var(--ln-warning-ink)]">Dépassement d'absences — dérogation exigée</p>
+          <p class="mt-1 text-caption leading-relaxed text-[var(--ln-warning-ink)]">
             Le jury reste souverain (Art. 31.2) : le dépassement ne refuse pas la décision,
             il refuse une décision <b class="font-semibold">sans motif de dérogation</b>.
           </p>

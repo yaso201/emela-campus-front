@@ -63,7 +63,7 @@
         </template>
       </StateBanner>
 
-      <div class="grid items-start gap-5 xl:grid-cols-[1fr_372px]">
+      <div class="grid grid-cols-1 items-start gap-5 xl:grid-cols-[1fr_372px]">
         <section>
           <h4 class="mb-2 text-micro font-bold uppercase tracking-wider text-ln-gray-500">
             Vos lignes — {{ load.program_label }} · {{ load.own_hours }} h

@@ -16,7 +16,8 @@
           </label>
           <input id="mod-name" v-model="form.course_name" type="text" :class="field" placeholder="Ex. Génie logiciel avancé" />
         </div>
-        <div class="grid grid-cols-2 gap-4">
+        <!-- MANDAT-14 (D-FRONT-LARGEURS-ETROITES-01) : une colonne en étroit, deux en large. -->
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label for="mod-coef" class="text-body-sm font-semibold text-ln-gray-900">Coefficient</label>
             <input id="mod-coef" v-model.number="form.custom_coefficient" type="number" min="1" :class="field" />

@@ -74,13 +74,13 @@
 
         <!-- Avertissements SERVEUR — chacun exige son accusé (A5). -->
         <div v-if="warnings.length" class="rounded-md-ln border border-ln-warning bg-ln-warning-bg p-4">
-          <p class="text-body-sm font-semibold text-[#6B4415]">Avertissements — accusé exigé avant l'acte</p>
+          <p class="text-body-sm font-semibold text-[var(--ln-warning-ink)]">Avertissements — accusé exigé avant l'acte</p>
           <label v-for="w in warnings" :key="w.code"
-                 class="mt-3 flex cursor-pointer items-start gap-3 text-caption leading-relaxed text-[#6B4415]">
+                 class="mt-3 flex cursor-pointer items-start gap-3 text-caption leading-relaxed text-[var(--ln-warning-ink)]">
             <input v-model="acked" type="checkbox" :value="w.code" class="mt-0.5 h-4 w-4 accent-ln-warning" />
             <span><b class="font-mono text-[11.5px] font-semibold">{{ w.code }}</b> — {{ w.message }}</span>
           </label>
-          <p class="mt-2 text-caption text-[#6B4415]">{{ sim && sim.acknowledgement_contract }}</p>
+          <p class="mt-2 text-caption text-[var(--ln-warning-ink)]">{{ sim && sim.acknowledgement_contract }}</p>
         </div>
 
         <!-- Motif de retrait — obligatoire (DEC-339), libre. -->

@@ -9,7 +9,7 @@
       <div class="flex flex-wrap items-center gap-2">
         <button v-if="can('validate:service')" type="button" class="ln-btn-secondary" :disabled="busy" @click="returnOpen = true">Renvoyer au responsable…</button>
         <button v-if="can('validate:service')" type="button" class="ln-btn-primary" :disabled="blockedByReason || busy" @click="validateAll">
-          Valider les {{ current.line_count || 0 }} lignes
+          {{ (current.line_count || 0) >= 2 ? 'Valider les ' + current.line_count + ' lignes' : 'Valider la ligne' }}
         </button>
       </div>
     </header>
@@ -24,7 +24,7 @@
       <button type="button" class="ln-btn-secondary mt-2" @click="report = null">Fermer le rapport</button>
     </div>
 
-    <div class="grid items-start gap-5 xl:grid-cols-[368px_1fr]">
+    <div class="grid grid-cols-1 items-start gap-5 xl:grid-cols-[368px_1fr]">
       <WorkQueue title="Répartitions proposées" :items="queueItems" :selected-id="selectedId"
                  :total="queueItems.length"
                  :state="queueState === 'denied' ? 'loading' : queueState"
@@ -279,7 +279,8 @@ async function submitReturn({ reason, detail }) {
   try {
     busy.value = true;
     await Promise.all(names.map((name) => returnServicePlan({ name, return_reason: motif })));
-    pending.value = names.length + ' ligne(s) renvoyée(s) au responsable.';
+    // P16 (MANDAT-14) : le pluriel s'accorde, sans « (s) ».
+    pending.value = names.length + (names.length >= 2 ? ' lignes renvoyées' : ' ligne renvoyée') + ' au responsable.';
     loadQueue();
   } catch (e) {
     actError.value = e.message || 'Renvoi refusé.';

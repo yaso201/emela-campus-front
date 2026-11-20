@@ -24,7 +24,7 @@
                 :rows="5" :row-height="56" :skeleton-widths="[180, 240, 120]"
                 @retry="reload" />
 
-    <div v-else class="grid items-start gap-5 xl:grid-cols-[392px_1fr]">
+    <div v-else class="grid grid-cols-1 items-start gap-5 xl:grid-cols-[392px_1fr]">
       <div>
         <!-- MANDAT-12 (S-17) : l'ordre du jour est CELUI DU SERVEUR ; il n'y a pas d'heure d'examen
              (aucun champ ne la porte) : la séance se tient en une fois, à la clôture (Q5 de la PC1). -->
@@ -49,9 +49,24 @@
           </header>
 
           <div v-if="data.status === 'Brouillon'" class="px-4 py-3">
-            <button v-if="data.can_convoke" type="button" class="ln-btn-primary" :disabled="busy" @click="convoke">
-              Convoquer les {{ data.agenda.length }} étudiants
-            </button>
+            <template v-if="data.can_convoke">
+              <!-- MANDAT-14 (D-FRONT-CONFIRMATION-CONSEIL-01) : convoquer engage — une confirmation redit le compte. -->
+              <button v-if="confirming !== 'convoke'" type="button" class="ln-btn-primary" :disabled="busy"
+                      @click="confirming = 'convoke'">
+                {{ data.agenda.length >= 2 ? 'Convoquer les ' + data.agenda.length + ' étudiants…' : 'Convoquer l’étudiant…' }}
+              </button>
+              <div v-else class="rounded-md-ln border border-ln-gray-300 bg-white p-3" role="alertdialog" aria-label="Convoquer">
+                <p class="text-body-sm text-ln-gray-900">
+                  <b class="font-semibold">{{ nb(data.agenda.length, 'étudiant', 'étudiants') }}</b>
+                  {{ data.agenda.length >= 2 ? 'recevront' : 'recevra' }} la convocation au conseil du {{ dateLabel }}.
+                  La convocation part aux intéressés ; elle ne se reprend pas.
+                </p>
+                <div class="mt-2 flex justify-end gap-2">
+                  <button type="button" class="ln-btn-secondary" @click="confirming = ''">Annuler</button>
+                  <button type="button" class="ln-btn-primary" :disabled="busy" @click="convoke">Convoquer</button>
+                </div>
+              </div>
+            </template>
             <p v-else class="text-caption text-ln-gray-500">{{ data.convoke_blocked_reason }}</p>
           </div>
 
@@ -61,7 +76,9 @@
                 Tenir la séance constate, pour chaque convoqué, sa présence — et pour un absent, si son absence
                 est <b class="font-semibold">non justifiée</b> (portée au jury). Une observation peut accompagner chaque ligne.
               </p>
-              <table class="w-full table-fixed border-collapse text-body-sm">
+              <!-- D-FRONT-LARGEURS-ETROITES-01 : en étroit, le tableau défile dans son cadre au lieu d'écraser ses colonnes. -->
+              <div class="overflow-x-auto">
+              <table class="w-full min-w-[560px] table-fixed border-collapse text-body-sm">
                 <thead>
                   <tr>
                     <th :class="headTh" class="!text-left">Étudiant</th>
@@ -88,11 +105,29 @@
                   </tr>
                 </tbody>
               </table>
-              <div class="mt-3 flex items-center gap-3">
+              </div>
+              <div class="mt-3 flex flex-wrap items-center gap-3">
                 <p class="mr-auto text-caption text-ln-gray-500">
-                  {{ unset ? unset + ' présence(s) à constater avant de tenir la séance.' : 'Une séance tenue ne se modifie plus : elle est la source que lit le jury.' }}
+                  {{ unset ? nb(unset, 'présence', 'présences') + ' à constater avant de tenir la séance.' : 'Une séance tenue ne se modifie plus : elle est la source que lit le jury.' }}
                 </p>
-                <button type="button" class="ln-btn-primary" :disabled="!!unset || busy" @click="hold">Tenir la séance</button>
+                <button v-if="confirming !== 'hold'" type="button" class="ln-btn-primary" :disabled="!!unset || busy"
+                        @click="confirming = 'hold'">Tenir la séance…</button>
+              </div>
+              <!-- MANDAT-14 (D-FRONT-CONFIRMATION-CONSEIL-01) : tenir la séance fige les présences que lit le jury — la
+                   confirmation redit les comptes constatés, sans motif. -->
+              <div v-if="confirming === 'hold'" class="mt-3 rounded-md-ln border border-ln-gray-300 bg-white p-3"
+                   role="alertdialog" aria-label="Tenir la séance">
+                <p class="text-body-sm text-ln-gray-900">
+                  {{ nb(counts.present, 'présent', 'présents') }},
+                  {{ nb(counts.justified, 'absent justifié', 'absents justifiés') }},
+                  <b class="font-semibold">{{ nb(counts.unjustified, 'absent non justifié', 'absents non justifiés') }}</b>
+                  {{ counts.unjustified >= 2 ? 'portés' : counts.unjustified === 1 ? 'porté' : '' }}{{ counts.unjustified ? ' au jury' : '' }}.
+                  Une séance tenue ne se modifie plus.
+                </p>
+                <div class="mt-2 flex justify-end gap-2">
+                  <button type="button" class="ln-btn-secondary" @click="confirming = ''">Annuler</button>
+                  <button type="button" class="ln-btn-primary" :disabled="busy" @click="hold">Tenir la séance</button>
+                </div>
               </div>
             </template>
             <p v-else class="text-caption leading-relaxed text-ln-gray-500">
@@ -102,7 +137,8 @@
 
           <div v-else class="px-4 py-3 text-caption leading-relaxed text-ln-gray-600">
             Tenue le {{ frDate(data.held_on) }} par <b class="font-semibold text-ln-gray-900">{{ data.chair?.label }}</b>.
-            {{ absentCount }} absence(s) non justifiée(s) portée(s) au jury.
+            {{ absentCount === 0 ? 'Aucune absence non justifiée portée au jury.'
+              : nb(absentCount, 'absence non justifiée portée', 'absences non justifiées portées') + ' au jury.' }}
           </div>
         </section>
 
@@ -183,26 +219,38 @@ const PRESENCE = {
   none: { label: 'Présence non constatée', tone: 'brouillon' },
 };
 
-/** Une date ISO (2026-09-10) à la française (10/09/2026) — affichage seul. */
+/** P16 (MANDAT-14) : une date ISO (2026-09-10) à la française (« 10 sept. 2026 », « 1er ») — affichage seul. */
 function frDate(iso) {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || '');
-  return m ? `${m[3]}/${m[2]}/${m[1]}` : (iso || '…');
+  if (!m) return iso || '…';
+  return new Date(`${m[1]}-${m[2]}-${m[3]}T12:00:00`)
+    .toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }).replace(/^1 /, '1er ');
 }
+/** P16 : un nombre et son nom, accordés (« 1 étudiant », « 3 étudiants ») — jamais « étudiant(s) ». */
+const nb = (n, un, plusieurs) => `${n} ${Number(n) >= 2 ? plusieurs : un}`;
 const dateLabel = computed(() => frDate(data.value.date));
 const agendaItems = computed(() => data.value.agenda.map((a) => ({
   id: a.student,
   title: a.student_name,
   subtitle: (a.convoked_on ? 'Convoqué le ' + frDate(a.convoked_on) : 'Non convoqué') + ' · ' + PRESENCE[a.presence || 'none'].label
-    + (a.preconisations ? ' · ' + a.preconisations + ' préconisation' : ''),
+    + (a.preconisations ? ' · ' + nb(a.preconisations, 'préconisation', 'préconisations') : ''),
   status: PRESENCE[a.presence || 'none'].tone,
   statusLabel: PRESENCE[a.presence || 'none'].label,
 })));
+// MANDAT-14 (D-FRONT-CONFIRMATION-CONSEIL-01) : la confirmation ouverte (« convoke », « hold ») et les comptes qu'elle redit.
+const confirming = ref('');
+const counts = computed(() => {
+  const rows = data.value.agenda.map((a) => attendance[a.student]?.presence);
+  return { present: rows.filter((p) => p === 'present').length,
+    justified: rows.filter((p) => p === 'absent_justifie').length,
+    unjustified: rows.filter((p) => p === 'absent_non_justifie').length };
+});
 const subtitle = computed(() => {
   if (state.value !== 'ready') return 'Chargement de la séance';
   const d = data.value;
   return [
-    d.convoked ? d.convoked + ' étudiants convoqués' : d.agenda.length + ' étudiants à convoquer',
-    d.status === 'Tenue' ? d.examined_count + ' examinés' : null,
+    d.convoked ? nb(d.convoked, 'étudiant convoqué', 'étudiants convoqués') : nb(d.agenda.length, 'étudiant', 'étudiants') + ' à convoquer',
+    d.status === 'Tenue' ? nb(d.examined_count, 'examiné', 'examinés') : null,
     d.chair ? 'tenue par ' + d.chair.label : 'présidée par le directeur des études qui tient la séance',
   ].filter(Boolean).join(' · ');
 });
@@ -220,7 +268,7 @@ watch(() => [data.value.name, data.value.agenda], ([name, rows]) => {
 function select(student) { selectedId.value = student; res.load({ ...params.value, name: data.value.name, student }); }
 async function act(fn) {
   actError.value = '';
-  try { busy.value = true; await fn(); reload(); }
+  try { busy.value = true; await fn(); confirming.value = ''; reload(); }
   catch (e) { actError.value = e.message || 'Acte refusé.'; }
   finally { busy.value = false; }
 }

@@ -83,7 +83,7 @@
         </div>
         <button v-else type="button" class="ln-btn-secondary" @click="start(a)">{{ (LABEL[a.act] || a.act) + '…' }}</button>
       </div>
-      <p v-for="b in blocked" :key="b.act" class="rounded-sm-ln bg-ln-warning-bg p-3 text-caption leading-snug text-[#6B4415]">
+      <p v-for="b in blocked" :key="b.act" class="rounded-sm-ln bg-ln-warning-bg p-3 text-caption leading-snug text-[var(--ln-warning-ink)]">
         <b class="font-semibold">{{ LABEL[b.act] || b.act }} — indisponible :</b> {{ b.reason }}
       </p>
       <p v-if="!available.length && !blocked.length" class="text-caption text-ln-gray-500">

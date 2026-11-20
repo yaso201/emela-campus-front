@@ -9,9 +9,12 @@
       <p class="mt-0.5 text-caption text-ln-gray-500">Les faits enregistrés — rien n'est déduit à l'écran.</p>
     </header>
     <dl class="px-4 py-2">
-      <div v-for="row in filled" :key="row.key" class="flex items-baseline gap-3 border-b border-ln-gray-100 py-2 last:border-b-0">
-        <dt class="w-[190px] flex-shrink-0 text-caption text-ln-gray-500">{{ row.label }}</dt>
-        <dd class="min-w-0 text-body-sm leading-snug text-ln-gray-900">
+      <!-- MANDAT-14 (D-FRONT-LARGEURS-ETROITES-01) : la colonne des libellés n'est fixe qu'en large ; en étroit, le
+           libellé passe au-dessus de sa valeur, et une valeur longue passe à la ligne. -->
+      <div v-for="row in filled" :key="row.key"
+           class="flex flex-col gap-0.5 border-b border-ln-gray-100 py-2 last:border-b-0 sm:flex-row sm:items-baseline sm:gap-3">
+        <dt class="text-caption text-ln-gray-500 sm:w-[190px] sm:flex-shrink-0">{{ row.label }}</dt>
+        <dd class="min-w-0 break-words text-body-sm leading-snug text-ln-gray-900">
           <template v-if="Array.isArray(row.value)">
             <span v-for="(item, i) in row.value" :key="i" class="block">{{ item }}</span>
           </template>

@@ -17,7 +17,7 @@
                 :rows="5" :row-height="56" :skeleton-widths="[180, 240, 120]"
                 @retry="reload" />
 
-    <div v-else class="grid items-start gap-5 xl:grid-cols-[392px_1fr]">
+    <div v-else class="grid grid-cols-1 items-start gap-5 xl:grid-cols-[392px_1fr]">
       <div class="flex flex-col gap-5">
         <WorkQueue title="Demandes" :items="queueItems" :selected-id="selectedId"
                    :total="data.count" state="ready" @select="select" />

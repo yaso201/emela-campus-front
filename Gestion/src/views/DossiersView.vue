@@ -50,7 +50,7 @@
                 :class="closedMode === m.k ? 'bg-ln-blue-900 text-white' : 'bg-white text-ln-gray-700'"
                 @click="setClosed(m.k)">{{ m.l }}</button>
       </div>
-      <form class="ml-auto flex items-center gap-2" @submit.prevent="openByNumber">
+      <form class="flex flex-wrap items-center gap-2 sm:ml-auto" @submit.prevent="openByNumber">
         <label for="dossier-numero" class="text-caption font-semibold text-ln-gray-700">Ouvrir par numéro</label>
         <input id="dossier-numero" v-model="numero" type="text" placeholder="CNG-2026-007"
                class="h-[30px] w-[160px] rounded-sm-ln border border-ln-gray-300 px-2 font-mono text-caption" />
@@ -59,7 +59,9 @@
     </div>
     <StateBanner v-if="numeroError" variant="warning" lead="Introuvable." :text="numeroError" />
 
-    <div class="grid items-start gap-5 xl:grid-cols-[368px_1fr]">
+    <!-- D-FRONT-LARGEURS-ETROITES-01 : `grid-cols-1` borne la colonne unique en étroit (minmax(0, 1fr)) — sans
+         elle, la colonne implicite prenait la largeur du plus long texte de la file. -->
+    <div class="grid grid-cols-1 items-start gap-5 xl:grid-cols-[368px_1fr]">
       <WorkQueue :title="closedMode ? 'Dossiers clos' : 'Dossiers ouverts'" :items="queueItems" :selected-id="selectedId"
                  :total="queueItems.length"
                  :state="listState === 'denied' ? 'loading' : listState"

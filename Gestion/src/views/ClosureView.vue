@@ -40,7 +40,7 @@
                 :rows="4" :row-height="64" :skeleton-widths="[260, 'auto', 120]"
                 @retry="reload" />
 
-    <div v-else class="grid items-start gap-5 xl:grid-cols-[1fr_420px]">
+    <div v-else class="grid grid-cols-1 items-start gap-5 xl:grid-cols-[1fr_420px]">
       <div class="flex flex-col gap-5">
         <!-- ⚠️ PANNEAU 1 · LES ANOMALIES. Ce qui aurait dû être réglé. L'écran ne
              barre rien : il montre ce qui reste ouvert et laisse clore quand même,
@@ -58,7 +58,7 @@
             </div>
             <span class="ml-auto flex-shrink-0">
               <StatusPill v-if="data.open_anomalies" status="anomalie"
-                          :label="data.open_anomalies + ' anomalie(s)'" />
+                          :label="data.open_anomalies + (data.open_anomalies >= 2 ? ' anomalies' : ' anomalie')" />
               <StatusPill v-else status="valide" label="Aucune anomalie" />
             </span>
           </header>

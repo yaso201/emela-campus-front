@@ -46,7 +46,7 @@
     <StateBanner v-if="pending" variant="warning" lead="Acte non disponible." :text="pending" />
     <StateBanner v-if="actError" variant="error" lead="L'acte a échoué." :text="actError" />
 
-    <div class="grid items-start gap-5 xl:grid-cols-[368px_1fr]">
+    <div class="grid grid-cols-1 items-start gap-5 xl:grid-cols-[368px_1fr]">
       <WorkQueue title="Soumissions en attente" :items="queueItems" :selected-id="selectedId"
                  :total="queueItems.length"
                  :state="queueState === 'denied' ? 'loading' : queueState"
@@ -102,7 +102,7 @@
                 {{ l.proposed_grade === null ? 'absent' : l.proposed_grade.toFixed(2) }}
               </td>
               <td :class="bodyTd">{{ l.unexcused_absences }} / {{ l.attendance_rows }} séances</td>
-              <td :class="bodyTd" class="!text-left !whitespace-normal !leading-snug text-[12.5px] text-[#6B4415]">
+              <td :class="bodyTd" class="!text-left !whitespace-normal !leading-snug text-[12.5px] text-[var(--ln-warning-ink)]">
                 {{ flagOf(l) }}
               </td>
             </tr>
