@@ -2710,6 +2710,32 @@ check('aucun @import après les directives @tailwind',
   main.slice(main.indexOf('@tailwind')).includes('@import')
     ? ['un @import suit une directive — CSS invalide, postcss-import peu fiable'] : []);
 
+// ─── 8 bis. LES FENÊTRES (MANDAT-14, D-FRONT-DIALOGUES-FOCUS-01) ─────────────
+// `composables/dialogFocus.js` donne le focus à toute fenêtre (`role="dialog"`, `role="alertdialog"`), la ferme
+// par Échap en déclenchant SON bouton d'échappée, et rend le focus au déclencheur. Deux invariants, ici :
+//   - l'observateur est installé (main.js) ;
+//   - chaque fichier qui ouvre une fenêtre porte une échappée au libellé EXACT (ou `data-dialog-cancel`) — sans
+//     quoi Échap ne ferme rien ; et aucun ACTE (« Annuler la séance… ») ne se lit comme une échappée.
+say('\n8 bis · Fenêtres : focus et Échap');
+{
+  const { ESCAPE_LABEL } = await import(pathToFileURL(join(SRC, 'composables/dialogFocus.js')));
+  const dlgBad = [];
+  if (!/installDialogFocus\(\)/.test(read(join(SRC, 'main.js')))) dlgBad.push('main.js : installDialogFocus() n’est pas appelé');
+  for (const p of vue) {
+    const s = read(p);
+    if (!/role="(?:alert)?dialog"/.test(s)) continue;
+    const labels = [...s.matchAll(/<button[^>]*>([\s\S]*?)<\/button>/g)]
+      .map((b) => b[1].replace(/<[^>]+>/g, '').replace(/\{\{[^}]*\}\}/g, '').replace(/\s+/g, ' ').trim());
+    if (!labels.some((l) => ESCAPE_LABEL.test(l)) && !/data-dialog-cancel/.test(s)) {
+      dlgBad.push(basename(p) + ' : une fenêtre sans échappée (« Annuler », « Fermer », « Revenir » ou data-dialog-cancel)');
+    }
+  }
+  for (const l of ['Annuler la séance…', 'Annuler la demande', 'Fermer la session']) {
+    if (ESCAPE_LABEL.test(l)) dlgBad.push('« ' + l + ' » serait pris pour une échappée : Échap déclencherait un acte');
+  }
+  check('chaque fenêtre se ferme par Échap, et Échap ne déclenche aucun acte', dlgBad);
+}
+
 // ─── 9. LA RÉPONSE PÉRIMÉE (MANDAT-12, D-FRONT-REPONSE-PERIMEE-01) ───────────
 // La course O-5 de MANDAT-10, rendue DÉTERMINISTE : deux chargements, dont les
 // réponses arrivent dans l'ordre inverse de leur départ. Le premier (sans
