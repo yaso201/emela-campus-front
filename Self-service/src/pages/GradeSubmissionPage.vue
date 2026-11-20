@@ -501,8 +501,10 @@ async function importCsv(event) {
                 </td>
                 <td class="py-3 px-4 text-sm text-ln-gray-500">{{ student.student_id }}</td>
                 <td class="py-3 px-4">
+                  <!-- MANDAT-14 (lot 6) : chaque champ porte son nom (le placeholder « — » n'en est pas un). -->
                   <input
                     v-model="grades[student.student_id]"
+                    :aria-label="`Note de ${student.student_name}`"
                     type="number"
                     min="0"
                     max="20"
