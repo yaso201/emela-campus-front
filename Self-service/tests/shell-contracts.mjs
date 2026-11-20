@@ -50,3 +50,21 @@ test('chaque page routée a un seul h1 et aucun main (le main est celui de la co
     assert.equal(compter(g, /<h1\b/g), 1, `${p} doit porter un h1, et un seul`);
   }
 });
+
+// Q18 (VERDICT-MANDAT-14-PC1B) : la personne se nomme par son nom d'usage. Le lot 6 a vu la coquille afficher
+// « Rf G 14 Etu A », découpé dans l'adresse du compte, au lieu du `display_name` que get_my_profile rend.
+test('Q18 : la coquille nomme la personne par le nom que rend le profil, l’adresse en repli', async () => {
+  const { createPinia, setActivePinia } = await import('pinia');
+  const { useAuthStore } = await import('../src/stores/auth.js');
+  const { useProfileStore } = await import('../src/stores/profile.js');
+  setActivePinia(createPinia());
+  const auth = useAuthStore();
+  const profil = useProfileStore();
+  auth.user = 'rf-g-14-etu-a@test.invalid';
+  assert.equal(auth.displayName, 'Rf G 14 Etu A', 'avant la lecture du profil : le repli');
+  profil.setResolvedProfile('student', auth.user, false, 'Afi Dossou');
+  assert.equal(auth.displayName, 'Afi Dossou');
+  assert.equal(auth.initials, 'AD');
+  profil.setResolvedProfile('generic', auth.user, false, auth.user);
+  assert.equal(auth.displayName, 'Rf G 14 Etu A', 'une adresse rendue comme nom n’est pas un nom d’usage');
+});

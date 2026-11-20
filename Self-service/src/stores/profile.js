@@ -10,6 +10,8 @@ export const useProfileStore = defineStore('profile', {
     error: null,
     sessionUser: typeof window !== 'undefined' ? window.user || 'Guest' : 'Guest',
     canAccessDesk: false,
+    // Q18 (MANDAT-14) : le nom d'usage de la personne (`display_name` de get_my_profile, `User.full_name`).
+    displayName: null,
   }),
   getters: {
     isLoaded: (state) => state.status === 'loaded',
@@ -33,12 +35,15 @@ export const useProfileStore = defineStore('profile', {
       this.profile = 'guest';
       this.status = 'guest';
       this.canAccessDesk = false;
+      this.displayName = null;
     },
 
-    setResolvedProfile(profile, user, canAccessDesk) {
+    setResolvedProfile(profile, user, canAccessDesk, displayName = null) {
       this.sessionUser = user || window.user || 'Guest';
       this.profile = profile || 'generic';
       this.canAccessDesk = !!canAccessDesk;
+      // Le serveur rend l'adresse quand le compte n'a pas de nom : ce n'est pas un nom d'usage.
+      this.displayName = displayName && displayName !== this.sessionUser ? displayName : null;
       this.status = 'loaded';
     },
 
@@ -92,7 +97,7 @@ export const useProfileStore = defineStore('profile', {
         }
 
         // R2: can_access_desk vient du backend — plus de lecture frontend des rôles système.
-        this.setResolvedProfile(resolvedProfile, data?.user, data?.can_access_desk);
+        this.setResolvedProfile(resolvedProfile, data?.user, data?.can_access_desk, data?.display_name);
       } catch (err) {
         this.error = err;
         this.status = 'error';
