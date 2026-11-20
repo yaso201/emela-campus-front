@@ -471,6 +471,33 @@
   "name",
   "values"
  ],
+ "portal_app.api.academic.instructor_api.get_grade_action_history": [
+  "course",
+  "academic_term",
+  "limit"
+ ],
+ "portal_app.api.academic.instructor_api.get_grade_statistics": [
+  "course",
+  "academic_term"
+ ],
+ "portal_app.api.academic.instructor_api.get_instructor_hours": [
+  "period",
+  "reference_date"
+ ],
+ "portal_app.api.academic.instructor_api.get_instructor_planning_by_name": [
+  "instructor",
+  "academic_term"
+ ],
+ "portal_app.api.academic.instructor_api.get_student_dossier_for_instructor": [
+  "student"
+ ],
+ "portal_app.api.academic.instructor_api.list_my_courses": [],
+ "portal_app.api.academic.instructor_api.list_my_groups_for_course": [
+  "course"
+ ],
+ "portal_app.api.academic.instructor_api.search_instructors": [
+  "query"
+ ],
  "portal_app.api.academic.leave_return.cancel_leave_return_request": [
   "name"
  ],
