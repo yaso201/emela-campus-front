@@ -84,7 +84,7 @@
                     state-title="Aucun niveau"
                     :state-message="maquetteWritable
                       ? 'Sans niveau, la filière n’accueille ni inscription ni maquette.'
-                      : 'Sans niveau, la filière n’accueille ni inscription ni maquette. Ses niveaux sont ajoutés par son responsable de formation ou par l’Education Manager.'">
+                      : 'Sans niveau, la filière n’accueille ni inscription ni maquette. Ses niveaux sont ajoutés par son responsable de formation ou par le responsable de la scolarité.'">
           <template #head>
             <tr>
               <th :class="headTh" class="!text-left">Code</th>

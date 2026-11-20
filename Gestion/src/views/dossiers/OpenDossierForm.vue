@@ -85,7 +85,7 @@
       </div>
 
       <footer class="flex items-center gap-3 border-t border-ln-gray-200 bg-ln-gray-50 px-5 py-4">
-        <p class="mr-auto text-caption text-ln-gray-500">{{ kind === 'abandon' ? 'Ouvert par l\'Education Manager.' : 'Instruit par l\'Education Manager.' }}</p>
+        <p class="mr-auto text-caption text-ln-gray-500">{{ kind === 'abandon' ? 'Ouvert par le responsable de la scolarité.' : 'Instruit par le responsable de la scolarité.' }}</p>
         <button type="button" class="ln-btn-secondary" @click="emit('cancel')">Annuler</button>
         <button type="button" class="ln-btn-primary" :disabled="!complete || busy" @click="submit">
           {{ kind === 'abandon' ? 'Ouvrir le constat' : 'Ouvrir le dossier' }}

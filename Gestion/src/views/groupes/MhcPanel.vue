@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col gap-4">
     <StateBanner v-if="data && !data.can_decide" variant="info" lead="Lecture seule.">
-      La décision sur une inscription à un MHC appartient à l’Education Manager. Vous lisez l’état et l’historique de
+      La décision sur une inscription à un MHC appartient au responsable de la scolarité. Vous lisez l’état et l’historique de
       chaque décision ; aucun bouton d’acte ne vous est proposé.
     </StateBanner>
     <StateBanner v-if="done" variant="success" lead="Décision enregistrée." :text="done" />

@@ -50,7 +50,7 @@
       </StateBanner>
       <section class="overflow-hidden rounded-md-ln border border-ln-gray-200" aria-label="Choisir une délibération">
         <BlockState v-if="listState !== 'ready'" :state="listState" title="Aucune délibération"
-                    message="Aucun jury n'existe pour ce contexte. Les délibérations se créent à l'instruction, par l'Education Manager."
+                    message="Aucun jury n'existe pour ce contexte. Les délibérations se créent à l'instruction, par le responsable de la scolarité."
                     :rows="4" :row-height="40" @retry="loadList" />
         <table v-else class="w-full text-body-sm">
           <thead>
@@ -93,7 +93,7 @@
 
     <BlockState v-if="tableState !== 'ready'" :state="tableState === 'denied' ? 'loading' : tableState"
                 title="Aucun étudiant à délibérer"
-                message="Ce jury n'a pas encore d'étudiant instruit. La liste se construit à l'instruction, par l'Education Manager."
+                message="Ce jury n'a pas encore d'étudiant instruit. La liste se construit à l'instruction, par le responsable de la scolarité."
                 :rows="8" :row-height="44" class="mb-4" @retry="reload" />
 
     <template v-else>

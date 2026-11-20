@@ -59,7 +59,7 @@
                 </div>
                 <p class="mt-1 text-caption text-ln-gray-500">Une seule session (Art. 26.1) : la note remplace celle du module.</p>
               </template>
-              <p v-else-if="r.eligible" class="text-caption text-ln-gray-600">Éligible — la saisie revient à l’Education Manager.</p>
+              <p v-else-if="r.eligible" class="text-caption text-ln-gray-600">Éligible — la saisie revient au responsable de la scolarité.</p>
               <p v-else-if="allBlocked" class="text-caption text-ln-gray-500">Fermée (voir ci-dessus).</p>
               <!-- La phrase de la garde de la saisie, telle que le serveur la rend : jamais une règle redite à l'écran. -->
               <p v-else class="text-caption leading-relaxed text-ln-gray-600">{{ r.blocked_reason }}</p>
