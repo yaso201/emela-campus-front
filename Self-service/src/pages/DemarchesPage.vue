@@ -6,6 +6,7 @@ import { computed, onMounted, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import { ArrowRight, CalendarClock, FileText, GraduationCap, LogOut, RefreshCw, Scale, Shuffle, UserX } from 'lucide-vue-next';
 import { callApi, formatDate, leavePeriod, plural } from '@/composables/useDemarche';
+import { useProfileStore } from '@/stores/profile';
 
 const A = 'portal_app.api.academic.';
 const CARTES = [
@@ -29,13 +30,25 @@ const CARTES = [
     ouvrir: null, vide: 'Aucune procédure disciplinaire ne vous concerne.' },
 ];
 
+// DEC-366 (E-M11) : l'étudiant à accès réduit. Ses lectures des congés et des réorientations sont fermées (DEC-333,
+// participation) : la carte du congé se nourrit de la demande de retour, qui rend le congé repris et sa période
+// (VERDICT-MANDAT-14-PC1C §5, voie b) ; elle n'existe que pour l'étudiant en congé. La réorientation n'est pas montrée.
+const profile = useProfileStore();
+const CARTE_CONGE_REDUIT = { key: 'coaR', titre: 'Congé académique', icone: CalendarClock, to: '/demarches/retour-conge',
+  method: A + 'leave_return.get_my_leave_return_requests', items: 'items', ouvrir: null, vide: 'Aucun congé en cours.',
+  viaRetour: true };
+const cartes = computed(() => (profile.profile === 'dossier'
+  ? [...(profile.dossier?.academic_status === 'COA' ? [CARTE_CONGE_REDUIT] : []),
+    ...CARTES.filter((c) => !['coa', 'reo'].includes(c.key))]
+  : CARTES));
+
 const reponses = ref({});
 const erreurs = ref({});
 const loading = ref(false);
 
 async function load() {
   loading.value = true;
-  await Promise.all(CARTES.map(async (c) => {
+  await Promise.all(cartes.value.map(async (c) => {
     try {
       reponses.value[c.key] = await callApi(c.method);
       delete erreurs.value[c.key];
@@ -69,6 +82,10 @@ function reste(delai) {
 
 function vue(c) {
   const r = reponses.value[c.key];
+  if (c.viaRetour) {
+    const periode = r?.open?.leave_period || r?.items?.[0]?.leave_period || null;
+    return { dossier: null, conge: periode, autres: 0, action: null, delai: null, open: null };
+  }
   const items = (r && r[c.items]) || [];
   const dossier = items[0] || null;
   const action = dossier?.available_acts?.find((a) => !a.act.startsWith('cancel')) || dossier?.available_acts?.[0];
@@ -82,8 +99,8 @@ function vue(c) {
   };
 }
 
-const vues = computed(() => Object.fromEntries(CARTES.map((c) => [c.key, vue(c)])));
-const attendu = computed(() => CARTES.filter((c) => vues.value[c.key].action));
+const vues = computed(() => Object.fromEntries(cartes.value.map((c) => [c.key, vue(c)])));
+const attendu = computed(() => cartes.value.filter((c) => vues.value[c.key].action));
 </script>
 
 <template>
@@ -112,7 +129,7 @@ const attendu = computed(() => CARTES.filter((c) => vues.value[c.key].action));
     </section>
 
     <div class="grid gap-4 md:grid-cols-2">
-      <article v-for="c in CARTES" :key="c.key" class="rounded-lg border border-ln-gray-200 bg-white p-4 flex flex-col gap-3">
+      <article v-for="c in cartes" :key="c.key" class="rounded-lg border border-ln-gray-200 bg-white p-4 flex flex-col gap-3">
         <div class="flex items-start gap-3">
           <component :is="c.icone" class="w-5 h-5 mt-0.5 text-ln-blue-800 flex-shrink-0" aria-hidden="true" />
           <div class="min-w-0 flex-1">
@@ -135,6 +152,13 @@ const attendu = computed(() => CARTES.filter((c) => vues.value[c.key].action));
                 et {{ plural(vues[c.key].autres, 'dossier antérieur', 'dossiers antérieurs') }}
               </p>
             </template>
+            <template v-else-if="vues[c.key].conge">
+              <p class="text-sm text-ln-gray-700 mt-1">
+                <span class="font-medium">Congé {{ leavePeriod(vues[c.key].conge) }}</span> ·
+                <span class="inline-flex items-center rounded-full border border-ln-gray-300 px-2 py-0.5 text-xs font-medium">En cours</span>
+              </p>
+              <p class="text-sm text-ln-gray-500 mt-2">Votre retour se demande dans « Retour de congé ».</p>
+            </template>
             <template v-else>
               <p class="text-sm text-ln-gray-500 mt-1">{{ c.vide }}</p>
               <p v-if="vues[c.key].open && !vues[c.key].open.available && vues[c.key].open.blocked_reason"
@@ -144,7 +168,8 @@ const attendu = computed(() => CARTES.filter((c) => vues.value[c.key].action));
         </div>
         <RouterLink :to="c.to"
                     class="mt-auto inline-flex items-center gap-1 self-start text-sm font-semibold text-ln-blue-800 hover:underline min-h-[44px]">
-          <template v-if="vues[c.key].dossier">Voir le dossier</template>
+          <template v-if="c.viaRetour">Mon retour de congé</template>
+          <template v-else-if="vues[c.key].dossier">Voir le dossier</template>
           <template v-else-if="c.ouvrir && vues[c.key].open?.available">{{ c.ouvrir }}</template>
           <template v-else>Voir</template>
           <ArrowRight class="w-4 h-4" aria-hidden="true" />

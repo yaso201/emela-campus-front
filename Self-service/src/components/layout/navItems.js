@@ -7,7 +7,9 @@
 // pour chaque profil, et refuse une liste `profiles` qui déborde de la garde.
 import { findStaticRoute, routeAdmits } from '../../router/routes.js';
 
-const ALL = ['student', 'instructor', 'director', 'candidate', 'generic', 'employee'];
+// DEC-366 (MANDAT-14, X8, E-M11) : `dossier` — l'étudiant à accès réduit ; son menu : Accueil, Mes démarches,
+// Documents, Notifications, Mon compte, Support.
+const ALL = ['student', 'dossier', 'instructor', 'director', 'candidate', 'generic', 'employee'];
 
 /** Menu latéral (bureau) et menu en surimpression (téléphone). */
 export const SIDE_NAV_ITEMS = [
@@ -15,9 +17,9 @@ export const SIDE_NAV_ITEMS = [
   { to: '/planning', label: 'Planning', icon: 'calendar', profiles: ['student', 'instructor'] },
   { to: '/results', label: 'Résultats', icon: 'chart', profiles: ['student'] },
   { to: '/evals', label: 'Évaluations', icon: 'star', profiles: ['student'] },
-  { to: '/documents', label: 'Documents', icon: 'file-text', profiles: ['student'] },
+  { to: '/documents', label: 'Documents', icon: 'file-text', profiles: ['student', 'dossier'] },
   // MANDAT-14 (E-M1, Q20) : « Mes démarches » remplace « Congé académique » ; le congé y a sa carte.
-  { to: '/demarches', label: 'Mes démarches', icon: 'file-text', profiles: ['student'] },
+  { to: '/demarches', label: 'Mes démarches', icon: 'file-text', profiles: ['student', 'dossier'] },
   { to: '/internship', label: 'Stage', icon: 'briefcase', profiles: ['student'] },
   // MANDAT-14 (E-M9, P7) : l'espace de l'enseignant a ses entrées — ses modules (notes, statistiques), ses heures.
   { to: '/modules', label: 'Mes modules', icon: 'file-text', profiles: ['instructor'] },
@@ -44,6 +46,8 @@ export const BOTTOM_NAV_ITEMS = [
   { to: '/', label: 'Accueil', icon: 'home', profiles: ALL },
   { to: '/planning', label: 'Planning', icon: 'calendar', profiles: ['student', 'instructor'] },
   { to: '/results', label: 'Résultats', icon: 'chart', profiles: ['student'] },
+  { to: '/demarches', label: 'Démarches', icon: 'file-text', profiles: ['dossier'] },
+  { to: '/documents', label: 'Documents', icon: 'file-text', profiles: ['dossier'] },
   { to: '/support', label: 'Aide', icon: 'help-circle', profiles: ALL },
   { to: '/notifications', label: 'Notifs', icon: 'bell', profiles: ALL },
 ];

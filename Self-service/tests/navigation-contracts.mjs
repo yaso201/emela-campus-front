@@ -125,3 +125,20 @@ test('P16 : aucun libellé anglais au menu ni au titre des routes', () => {
     if (r.meta?.label) assert.ok(!ANGLAIS.test(r.meta.label), `route ${r.path} : « ${r.meta.label} »`);
   }
 });
+
+// DEC-366 (E-M11, X8) : l'étudiant à accès réduit — profil de navigation `dossier`. Son menu et la garde du routeur
+// se réduisent aux six entrées de DEC-366 ; la page Congé et la réorientation (lectures fermées au MINIMAL, DEC-333)
+// et toute page de participation lui restent refusées.
+test('DEC-366 : le profil « dossier » ne voit et n’ouvre que l’espace réduit', () => {
+  const menu = navItemsFor(SIDE_NAV_ITEMS, 'dossier').map((i) => i.to).sort();
+  assert.deepEqual(menu, ['/', '/account', '/demarches', '/documents', '/notifications', '/support']);
+  const barre = navItemsFor(BOTTOM_NAV_ITEMS, 'dossier').map((i) => i.to);
+  assert.ok(barre.length <= BOTTOM_NAV_MAX, `barre basse : ${barre.length} entrées`);
+  const admises = routes.filter((r) => !r.redirect && routeAdmits(r, 'dossier')).map((r) => r.path).sort();
+  assert.deepEqual(admises, ['/', '/account', '/account/password', '/account/preferences', '/demarches',
+    '/demarches/abandon', '/demarches/demission', '/demarches/discipline', '/demarches/retour-conge', '/documents',
+    '/notifications', '/support', '/support/:id'].sort());
+  for (const p of ['/account/leave-requests', '/demarches/reorientation', '/planning', '/results', '/evals', '/internship']) {
+    assert.ok(!routeAdmits(findStaticRoute(p), 'dossier'), `${p} doit rester fermé au profil « dossier »`);
+  }
+});

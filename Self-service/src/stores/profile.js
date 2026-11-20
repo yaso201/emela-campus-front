@@ -12,6 +12,10 @@ export const useProfileStore = defineStore('profile', {
     canAccessDesk: false,
     // Q18 (MANDAT-14) : le nom d'usage de la personne (`display_name` de get_my_profile, `User.full_name`).
     displayName: null,
+    // DEC-366 (MANDAT-14, X8, E-M11) : la facette « dossier » d'un étudiant à accès réduit (`dossier` de get_my_profile)
+    // — statut, son libellé, l'échéance de l'accès, la période disciplinaire. Le serveur garde le profil GÉNÉRIQUE ;
+    // l'espace en tire le profil de navigation `dossier` (accueil, menu et routes réduits).
+    dossier: null,
   }),
   getters: {
     isLoaded: (state) => state.status === 'loaded',
@@ -21,6 +25,7 @@ export const useProfileStore = defineStore('profile', {
       const labels = {
         guest:      'Invité',
         student:    'Étudiant',
+        dossier:    'Étudiant',
         instructor: 'Enseignant',
         director:   'Direction',
         candidate:  'Candidat',
@@ -36,11 +41,14 @@ export const useProfileStore = defineStore('profile', {
       this.status = 'guest';
       this.canAccessDesk = false;
       this.displayName = null;
+      this.dossier = null;
     },
 
-    setResolvedProfile(profile, user, canAccessDesk, displayName = null) {
+    setResolvedProfile(profile, user, canAccessDesk, displayName = null, dossier = null) {
       this.sessionUser = user || window.user || 'Guest';
-      this.profile = profile || 'generic';
+      // DEC-366 : un profil générique qui porte la facette « dossier » est un étudiant à accès réduit.
+      this.dossier = (profile || 'generic') === 'generic' && dossier ? dossier : null;
+      this.profile = this.dossier ? 'dossier' : profile || 'generic';
       this.canAccessDesk = !!canAccessDesk;
       // Le serveur rend l'adresse quand le compte n'a pas de nom : ce n'est pas un nom d'usage.
       this.displayName = displayName && displayName !== this.sessionUser ? displayName : null;
@@ -97,7 +105,7 @@ export const useProfileStore = defineStore('profile', {
         }
 
         // R2: can_access_desk vient du backend — plus de lecture frontend des rôles système.
-        this.setResolvedProfile(resolvedProfile, data?.user, data?.can_access_desk, data?.display_name);
+        this.setResolvedProfile(resolvedProfile, data?.user, data?.can_access_desk, data?.display_name, data?.dossier);
       } catch (err) {
         this.error = err;
         this.status = 'error';

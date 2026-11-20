@@ -6,8 +6,11 @@
 // Ce module n'importe ni Vue ni le store, pour qu'un test Node le charge tel quel
 // (`tests/navigation-contracts.mjs`) ; les composants ne sont chargés qu'à la navigation.
 
-/** Les profils que rend `portal_app.api.portal_access.get_my_profile`. */
-export const PROFILES = ['student', 'instructor', 'director', 'candidate', 'generic', 'employee'];
+/** Les profils que rend `portal_app.api.portal_access.get_my_profile`. DEC-366 (MANDAT-14, X8, E-M11) : `dossier`, le
+ * profil de NAVIGATION de l'étudiant à accès réduit (profil générique du serveur + facette « dossier ») ; la garde ne
+ * l'admet que sur Accueil, Mes démarches (retour, démission, abandon, discipline), Documents, Notifications, Mon
+ * compte, Support — les routes sans garde de profil sont toutes de cette liste. */
+export const PROFILES = ['student', 'dossier', 'instructor', 'director', 'candidate', 'generic', 'employee'];
 
 export const routes = [
   {
@@ -40,7 +43,7 @@ export const routes = [
     path: '/documents',
     name: 'documents',
     component: () => import('@/pages/DocumentsPage.vue'),
-    meta: { label: 'Documents', icon: 'file-text', requiresProfile: ['student'] },
+    meta: { label: 'Documents', icon: 'file-text', requiresProfile: ['student', 'dossier'] },
   },
   {
     path: '/notifications',
@@ -211,13 +214,13 @@ export const routes = [
     path: '/demarches',
     name: 'demarches',
     component: () => import('@/pages/DemarchesPage.vue'),
-    meta: { label: 'Mes démarches', requiresProfile: ['student'] },
+    meta: { label: 'Mes démarches', requiresProfile: ['student', 'dossier'] },
   },
   {
     path: '/demarches/retour-conge',
     name: 'demarche-retour-conge',
     component: () => import('@/pages/RetourCongePage.vue'),
-    meta: { label: 'Retour de congé', requiresProfile: ['student'] },
+    meta: { label: 'Retour de congé', requiresProfile: ['student', 'dossier'] },
   },
   {
     path: '/demarches/reorientation',
@@ -229,19 +232,19 @@ export const routes = [
     path: '/demarches/demission',
     name: 'demarche-demission',
     component: () => import('@/pages/DemissionPage.vue'),
-    meta: { label: 'Démission', requiresProfile: ['student'] },
+    meta: { label: 'Démission', requiresProfile: ['student', 'dossier'] },
   },
   {
     path: '/demarches/abandon',
     name: 'demarche-abandon',
     component: () => import('@/pages/AbandonPage.vue'),
-    meta: { label: 'Abandon d’études', requiresProfile: ['student'] },
+    meta: { label: 'Abandon d’études', requiresProfile: ['student', 'dossier'] },
   },
   {
     path: '/demarches/discipline',
     name: 'demarche-discipline',
     component: () => import('@/pages/DisciplinePage.vue'),
-    meta: { label: 'Discipline', requiresProfile: ['student'] },
+    meta: { label: 'Discipline', requiresProfile: ['student', 'dossier'] },
   },
   // Route catch-all — redirection vers cockpit (C-004)
   {
