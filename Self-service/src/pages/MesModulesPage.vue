@@ -72,6 +72,17 @@ onMounted(async () => {
             <BarChart3 class="w-4 h-4" aria-hidden="true" /> Statistiques
           </RouterLink>
         </div>
+        <!-- E-M10 (P26, PC1C) : le planning du module, tous groupes, et ses enseignants. -->
+        <div class="flex flex-wrap gap-x-4 gap-y-1 border-t border-ln-gray-100 pt-2 text-sm">
+          <RouterLink :to="`/modules/${encodeURIComponent(m.course)}`"
+                      class="font-semibold text-ln-blue-800 hover:underline min-h-[44px] inline-flex items-center">
+            Planning du module
+          </RouterLink>
+          <RouterLink :to="{ path: `/modules/${encodeURIComponent(m.course)}`, query: { onglet: 'enseignants' } }"
+                      class="font-semibold text-ln-blue-800 hover:underline min-h-[44px] inline-flex items-center">
+            Enseignants du module
+          </RouterLink>
+        </div>
       </article>
     </div>
   </div>

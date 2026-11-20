@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useProfileStore } from '@/stores/profile';
 import { Menu, LogOut } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
+import { pageTitleFor } from '@/composables/usePageTitle';
 
 const props = defineProps({
   /**
@@ -27,9 +28,9 @@ const auth = useAuthStore();
 const profile = useProfileStore();
 const { logout } = useAuth();
 
-// Titre de page depuis la meta de la route
+// Titre de page : celui que la page pose pour son chemin (P27, `usePageTitle`), sinon la meta de la route
 const pageTitle = computed(() => {
-  return route.meta?.label || 'emela';
+  return pageTitleFor(route.path) || route.meta?.label || 'emela';
 });
 
 // Sous-titre avec date

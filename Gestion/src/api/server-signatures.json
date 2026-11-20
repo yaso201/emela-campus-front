@@ -488,6 +488,9 @@
   "instructor",
   "academic_term"
  ],
+ "portal_app.api.academic.instructor_api.get_my_course": [
+  "course"
+ ],
  "portal_app.api.academic.instructor_api.get_student_dossier_for_instructor": [
   "student"
  ],

@@ -147,6 +147,14 @@ export const routes = [
     component: () => import('@/pages/MesModulesPage.vue'),
     meta: { label: 'Mes modules', requiresProfile: ['instructor'] },
   },
+  // MANDAT-14 (E-M10, P26 ; PC1C) : le module de l'enseignant — son planning (tous groupes) et ses enseignants.
+  // P27 : la barre du haut porte le nom du module (la page le pose, `usePageTitle`) ; « Module » n'est qu'un repli.
+  {
+    path: '/modules/:course',
+    name: 'my-module',
+    component: () => import('@/pages/ModulePage.vue'),
+    meta: { label: 'Module', requiresProfile: ['instructor'], navParent: '/modules' },
+  },
   {
     path: '/modules/:course/stats',
     name: 'module-stats',

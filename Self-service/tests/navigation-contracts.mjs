@@ -109,6 +109,9 @@ test('P23 : une page atteinte par « Mes démarches » allume « Mes démarches 
   }
   assert.deepEqual(lit('/account', 'student'), ['Mon compte']);
   assert.deepEqual(lit('/modules/GL-S3-ALGO2/submit', 'instructor'), ['Mes modules']);
+  // E-M10 (PC1C) : la page du module allume « Mes modules » ; le planning d'un collègue ouvert depuis elle, « Planning ».
+  assert.deepEqual(lit('/modules/GL-S3-ALGO2', 'instructor'), ['Mes modules']);
+  assert.deepEqual(lit('/planning/search?enseignant=ENS-00002', 'instructor'), ['Planning']);
   assert.deepEqual(lit('/planning/search', 'instructor'), ['Planning']);
   assert.deepEqual(lit('/', 'student'), ['Accueil']);
 });
