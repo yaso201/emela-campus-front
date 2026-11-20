@@ -9,6 +9,9 @@
   "name",
   "dismiss_reason"
  ],
+ "portal_app.api.academic.abandonment.get_my_abandonment_findings": [
+  "student_id"
+ ],
  "portal_app.api.academic.abandonment.issue_abandonment_notice": [
   "name"
  ],
@@ -120,6 +123,11 @@
   "academic_level",
   "status"
  ],
+ "portal_app.api.academic.deliberation_mgmt.list_semester_results": [
+  "academic_level",
+  "academic_term",
+  "academic_year"
+ ],
  "portal_app.api.academic.deliberation_mgmt.start_deliberation": [
   "name"
  ],
@@ -189,7 +197,8 @@
   "student_id"
  ],
  "portal_app.api.academic.document_requests.list_document_requests": [
-  "status"
+  "status",
+  "limit"
  ],
  "portal_app.api.academic.document_requests.refuse_document_request": [
   "name",
@@ -201,7 +210,8 @@
  ],
  "portal_app.api.academic.dossiers_read.list_dossiers": [
   "kind",
-  "limit"
+  "limit",
+  "closed"
  ],
  "portal_app.api.academic.early_warning.add_preconisation": [
   "student",
@@ -494,6 +504,18 @@
   "student",
   "limit"
  ],
+ "portal_app.api.academic.module_grade.list_mhc_enrollments": [
+  "academic_term",
+  "program",
+  "status",
+  "limit"
+ ],
+ "portal_app.api.academic.module_grade.list_retake_candidates": [
+  "course",
+  "academic_term",
+  "student_group",
+  "limit"
+ ],
  "portal_app.api.academic.module_grade.propose_module_average": [
   "course",
   "student_group"
@@ -513,6 +535,11 @@
   "course",
   "student_group",
   "decisions"
+ ],
+ "portal_app.api.academic.people_search.search_people": [
+  "query",
+  "kind",
+  "limit"
  ],
  "portal_app.api.academic.planning_mgmt.assign_instructor": [
   "schedules",
@@ -586,7 +613,9 @@
   "name",
   "source_label",
   "credits_recognized",
-  "basis"
+  "basis",
+  "covers_academic_term",
+  "covers_full_semester"
  ],
  "portal_app.api.academic.reorientation.create_reorientation_request": [
   "target_program",
@@ -614,6 +643,11 @@
  "portal_app.api.academic.reorientation.list_reorientation_requests": [
   "status",
   "limit"
+ ],
+ "portal_app.api.academic.reorientation.list_target_terms": [
+  "target_program",
+  "target_academic_year",
+  "target_level"
  ],
  "portal_app.api.academic.reorientation.record_reorientation_notification": [
   "name",
@@ -860,7 +894,9 @@
  "portal_app.api.academic.year_closure.close_academic_year": [
   "academic_year",
   "new_current_year",
-  "reason"
+  "reason",
+  "early_closure",
+  "early_closure_reason"
  ],
  "portal_app.api.academic.year_closure.get_year_status": [
   "academic_year"
