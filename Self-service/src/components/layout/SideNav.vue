@@ -7,6 +7,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useProfileStore } from '@/stores/profile';
 import { X, LogOut, ExternalLink, User } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
+import { SIDE_NAV_ITEMS, navItemsFor } from './navItems.js';
 
 const props = defineProps({
   /**
@@ -25,33 +26,10 @@ const auth = useAuthStore();
 const profile = useProfileStore();
 const { logout } = useAuth();
 
-const allNavItems = [
-  { to: '/', label: 'Accueil', icon: 'home', profiles: ['student', 'instructor', 'director', 'candidate', 'generic', 'employee'] },
-  { to: '/planning', label: 'Planning', icon: 'calendar', profiles: ['student', 'instructor'] },
-  { to: '/results', label: 'Résultats', icon: 'chart', profiles: ['student'] },
-  { to: '/evals', label: 'Évaluations', icon: 'star', profiles: ['student'] },
-  { to: '/documents', label: 'Documents', icon: 'file-text', profiles: ['student'] },
-  { to: '/account/leave-requests', label: 'Congé académique', icon: 'file-text', profiles: ['student'] },
-  { to: '/internship', label: 'Stage', icon: 'briefcase', profiles: ['student'] },
-  { to: '/insights', label: 'Pilotage', icon: 'bar-chart', profiles: ['director'] },
-  { to: '/attendance-paper', label: 'Présences papier', icon: 'file-text', profiles: ['instructor', 'director', 'generic', 'employee'] },
-  { to: '/attendance-kpis', label: 'KPI présences', icon: 'bar-chart', profiles: ['director', 'generic', 'employee'] },
-  { to: '/attendance-corrections', label: 'Corrections', icon: 'file-text', profiles: ['student', 'instructor', 'director', 'generic', 'employee'] },
-  { to: '/attendance-leaves', label: 'Leaves', icon: 'file-text', profiles: ['student', 'director', 'generic', 'employee'] },
-  { to: '/attendance-antifraud', label: 'Revue antifraude', icon: 'shield-alert', profiles: ['director', 'generic', 'employee'] },
-  { to: '/attendance-sync-anomalies', label: 'Anomalies sync', icon: 'refresh-cw', profiles: ['director', 'generic', 'employee'] },
-  { to: '/attendance-pdfs', label: 'PDF attendance', icon: 'file-text', profiles: ['student', 'instructor', 'director', 'generic', 'employee'] },
-  { to: '/attendance-compliance', label: 'Conformité', icon: 'shield-check', profiles: ['director', 'generic', 'employee'] },
-  { to: '/attendance-observability', label: 'Santé attendance', icon: 'activity', profiles: ['director', 'generic', 'employee'] },
-  { to: '/support', label: 'Support', icon: 'help-circle', profiles: ['student', 'instructor', 'director', 'candidate', 'generic', 'employee'] },
-  { to: '/notifications', label: 'Notifications', icon: 'bell', profiles: ['student', 'instructor', 'director', 'candidate', 'generic', 'employee'] },
-  { to: '/account', label: 'Mon compte', icon: 'user', profiles: ['student', 'instructor', 'director', 'candidate', 'generic', 'employee'] },
-];
-
-const visibleItems = computed(() => {
-  const current = profile.profile || 'generic';
-  return allNavItems.filter((item) => item.profiles.includes(current) && (!item.requiresDesk || profile.canAccessDesk));
-});
+// P8 (MANDAT-14) : les entrées et leurs droits viennent de `navItems.js`, qui suit la garde du routeur.
+const visibleItems = computed(() => navItemsFor(SIDE_NAV_ITEMS, profile.profile || 'generic', {
+  canAccessDesk: profile.canAccessDesk,
+}));
 
 function close() {
   emit('update:modelValue', false);

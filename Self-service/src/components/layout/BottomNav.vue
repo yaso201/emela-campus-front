@@ -5,22 +5,14 @@
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useProfileStore } from '@/stores/profile';
+import { BOTTOM_NAV_ITEMS, BOTTOM_NAV_MAX, navItemsFor } from './navItems.js';
 
 const route = useRoute();
 const profile = useProfileStore();
 
-const allNavItems = [
-  { to: '/', label: 'Accueil', icon: 'home', profiles: ['student', 'instructor', 'director', 'candidate', 'generic', 'employee'] },
-  { to: '/planning', label: 'Planning', icon: 'calendar', profiles: ['student', 'instructor'] },
-  { to: '/results', label: 'Résultats', icon: 'chart', profiles: ['student'] },
-  { to: '/support', label: 'Aide', icon: 'help-circle', profiles: ['student', 'instructor', 'director', 'candidate', 'generic', 'employee'] },
-  { to: '/notifications', label: 'Notifs', icon: 'bell', profiles: ['student', 'instructor', 'director', 'candidate', 'generic', 'employee'] },
-];
-
-const visibleItems = computed(() => {
-  const current = profile.profile || 'generic';
-  return allNavItems.filter((item) => item.profiles.includes(current)).slice(0, 5);
-});
+// P8 (MANDAT-14) : les entrées et leurs droits viennent de `navItems.js`, qui suit la garde du routeur.
+const visibleItems = computed(() => navItemsFor(BOTTOM_NAV_ITEMS, profile.profile || 'generic')
+  .slice(0, BOTTOM_NAV_MAX));
 
 function isActive(item) {
   if (item.to === '/') {
