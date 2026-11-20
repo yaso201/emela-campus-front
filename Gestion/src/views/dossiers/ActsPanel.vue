@@ -28,21 +28,36 @@
               </label>
               <!-- Un siège du conseil (Art. 18.2) : le compte qui le tient, et s'il y est représenté. -->
               <div v-else-if="f.type === 'seat'" class="rounded-sm-ln border border-ln-gray-200 p-2">
-                <label :for="'act-f-' + f.key" class="text-caption font-semibold text-ln-gray-700">{{ f.label }} <span v-if="f.required" class="text-ln-error">obligatoire</span></label>
-                <input :id="'act-f-' + f.key" v-model="seat(f.key).member_user" type="text" placeholder="compte (courriel)"
-                       class="mt-1 h-10 w-full rounded-sm-ln border border-ln-gray-300 px-2 text-body-sm" />
+                <!-- MANDAT-14 (C7) : le titulaire du siège se cherche parmi le personnel (serveur) ; Q18 : son nom. -->
+                <PeopleSearch :id="'act-f-' + f.key" kind="staff" :selected="seat(f.key).member_user"
+                              :label="f.label + (f.required ? ' — obligatoire' : '')" placeholder="Nom ou courriel"
+                              @pick="seat(f.key).member_user = $event.user; picked[f.key] = $event.full_name" />
+                <p v-if="seat(f.key).member_user" class="mt-1 text-caption text-ln-gray-700">
+                  Retenu : <b class="font-semibold">{{ picked[f.key] || seat(f.key).member_user }}</b>
+                </p>
                 <label class="mt-1.5 inline-flex items-center gap-2 text-caption text-ln-gray-700">
                   <input v-model="seat(f.key).is_representative" type="checkbox" class="accent-ln-blue-900"
                          :aria-label="'Représenté — ' + f.label" />
-                  représenté(e)
+                  siège tenu par un représentant
                 </label>
+              </div>
+              <div v-else-if="f.type === 'person'">
+                <PeopleSearch :id="'act-f-' + f.key" kind="staff" :selected="values[f.key] || ''"
+                              :label="f.label + (f.required ? ' — obligatoire' : '')" placeholder="Nom ou courriel"
+                              @pick="values[f.key] = $event.user; picked[f.key] = $event.full_name" />
+                <p v-if="values[f.key]" class="mt-1 text-caption text-ln-gray-700">
+                  Retenu : <b class="font-semibold">{{ picked[f.key] || values[f.key] }}</b>
+                </p>
               </div>
               <template v-else>
                 <label :for="'act-f-' + f.key" class="text-caption font-semibold text-ln-gray-700">{{ f.label }} <span v-if="f.required" class="text-ln-error">obligatoire</span></label>
                 <select v-if="f.options || f.choices" :id="'act-f-' + f.key" v-model="values[f.key]"
-                        class="mt-1 h-10 w-full rounded-sm-ln border border-ln-gray-300 bg-white px-2 text-body-sm">
-                  <!-- C9 (PC1C) : rien n'est prérempli — une liste lue s'ouvre sur un choix vide. -->
-                  <option v-if="f.choices" value="" disabled>{{ optionsOf(f).length ? 'Choisir…' : 'Aucune valeur lue' }}</option>
+                        :disabled="Boolean(f.after && !values[f.after])"
+                        class="mt-1 h-10 w-full rounded-sm-ln border border-ln-gray-300 bg-white px-2 text-body-sm disabled:bg-ln-gray-50">
+                  <!-- C9 (PC1C) : rien n'est prérempli — une liste lue s'ouvre sur un choix vide. P22 : une liste qui
+                       dépend d'un autre champ (`after`) attend ce champ, et le dit. -->
+                  <option v-if="f.choices" value="" disabled>{{ f.after && !values[f.after] ? f.afterHint
+                    : optionsOf(f).length ? 'Choisir…' : 'Aucune valeur lue' }}</option>
                   <option v-for="o in optionsOf(f)" :key="o.value" :value="o.value">{{ o.label }}</option>
                 </select>
                 <input v-else :id="'act-f-' + f.key" v-model="values[f.key]" :type="f.type || 'text'" :min="f.min"
@@ -87,7 +102,9 @@
  *   busy — un acte est en cours.
  * Événement : act({ act, outcome, reason, values }).
  */
-import { computed, reactive, ref } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
+import PeopleSearch from '../../components/PeopleSearch.vue';
+import { listTargetTerms } from '../../api/dossiers.js';
 
 const props = defineProps({
   available: { type: Array, default: () => [] },   // [{ act, method, outcomes[], requires_reason }]
@@ -95,7 +112,8 @@ const props = defineProps({
   waitingRoles: { type: Array, default: () => [] },   // noms de rôles (chaînes) — S-18 `waiting_for_roles`
   busy: { type: Boolean, default: false },
   // MANDAT-12 (M9) : les listes que la vue lit pour un acte (années, semestres, niveaux d'accueil) —
-  // { years: [{ value, label }], terms: [{ value, label }], levels: [{ value, label }], appeal_cap: nombre (Q19) }
+  // { years: [{ value, label }], terms: [{ value, label }], levels: [{ value, label }], appeal_cap: nombre (Q19),
+  //   target_terms: [{ value, label }] (C9, sans niveau), target_program: la filière visée (MANDAT-14) }
   choices: { type: Object, default: () => ({}) },
 });
 const emit = defineEmits(['act']);
@@ -103,6 +121,31 @@ const openAct = ref(null);
 const outcome = ref('');
 const reason = ref('');
 const values = reactive({});
+// MANDAT-14 (C7) : le nom de la personne retenue, pour la relire avant l'acte (la valeur envoyée reste le compte).
+const picked = reactive({});
+
+/**
+ * MANDAT-14 (G-M8, C9 ; P22) : les semestres d'accueil d'une réorientation dépendent du NIVEAU décidé — ceux où la
+ * filière visée offre au moins une UE à ce niveau (`list_target_terms(target_program, target_academic_year,
+ * target_level)`). Le niveau se choisit donc AVANT le semestre ; changer le niveau ou l'année vide le semestre et
+ * relit la liste. Garde de séquence : une réponse dépassée ne gagne pas.
+ */
+const levelTerms = ref([]);
+let levelSeq = 0;
+watch(() => [openAct.value, values.target_academic_year, values.target_level, props.choices.target_program],
+  async ([act, year, level, program], before) => {
+    if (act !== 'decideReorientation') return;
+    if (before && (before[1] !== year || before[2] !== level)) values.target_academic_term = '';
+    const mine = ++levelSeq;
+    levelTerms.value = [];
+    if (!program || !year || !level) return;
+    try {
+      const out = ((await listTargetTerms({ target_program: program, target_academic_year: year, target_level: level }))
+        ?.terms || []).map((t) => ({ value: t.academic_term,
+        label: `${t.academic_term} — ${t.ue_count} ${t.ue_count >= 2 ? 'UE offertes' : 'UE offerte'}` }));
+      if (mine === levelSeq) levelTerms.value = out;
+    } catch { if (mine === levelSeq) levelTerms.value = []; }
+  });
 
 // Le libellé d'un acte (vocabulaire d'écran) ; ses issues et l'exigence du motif viennent du SERVEUR.
 const LABEL = {
@@ -132,12 +175,18 @@ const FIELDS = {
     // Revue adversariale MANDAT-12 (bas) : les paramètres POSITIONNELS du verbe sont exigés à l'écran (C9) — vides,
     // ils donnaient l'erreur d'argument manquant du cadre au lieu de garder l'acte inactif.
     { key: 'member_role', label: 'Siège', options: ['Directeur des Études', "Responsable de la formation d'origine", 'Responsable de la formation visée'], required: true },
-    { key: 'member_user', label: 'Membre (compte)', required: true },
+    // MANDAT-14 (C7) : le membre se cherche parmi le personnel (serveur), au lieu d'un compte tapé.
+    { key: 'member_user', label: 'Membre', type: 'person', required: true },
   ],
   addCreditRecognition: [
     { key: 'source_label', label: 'Acquis reconnu', required: true },
     { key: 'credits_recognized', label: 'Crédits (ECTS)', type: 'number', required: true },
     { key: 'basis', label: 'Fondement', required: true },
+    // MANDAT-14 (X1) : le semestre couvert, et la totalité. La totalité exige le semestre (le serveur le refuse
+    // sinon, par sa phrase) ; seule une ligne qui porte les deux tient les MHC obligatoires pour validés.
+    { key: 'covers_academic_term', label: 'Semestre couvert (facultatif)', choices: 'target_terms' },
+    { key: 'covers_full_semester', label: 'Reconnu en totalité — ses MHC obligatoires sont tenus pour validés', type: 'checkbox',
+      hint: 'Exige le semestre couvert. Une reconnaissance partielle ne couvre aucun MHC.' },
   ],
   recordResignationInformation: [{ key: 'info_channel', label: 'Moyen de l’information (écrit, entretien proposé)', required: true }],
   convokeDisciplinaryCouncil: [
@@ -168,16 +217,20 @@ const FIELDS = {
   ],
   // MANDAT-12 (M9, Q17 ; C9) — l'acceptation crée l'inscription d'accueil : les TROIS valeurs sont exigées à l'écran
   // (rien n'est prérempli) ; « Rejetée » n'en demande aucune.
+  // MANDAT-14 (P22) : l'année, puis le NIVEAU, puis le semestre — la liste des semestres dépend du niveau (C9 : seuls
+  // ceux où la filière visée offre au moins une UE à ce niveau ; un autre serait refusé par le serveur).
   decideReorientation: [
     { key: 'target_academic_year', label: 'Année d’accueil', choices: 'years', when: 'Acceptée', required: true },
-    { key: 'target_academic_term', label: 'Semestre d’accueil', choices: 'terms', when: 'Acceptée', required: true },
     { key: 'target_level', label: 'Niveau d’accueil (filière visée)', choices: 'levels', when: 'Acceptée', required: true,
       hint: 'L’acceptation inscrit l’étudiant dans la filière visée : la décision et l’inscription sont un seul acte.' },
+    { key: 'target_academic_term', label: 'Semestre d’accueil', choices: 'level_terms', when: 'Acceptée', required: true,
+      after: 'target_level', afterHint: 'Choisir d’abord le niveau d’accueil',
+      hint: 'Les semestres où la filière visée offre au moins une UE à ce niveau. Un autre serait refusé par le serveur, qui nomme les possibles.' },
   ],
 };
-/** Les options d'un champ : écrites (`options`) ou lues par la vue (`choices`). */
+/** Les options d'un champ : écrites (`options`), lues par la vue (`choices`), ou lues ici (`level_terms`, P22). */
 function optionsOf(f) {
-  const raw = f.options || props.choices[f.choices] || [];
+  const raw = f.options || (f.choices === 'level_terms' ? levelTerms.value : props.choices[f.choices]) || [];
   return raw.map((o) => (typeof o === 'string' ? { value: o, label: o } : o));
 }
 /** Un siège du conseil, dans `values` (posé à l'ouverture de l'acte) : { seat, member_user, is_representative }. */
@@ -204,6 +257,7 @@ const waiting = computed(() => (props.waitingRoles.length
 function start(a) {
   openAct.value = a.act; outcome.value = (a.outcomes || [])[0] || ''; reason.value = '';
   for (const k of Object.keys(values)) delete values[k];
+  for (const k of Object.keys(picked)) delete picked[k];
   for (const f of FIELDS[a.act] || []) {
     if (f.type === 'seat') values[f.key] = { seat: f.seat, member_user: '', is_representative: false };
     if (f.choices) values[f.key] = '';   // C9 : une liste lue s'ouvre sur « Choisir… »

@@ -5,10 +5,16 @@
         <p class="mb-2 text-caption text-ln-gray-500">
           Notes · <b class="font-semibold text-ln-gray-900">Délibération annuelle</b>
         </p>
-        <h1 class="text-h1 tracking-tight text-ln-gray-900">Jury de fin d'année — {{ dash.program || '…' }}</h1>
-        <p class="mt-1 text-body-sm text-ln-gray-500">{{ subtitle }}</p>
+        <!-- P20 (PC1B) : sans jury choisi, la page a SON titre — elle ne reste pas sur « Jury de fin d'année — … »
+             ni sur « Chargement du jury ». -->
+        <h1 v-if="!subject" class="text-h1 tracking-tight text-ln-gray-900">Avant le jury</h1>
+        <h1 v-else class="text-h1 tracking-tight text-ln-gray-900">Jury de fin d'année — {{ dash.program_label || dash.program || '…' }}</h1>
+        <p v-if="!subject" class="mt-1 text-body-sm text-ln-gray-500">
+          Les résultats de semestre de la cohorte, leur calcul, et le jury à ouvrir
+        </p>
+        <p v-else class="mt-1 text-body-sm text-ln-gray-500">{{ subtitle }}</p>
       </div>
-      <div class="flex flex-wrap items-center gap-2">
+      <div v-if="subject" class="flex flex-wrap items-center gap-2">
         <!-- ⚠️ La synthèse est le DÉFAUT, pas une option. Le lot 2 l'a tranché
              comme une mesure : quatorze colonnes ne tiennent pas dans 1280 px
              avec le bloc de décision épinglé. -->
@@ -32,6 +38,8 @@
          montre aucune délibération arbitraire (un lien qui ressemble à un
          succès est pire qu'un lien mort — la leçon du bilan de charge). -->
     <template v-if="!subject">
+      <!-- MANDAT-14 (G-M2, C5) : avant le jury, les résultats de semestre de la cohorte et leur calcul. -->
+      <CohortResultsPanel />
       <div v-if="can('deliberate')" class="mb-4">
         <button type="button" class="ln-btn-primary" @click="openOpenPanel">Ouvrir une délibération…</button>
       </div>
@@ -59,10 +67,11 @@
                 class="cursor-pointer border-b border-ln-gray-100 last:border-0 hover:bg-ln-gray-50"
                 @click="openDeliberation(d.name)">
               <td class="px-4 py-2.5 font-mono text-[12px] text-ln-blue-700">{{ d.name }}</td>
-              <td class="px-4 py-2.5">{{ d.program }}</td>
+              <!-- Q18 : la filière par son libellé ; P16 : la date au format français. -->
+              <td class="px-4 py-2.5">{{ d.program_label || d.program }}</td>
               <td class="px-4 py-2.5">{{ d.academic_term }}</td>
               <td class="px-4 py-2.5">{{ d.status }}</td>
-              <td class="px-4 py-2.5">{{ d.deliberation_date }}</td>
+              <td class="px-4 py-2.5">{{ jourFr(d.deliberation_date) }}</td>
             </tr>
           </tbody>
         </table>
@@ -452,6 +461,10 @@ import { listDeliberationRoster, listDeliberations } from '../api/deliberation.j
 import { listStructureOptions, getStructureTree } from '../api/structure.js';
 import DecisionForm from './notes/DecisionForm.vue';
 import DeliberationOpenPanel from './notes/DeliberationOpenPanel.vue';
+import CohortResultsPanel from './notes/CohortResultsPanel.vue';
+// P16 : « 28 juin 2027 », « 1er juillet 2027 » ; jamais « 2027-06-28 ».
+const jourFr = (iso) => (iso ? new Date(String(iso).slice(0, 10) + 'T12:00:00')
+  .toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).replace(/^1 /, '1er ') : '—');
 
 const { can } = useSession();
 const { params } = useAcademicContext();

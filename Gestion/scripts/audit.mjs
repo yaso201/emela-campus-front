@@ -164,7 +164,7 @@ say('\n2 · Simulacre');
  * inatteignable pour sa propre défaillance, et le contrat du script — une ligne
  * ÉCHEC nommée, puis code 1 — était rompu.
  */
-let fx, fxG, fxP, fxN, fxD, fxC, fxZ, fxK;
+let fx, fxG, fxP, fxN, fxD, fxC, fxZ, fxK, fxL;
 const FIXTURE_MODULES = {};
 try {
   /**
@@ -192,9 +192,11 @@ try {
   fxZ = FIXTURE_MODULES['fixtures-fin-de-cycle.js'];
   // MANDAT-10, E3' : la charpente (calendrier académique, catalogue des filières).
   fxK = FIXTURE_MODULES['fixtures-charpente.js'];
+  // MANDAT-14 (L4-C) : les lectures neuves (étapes 5 et 11, recherche de personnes, semestres d'accueil).
+  fxL = FIXTURE_MODULES['fixtures-l4c.js'];
   const missing = ['fixtures.js', 'fixtures-groupes.js', 'fixtures-planning.js',
     'fixtures-notes.js', 'fixtures-dossiers.js', 'fixtures-conseil.js',
-    'fixtures-fin-de-cycle.js', 'fixtures-charpente.js'].filter((n) => !FIXTURE_MODULES[n]);
+    'fixtures-fin-de-cycle.js', 'fixtures-charpente.js', 'fixtures-l4c.js'].filter((n) => !FIXTURE_MODULES[n]);
   if (missing.length) throw new Error('modules attendus absents : ' + missing.join(', '));
 } catch (e) {
   check('le module de simulacre se charge', [e.message]);
@@ -289,7 +291,17 @@ const probes = [
   ['documentRequests', () => fxZ.documentRequests({}).items.length],
   // ⚠️ Sondée avec un NOM RÉEL : la fixture lève sur une demande inconnue, donc la
   // sonde garde aussi contre le renommage d'une demande du jeu d'essai.
-  ['documentRequest', () => fxZ.documentRequest({ name: 'DOC-2027-0188' }).checks.length],
+  // MANDAT-14 (C1) : la forme du serveur — plus de `checks` ; la demande porte sa période et son éligibilité.
+  ['documentRequest', () => fxZ.documentRequest({ name: 'DRQ-2026-00091' }).eligibility_note.length],
+  // MANDAT-14 (L4-C) — les lectures et les actes neufs des étapes 5, 11 et 12.
+  ['semesterResults', () => fxL.semesterResults({ academic_level: 'L2-GL' }).rows.length],
+  ['computeSemesterResults', () => fxL.computeSemesterResults({ academic_level: 'L2-GL' }).rows.length],
+  ['mhcEnrollments', () => fxL.mhcEnrollments().items.length],
+  ['validateMhcEnrollment', () => fxL.validateMhcEnrollment({ decision: 'Validé' }).status],
+  ['retakeCandidates', () => fxL.retakeCandidates({ course: 'INF-204' }).rows.length],
+  ['recordRetakeGrade', () => fxL.recordRetakeGrade({ retake_grade: '12' }).retake_grade],
+  ['searchPeople', () => fxL.searchPeople({ query: 'Kponou' }).students.length],
+  ['targetTerms', () => fxL.targetTerms({ target_program: 'LRC' }).terms.length],
   ['yearClosure', () => fxZ.yearClosure({}).anomalies.length],
   ['mentionOf', () => fxZ.mentionOf(15.82)],
   ['graduationDossiers', () => fxZ.graduationDossiers({}).items.length],

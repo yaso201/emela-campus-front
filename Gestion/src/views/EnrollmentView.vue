@@ -18,8 +18,11 @@
               @click="tab = t.key">{{ t.label }}<span v-if="t.count" class="tabular opacity-70">{{ t.count }}</span></button>
     </div>
 
+    <!-- MANDAT-14 (G-M1, C4) : les inscriptions aux MHC, à statuer (étape 5). -->
+    <MhcPanel v-if="tab === 'mhc'" />
+
     <!-- ══ Une inscription et son rapport ligne à ligne ══════════════════ -->
-    <template v-if="tab === 'report'">
+    <template v-else-if="tab === 'report'">
       <StateBanner variant="info" lead="Une inscription est une cascade, pas un acte.">
         Étudiant, inscription au programme, inscription pédagogique, compte utilisateur, rattachement
         aux groupes. Chaque étape réussit ou échoue seule — le <b class="font-semibold">succès partiel
@@ -244,11 +247,13 @@ import {
   getEnrollmentLog, listIncompleteEnrollments, listMoodleOrphans, replayEnrollment,
   runPedagogicalEnrollment,
 } from '../api/groups.js';
+import MhcPanel from './groupes/MhcPanel.vue';
 
 const { can } = useSession();
 const { params } = useAcademicContext();
 const pending = ref('');
-const tab = ref('report');
+// `?onglet=mhc` ouvre l'onglet des MHC (lien depuis la file de travail, preuves du lot 6).
+const tab = ref(new URLSearchParams(location.search).get('onglet') || 'report');
 
 /**
  * ⚠️ L'écran LIT un journal ; il ne rejoue pas la cascade.
@@ -367,9 +372,12 @@ const tabs = computed(() => [
   { key: 'replay', label: 'À reprendre', count: replays.value.length },
   { key: 'orphans', label: 'Orphelins',
     count: orphanFamilies.value.reduce((n, f) => n + (f.items?.length || 0), 0) },
+  // MANDAT-14 (G-M1) : l'onglet n'existe que pour qui lit les MHC (`read:mhc` : EM, GA, DE).
+  ...(can('read:mhc') ? [{ key: 'mhc', label: 'Inscriptions aux MHC' }] : []),
 ]);
 
 const subtitle = computed(() => {
+  if (tab.value === 'mhc') return 'Étape 5 — statuer sur les inscriptions aux MHC du semestre';
   if (tab.value === 'replay') return 'Journaux échoués ou partiels — la reprise ne duplique rien';
   if (tab.value === 'orphans') return 'Étudiants sans groupe, groupes sans enseignant';
   return report.value ? 'Journal ' + report.value.log_name + ' · cascade en ' + (report.value.lines || []).length + ' étapes'

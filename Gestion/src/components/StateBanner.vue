@@ -7,7 +7,9 @@
     </svg>
     <div>
       <span v-if="lead" class="font-semibold" :class="tone.lead">{{ lead }}</span>
-      <span v-if="lead"> </span><slot>{{ text }}</slot>
+      <!-- P21 (MANDAT-14) : l'espace est une EXPRESSION — un nœud texte d'espace seule peut être retiré à la
+           compilation du gabarit (« en l'état.Relevé »). -->
+      <template v-if="lead">{{ ' ' }}</template><slot>{{ text }}</slot>
     </div>
   </div>
 </template>

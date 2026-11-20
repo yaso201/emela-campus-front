@@ -161,32 +161,76 @@ export const REFUSAL_CATEGORIES = [
     examples: 'Période hors scolarité, document inexistant, document émis par un autre service.' },
 ];
 
-/** `list_document_requests(...)` — 🔴 non tranché. */
+/* MANDAT-14 (G-M4, C1) — LA FORME DU SERVEUR, `document_requests.list_document_requests` :
+ * `{items, count, counts, pending, oldest_pending, refusal_categories, catalogue, may_be_truncated}`.
+ * Les libellés, le catalogue et le vocabulaire des refus sont ceux du serveur ; le monde est celui du simulacre
+ * (« nous sommes le 10 septembre 2026 ») : l'année 2025-2026 est close, son relevé s'émet ; le premier semestre de
+ * 2026-2027 court, son relevé attend. P18 : les matricules à la forme du simulacre. */
+const C1_BASE = { student: null, programs: ['L-GL'], program_label: 'Licence Génie logiciel', academic_term: null,
+  eligibility_note: null, issuable: null, blocked_reason: null, refusal_category: null, refusal_label: null,
+  reformulable: null, refusal_reason: null, refused_on: null, issued_document: null, issued_on: null,
+  verification_code: null, document_uuid: null };
+const NOTE_S7 = 'Relevé semestriel INDISPONIBLE pour l’instant : le semestre 2026-2027 (S7) n’est pas encore '
+  + 'publié (délibération non clôturée). La demande reste en file.';
+const C1_ITEMS = [
+  { ...C1_BASE, name: 'DRQ-2026-00091', student: 'ETU-25-0133', student_name: 'Marie Kponou',
+    document_type: 'releve_officiel_semestriel', doc_label: 'Relevé officiel semestriel', academic_year: '2025-2026',
+    academic_term: '2025-2026 (S2)', status: 'Demandée', status_label: 'En attente de traitement',
+    requested_on: '2026-09-04', eligibility_note: 'Le semestre est publié.', issuable: true },
+  { ...C1_BASE, name: 'DRQ-2026-00092', student: 'ETU-25-0087', student_name: 'Ange Sossou',
+    document_type: 'releve_annuel', doc_label: 'Relevé annuel', academic_year: '2025-2026', status: 'Demandée',
+    status_label: 'En attente de traitement', requested_on: '2026-09-07',
+    eligibility_note: 'Les deux semestres sont publiés.', issuable: true },
+  { ...C1_BASE, name: 'DRQ-2026-00094', student: 'ETU-24-0147', student_name: 'Grâce Aïvodji',
+    programs: ['M-SI'], program_label: 'Master Systèmes d’information', document_type: 'releve_officiel_semestriel',
+    doc_label: 'Relevé officiel semestriel', academic_year: '2026-2027', academic_term: '2026-2027 (S7)',
+    status: 'Demandée', status_label: 'En attente de traitement', requested_on: '2026-09-09',
+    eligibility_note: NOTE_S7, issuable: false, blocked_reason: NOTE_S7 },
+  { ...C1_BASE, name: 'DRQ-2026-00089', student: 'ETU-24-0164', student_name: 'Rachid Ouédraogo',
+    programs: ['L-SIG', 'L-GL'], program_label: 'Licence Systèmes d’information et gestion, Licence Génie logiciel',
+    document_type: 'releve_annuel', doc_label: 'Relevé annuel', academic_year: '2025-2026', status: 'Émise',
+    status_label: 'Émise', requested_on: '2026-09-01', eligibility_note: 'Les deux semestres sont publiés.',
+    issued_document: 'AID-2026-00131', issued_on: '2026-09-03', verification_code: 'LNM-4H2P-9XQ7',
+    document_uuid: '9b0e5d7c-2a41-4f6e-8c3b-71d2e0a4f915' },
+  { ...C1_BASE, name: 'DRQ-2026-00087', student: 'ETU-23-0091', student_name: 'Serge Bocco',
+    document_type: 'releve_annuel', doc_label: 'Relevé annuel', academic_year: '2026-2027', status: 'Refusée',
+    status_label: 'Refusée', requested_on: '2026-09-01', refusal_category: 'prematuree',
+    refusal_label: 'La demande est prématurée', reformulable: true, refused_on: '2026-09-02',
+    refusal_reason: 'L’année 2026-2027 commence : le relevé annuel se demande après les deux jurys.' },
+];
+const C1_CATALOGUE = [
+  { document_type: 'releve_officiel_semestriel', label: 'Relevé officiel semestriel', requestable: true, reason: null },
+  { document_type: 'releve_annuel', label: 'Relevé annuel', requestable: true, reason: null },
+  { document_type: 'attestation_scolarite', label: 'Attestation de scolarité', requestable: false,
+    reason: 'Ne se demande pas par cette file : la scolarité la délivre directement, elle ne dépend que de l’inscription.' },
+  { document_type: 'attestation_reussite', label: 'Attestation de réussite', requestable: false,
+    reason: 'Délivrée par la diplomation, après la décision du jury de diplôme.' },
+  { document_type: 'diplome', label: 'Diplôme', requestable: false,
+    reason: 'Délivré par la diplomation, après la décision du jury de diplôme.' },
+  { document_type: 'supplement_diplome', label: 'Supplément au diplôme', requestable: false,
+    reason: 'Préparé, pas encore délivré : la description du programme manque.' },
+];
+
+/** 🟢 `list_document_requests(status, limit)` — la forme C1 (MANDAT-14). */
 export function documentRequests(params = {}) {
-  const base = {
-    catalogue: CATALOGUE,
-    refusal_categories: REFUSAL_CATEGORIES,
-    oldest: '9 mars',
-  };
-  if (params.__empty) return { ...base, count: 0, pending: 0, items: [] };
-  let rows = REQUESTS;
-  if (params.state === 'pending') rows = rows.filter((r) => r.status === 'recue' || r.status === 'incomplete');
-  return {
-    ...base,
-    count: REQUESTS.length,
-    pending: REQUESTS.filter((r) => r.status === 'recue' || r.status === 'incomplete').length,
-    items: rows,
-  };
+  const counts = { 'Demandée': 3, 'Émise': 1, 'Refusée': 1 };
+  const base = { refusal_categories: REFUSAL_CATEGORIES, catalogue: C1_CATALOGUE, may_be_truncated: false };
+  if (params.__empty) {
+    return { ...base, items: [], count: 0, counts: { 'Demandée': 0, 'Émise': 0, 'Refusée': 0 }, pending: 0,
+      oldest_pending: null };
+  }
+  const items = params.status ? C1_ITEMS.filter((r) => r.status === params.status) : C1_ITEMS;
+  return { ...base, items, count: 5, counts, pending: counts['Demandée'], oldest_pending: '2026-09-04' };
 }
 
-/** `get_document_request(name)` — 🔴 non tranché. Un nom inconnu lève. */
+/** 🟢 `get_document_request(name)` — une demande, la même forme ; un nom inconnu lève. */
 export function documentRequest(params = {}) {
   if (params.__empty) return null;
-  const row = REQUESTS.find((r) => r.name === params.name);
+  const row = C1_ITEMS.find((r) => r.name === params.name);
   if (!row) {
     throw Object.assign(new Error('Demande inconnue : ' + params.name), { code: 'NOT_FOUND' });
   }
-  return { ...row, catalogue_entry: CATALOGUE.find((c) => c.key === row.doc) || null };
+  return row;
 }
 
 /* ══════════════ GRAPPE 9 · CLÔTURE D'ANNÉE ══════════════ */
@@ -261,6 +305,11 @@ export function yearClosure(params = {}) {
     return { ...base, anomalies: [], continuations: [], open_anomalies: 0, requires_reason: false };
   }
   const open = anomalies.filter((a) => !a.ok);
+  // MANDAT-14 (G-M5, C10) : `?etat=anticipee` — le second semestre court encore. Forme de get_year_status :
+  // `running_terms` [{academic_term, term_end_date}] et `early_closure` (le dernier acte est-il anticipé).
+  // `location` n'existe pas sous Node (l'audit exécute les fixtures) : l'état par défaut, alors.
+  const anticipee = typeof location !== 'undefined'
+    && new URLSearchParams(location.search).get('etat') === 'anticipee';
   return {
     ...base,
     anomalies,
@@ -269,6 +318,9 @@ export function yearClosure(params = {}) {
     // ⚠️ DÉRIVÉ, jamais déclaré : le motif est exigé parce qu'une anomalie
     // subsiste. Un drapeau posé à la main divergerait de la liste qui le justifie.
     requires_reason: open.length > 0,
+    running_terms: anticipee ? [{ academic_term: '2026-2027 (S2)', term_end_date: '2027-07-31' }] : [],
+    early_closure: false,
+    ...(anticipee ? { jury_on: '28 juin 2027 (S2 délibéré par anticipation)' } : {}),
   };
 }
 

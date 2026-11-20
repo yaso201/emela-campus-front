@@ -111,6 +111,13 @@ export const addCommissionMember = (p) => call(REO + 'add_commission_member', p)
 export const addCreditRecognition = (p) => call(REO + 'add_credit_recognition', p);
 
 export const decideReorientation = (p) => call(REO + 'decide_reorientation', p);
+/**
+ * 🟢 MANDAT-14 (C9, G-M8) — `list_target_terms(target_program, target_academic_year, target_level)` : les
+ * semestres d'accueil POSSIBLES — ceux où la filière visée offre au moins une UE (propre ou partagée) au niveau.
+ * `{target_program, target_academic_year, target_level, terms: [{academic_term, academic_levels, ue_count}]}`.
+ * La décision refuse un autre semestre, par une phrase qui nomme les possibles.
+ */
+export const listTargetTerms = (p) => call(REO + 'list_target_terms', p);
 export const recordReorientationNotification = (p) =>
   call(REO + 'record_reorientation_notification', p);
 /** 🟢 `:75` — `list_reorientation_requests(status, limit)`. */

@@ -272,6 +272,11 @@ function enrich(c) {
   const at = reachedIndex(c);
   return {
     ...c,
+    // MANDAT-14 (P18) : `list_dossiers` rend `created` — la date que la liste affiche (« ouvert le … ») ; le
+    // simulacre la tirait de nulle part, et chaque dossier disait « ouvert le — ».
+    created: c.created || c.opened_on || null,
+    // Q18 : le serveur rend le nom à côté du compte ; le simulacre écrit déjà des noms.
+    instructed_by_name: c.instructed_by_name || c.instructed_by || null,
     kind_label: p.label,
     decider_role: p.decider,
     outcomes: p.outcomes,
@@ -305,8 +310,31 @@ function enrich(c) {
   };
 }
 
+/* MANDAT-14 (G-M6, C8) — `list_dossiers(kind, limit, closed=1)` : les dossiers dont la machine n'a plus de sortie,
+ * mêmes colonnes, plus `closed` et `last_change_on`. Un congé décidé il y a plus de 7 jours est CLOS (DEC-364 : son
+ * arbitrage ne s'exerce plus). Dates cohérentes avec le « 10 septembre 2026 » du simulacre. */
+const CLOSED_CASES = [
+  { name: 'CNG-2026-007', kind: 'conge', student: 'ETU-24-0188', student_name: 'Pélagie Houngbo', reached: 'decision',
+    status: 'Approuvée', opened_on: '2026-08-03', created: '2026-08-03', last_change_on: '2026-08-20', closed: true,
+    ground: 'Raisons de santé', instructed_by: 'E. Mensah', decided_by: 'S. Kouassi',
+    decision_reason: 'Certificat médical conforme ; congé d’un semestre accordé.', arbitration: null,
+    step_dates: { depot: '3 août', instruction: '10 août', decision: '20 août' } },
+  { name: 'REO-2026-003', kind: 'reorientation', student: 'ETU-24-0071', student_name: 'Fabrice Ahoyo',
+    reached: 'decision', status: 'Rejetée', opened_on: '2026-06-02', created: '2026-06-02', last_change_on: '2026-07-30',
+    closed: true, ground: 'Vers la Licence Mathématiques et informatique', instructed_by: null, decided_by: 'F. Agbo',
+    decision_reason: 'Prérequis d’analyse non couverts par le parcours d’origine.' },
+  { name: 'DIS-2026-008', kind: 'discipline', student: 'ETU-23-0102', student_name: 'Rodrigue Tossou',
+    reached: 'decision', status: 'Sans sanction', opened_on: '2026-05-12', created: '2026-05-12',
+    last_change_on: '2026-06-09', closed: true, ground: 'Comportement répréhensible', instructed_by: 'E. Mensah',
+    decided_by: 'F. Agbo', decision_reason: 'Faits non établis après audition.' },
+];
+
 export function dossiers(params = {}) {
   if (params.__empty) return { count: 0, items: [] };
+  if (Number(params.closed)) {
+    const closed = params.kind ? CLOSED_CASES.filter((c) => c.kind === params.kind) : CLOSED_CASES;
+    return { count: closed.length, items: closed.map(enrich) };
+  }
   let rows = CASES;
   if (params.kind) rows = rows.filter((c) => c.kind === params.kind);
   if (params.status) rows = rows.filter((c) => c.status === params.status);
