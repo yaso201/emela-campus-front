@@ -16,11 +16,13 @@ export const routes = [
     component: () => import('@/pages/CockpitPage.vue'),
     meta: { label: 'Accueil', icon: 'home' },
   },
+  // Q19 (VERDICT-MANDAT-14-PC1B) : le directeur suit les enseignants et les étudiants dans la gestion ; l'espace
+  // ne lui offre ni planning, ni planning des collègues, ni dossier étudiant (P8 : route admise = chemin de menu).
   {
     path: '/planning',
     name: 'planning',
     component: () => import('@/pages/PlanningPage.vue'),
-    meta: { label: 'Planning', icon: 'calendar' },
+    meta: { label: 'Planning', icon: 'calendar', requiresProfile: ['student', 'instructor'] },
   },
   {
     path: '/results',
@@ -80,19 +82,20 @@ export const routes = [
     path: '/attendance-kpis',
     name: 'attendance-kpis',
     component: () => import('@/pages/AttendanceKpiPage.vue'),
-    meta: { label: 'KPI présences', icon: 'bar-chart', requiresProfile: ['director'] },
+    meta: { label: 'Indicateurs de présence', icon: 'bar-chart', requiresProfile: ['director'] },
   },
   {
     path: '/attendance-corrections',
     name: 'attendance-corrections',
     component: () => import('@/pages/AttendanceCorrectionsPage.vue'),
-    meta: { label: 'Corrections attendance', icon: 'file-text', requiresProfile: ['student', 'instructor', 'director', 'generic', 'employee'] },
+    // P16 (PC1B) : les libellés en français.
+    meta: { label: 'Corrections de présence', icon: 'file-text', requiresProfile: ['student', 'instructor', 'director', 'generic', 'employee'] },
   },
   {
     path: '/attendance-leaves',
     name: 'attendance-leaves',
     component: () => import('@/pages/AttendanceLeavesPage.vue'),
-    meta: { label: 'Leaves attendance', icon: 'file-text', requiresProfile: ['student', 'director', 'generic', 'employee'] },
+    meta: { label: 'Absences justifiées', icon: 'file-text', requiresProfile: ['student', 'director', 'generic', 'employee'] },
   },
   {
     path: '/attendance-antifraud',
@@ -104,38 +107,45 @@ export const routes = [
     path: '/attendance-sync-anomalies',
     name: 'attendance-sync-anomalies',
     component: () => import('@/pages/AttendanceSyncAnomaliesPage.vue'),
-    meta: { label: 'Anomalies sync', icon: 'refresh-cw', requiresProfile: ['director', 'generic', 'employee'] },
+    meta: { label: 'Anomalies de synchronisation', icon: 'refresh-cw', requiresProfile: ['director', 'generic', 'employee'] },
   },
   {
     path: '/attendance-pdfs',
     name: 'attendance-pdfs',
     component: () => import('@/pages/AttendancePdfPage.vue'),
-    meta: { label: 'PDF attendance', icon: 'file-text', requiresProfile: ['student', 'instructor', 'director', 'generic', 'employee'] },
+    meta: { label: 'Feuilles de présence (PDF)', icon: 'file-text', requiresProfile: ['student', 'instructor', 'director', 'generic', 'employee'] },
   },
   {
     path: '/attendance-compliance',
     name: 'attendance-compliance',
     component: () => import('@/pages/AttendanceCompliancePage.vue'),
-    meta: { label: 'Conformité attendance', icon: 'shield-check', requiresProfile: ['director', 'generic', 'employee'] },
+    meta: { label: 'Conformité des présences', icon: 'shield-check', requiresProfile: ['director', 'generic', 'employee'] },
   },
   {
     path: '/attendance-observability',
     name: 'attendance-observability',
     component: () => import('@/pages/AttendanceObservabilityPage.vue'),
-    meta: { label: 'Santé attendance', icon: 'activity', requiresProfile: ['director', 'generic', 'employee'] },
+    meta: { label: 'Santé des présences', icon: 'activity', requiresProfile: ['director', 'generic', 'employee'] },
   },
-  // Routes enseignant — Zone A (lecture) + Zone B (écriture)
+  // Routes enseignant — Zone A (lecture) + Zone B (écriture). Q19 : l'enseignant seul.
   {
     path: '/planning/search',
     name: 'planning-search',
     component: () => import('@/pages/PlanningInstructorPage.vue'),
-    meta: { label: 'Planning collègues', icon: 'calendar', requiresProfile: ['instructor', 'director'] },
+    meta: { label: 'Planning des collègues', icon: 'calendar', requiresProfile: ['instructor'], navParent: '/planning' },
   },
   {
     path: '/students/:id',
     name: 'student-dossier',
     component: () => import('@/pages/DossierEtudiantPage.vue'),
-    meta: { label: 'Dossier étudiant', requiresProfile: ['instructor', 'director'] },
+    meta: { label: 'Dossier étudiant', requiresProfile: ['instructor'], navParent: '/modules' },
+  },
+  // MANDAT-14 (E-M9, P7) : la liste des modules de l'enseignant, chemin permanent vers les notes et les statistiques.
+  {
+    path: '/modules',
+    name: 'my-modules',
+    component: () => import('@/pages/MesModulesPage.vue'),
+    meta: { label: 'Mes modules', requiresProfile: ['instructor'] },
   },
   {
     path: '/modules/:course/stats',
@@ -181,11 +191,49 @@ export const routes = [
     component: () => import('@/pages/TeacherPinForm.vue'),
     meta: { label: 'PIN enseignant', requiresProfile: ['instructor'] },
   },
+  // P23 (PC1B) : la page Congé est une démarche — elle allume « Mes démarches », pas « Mon compte ».
   {
     path: '/account/leave-requests',
     name: 'academic-leave-requests',
     component: () => import('@/pages/AcademicLeaveRequestsPage.vue'),
-    meta: { label: 'Congé académique', icon: 'file-text', requiresProfile: ['student'] },
+    meta: { label: 'Congé académique', icon: 'file-text', requiresProfile: ['student'], navParent: '/demarches' },
+  },
+  // MANDAT-14 (E-M1 à E-M6, Q20) : les démarches de l'étudiant, une page par procédure.
+  {
+    path: '/demarches',
+    name: 'demarches',
+    component: () => import('@/pages/DemarchesPage.vue'),
+    meta: { label: 'Mes démarches', requiresProfile: ['student'] },
+  },
+  {
+    path: '/demarches/retour-conge',
+    name: 'demarche-retour-conge',
+    component: () => import('@/pages/RetourCongePage.vue'),
+    meta: { label: 'Retour de congé', requiresProfile: ['student'] },
+  },
+  {
+    path: '/demarches/reorientation',
+    name: 'demarche-reorientation',
+    component: () => import('@/pages/ReorientationPage.vue'),
+    meta: { label: 'Réorientation', requiresProfile: ['student'] },
+  },
+  {
+    path: '/demarches/demission',
+    name: 'demarche-demission',
+    component: () => import('@/pages/DemissionPage.vue'),
+    meta: { label: 'Démission', requiresProfile: ['student'] },
+  },
+  {
+    path: '/demarches/abandon',
+    name: 'demarche-abandon',
+    component: () => import('@/pages/AbandonPage.vue'),
+    meta: { label: 'Abandon d’études', requiresProfile: ['student'] },
+  },
+  {
+    path: '/demarches/discipline',
+    name: 'demarche-discipline',
+    component: () => import('@/pages/DisciplinePage.vue'),
+    meta: { label: 'Discipline', requiresProfile: ['student'] },
   },
   // Route catch-all — redirection vers cockpit (C-004)
   {
@@ -206,4 +254,15 @@ export function routeAdmits(route, profile) {
 /** La route d'un chemin STATIQUE (sans paramètre), tel qu'un menu le déclare ; `null` si aucune. */
 export function findStaticRoute(path) {
   return routes.find((r) => r.path === path && !r.redirect) || null;
+}
+
+/** La route d'un chemin réel, paramètres compris (`/modules/X/submit` → `/modules/:course/submit`) ; `null` si aucune. */
+export function matchRoute(path) {
+  const segments = String(path).split('?')[0].split('/').filter(Boolean);
+  return routes.find((r) => {
+    if (r.redirect) return false;
+    const pattern = r.path.split('/').filter(Boolean);
+    return pattern.length === segments.length
+      && pattern.every((p, i) => p.startsWith(':') || p === segments[i]);
+  }) || null;
 }

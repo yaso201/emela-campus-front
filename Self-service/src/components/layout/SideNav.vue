@@ -9,7 +9,7 @@ import { X, LogOut, ExternalLink, User } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
 // MANDAT-14 (C-3.3, P25) : `NavIcon` n'était importé nulle part — le menu n'avait aucune icône.
 import NavIcon from './NavIcon.vue';
-import { SIDE_NAV_ITEMS, navItemsFor } from './navItems.js';
+import { SIDE_NAV_ITEMS, isNavActive, navItemsFor } from './navItems.js';
 
 const props = defineProps({
   /**
@@ -95,8 +95,8 @@ function close() {
             :to="item.to"
             class="group flex items-center gap-3 px-3 py-2.5 rounded-md-ln mb-1 text-sm text-ln-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25 min-h-[44px]"
             :class="[
-              // Item actif : fond bleu clair + texte bleu + barre gauche
-              $route.path === item.to || ($route.path === '/' && item.to === '/') 
+              // Item actif : fond bleu clair + texte bleu + barre gauche (P23 : une seule règle, `isNavActive`)
+              isNavActive(item, $route)
                 ? 'bg-ln-blue-50 text-ln-blue-800 font-semibold border-l-4 border-l-ln-blue-800 -ml-[1px] pl-[calc(0.75rem-3px)]' 
                 : 'hover:bg-ln-gray-50 hover:text-ln-gray-900 border-l-4 border-l-transparent'
             ]"
@@ -170,8 +170,8 @@ function close() {
         :to="item.to"
         class="group flex items-center gap-3 px-3 py-2.5 rounded-md-ln mb-1 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25 min-h-[44px]"
         :class="[
-          // Item actif : fond bleu clair + texte bleu + barre gauche
-          $route.path === item.to || ($route.path.startsWith(item.to) && item.to !== '/') || (item.to === '/' && $route.path === '/')
+          // Item actif : fond bleu clair + texte bleu + barre gauche (P23 : une seule règle, `isNavActive`)
+          isNavActive(item, $route)
             ? 'bg-ln-blue-50 text-ln-blue-800 font-semibold border-l-4 border-l-ln-blue-800 -ml-[1px] pl-[calc(0.75rem-3px)]' 
             : 'text-ln-gray-700 hover:bg-ln-gray-50 hover:text-ln-gray-900 border-l-4 border-l-transparent'
         ]"

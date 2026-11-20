@@ -413,7 +413,7 @@ function goBack() {
           </label>
 
           <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium text-ln-gray-900">Email *</span>
+            <span class="text-sm font-medium text-ln-gray-900">Courriel *</span>
             <input v-model="form.company_supervisor_email" type="email" class="rounded border border-ln-gray-300 px-3 py-2 min-h-[44px]" />
             <span v-if="errors.company_supervisor_email" class="text-xs text-red-600">{{ errors.company_supervisor_email }}</span>
           </label>

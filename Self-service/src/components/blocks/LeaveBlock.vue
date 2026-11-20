@@ -75,7 +75,7 @@ function progressPercent(item) {
       </div>
 
       <p v-if="pendingCount" class="mt-3 text-xs text-ln-gray-500">
-        {{ pendingCount }} demande(s) en attente.
+        {{ pendingCount }} {{ pendingCount >= 2 ? 'demandes' : 'demande' }} en attente.
       </p>
 
       <a

@@ -404,6 +404,11 @@ async function importCsv(event) {
   <div class="space-y-6">
     <!-- Header -->
     <div>
+      <!-- MANDAT-14 (P7) : retour à « Mes modules », et les statistiques du même module, par un clic. -->
+      <nav class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm mb-2" aria-label="Le module">
+        <router-link to="/modules" class="text-ln-blue-800 hover:underline min-h-[44px] inline-flex items-center">← Mes modules</router-link>
+        <router-link :to="`/modules/${encodeURIComponent(courseId)}/stats`" class="text-ln-blue-800 hover:underline min-h-[44px] inline-flex items-center">Statistiques du module</router-link>
+      </nav>
       <h1 class="text-2xl font-bold text-ln-gray-900">Soumettre les notes</h1>
       <p class="text-lg text-ln-gray-700 mt-1">{{ courseName }}</p>
 
@@ -441,7 +446,7 @@ async function importCsv(event) {
           >
             <option value="">— Choisir un groupe —</option>
             <option v-for="g in groups" :key="g.name" :value="g.name">
-              {{ g.label }} ({{ g.student_count }} étudiants)
+              {{ g.label }} ({{ g.student_count }} {{ g.student_count >= 2 ? 'étudiants' : 'étudiant' }})
             </option>
           </select>
         </div>
@@ -478,7 +483,8 @@ async function importCsv(event) {
             <thead>
               <tr class="border-b border-ln-gray-200">
                 <th class="text-left py-3 px-4 text-xs font-semibold text-ln-gray-600 uppercase">Étudiant</th>
-                <th class="text-left py-3 px-4 text-xs font-semibold text-ln-gray-600 uppercase">ID</th>
+                <!-- P24 (PC1B) : l'identifiant de l'étudiant s'intitule « Matricule », jamais « ID ». -->
+                <th class="text-left py-3 px-4 text-xs font-semibold text-ln-gray-600 uppercase">Matricule</th>
                 <th class="text-center py-3 px-4 text-xs font-semibold text-ln-gray-600 uppercase w-32">Note /20</th>
               </tr>
             </thead>
@@ -489,7 +495,9 @@ async function importCsv(event) {
                 class="border-b border-ln-gray-100 last:border-0"
               >
                 <td class="py-3 px-4">
-                  <div class="font-medium text-ln-gray-900">{{ student.student_name }}</div>
+                  <!-- MANDAT-14 (P7) : le dossier de l'étudiant (/students/:id) depuis la liste de classe. -->
+                  <router-link :to="`/students/${encodeURIComponent(student.student_id)}`"
+                               class="font-medium text-ln-blue-800 hover:underline">{{ student.student_name }}</router-link>
                 </td>
                 <td class="py-3 px-4 text-sm text-ln-gray-500">{{ student.student_id }}</td>
                 <td class="py-3 px-4">

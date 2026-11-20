@@ -8,9 +8,9 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PROFILES, routes, routeAdmits, findStaticRoute } from '../src/router/routes.js';
+import { PROFILES, routes, routeAdmits, findStaticRoute, matchRoute } from '../src/router/routes.js';
 import {
-  SIDE_NAV_ITEMS, BOTTOM_NAV_ITEMS, BOTTOM_NAV_MAX, navItemsFor,
+  SIDE_NAV_ITEMS, BOTTOM_NAV_ITEMS, BOTTOM_NAV_MAX, navItemsFor, isNavActive,
 } from '../src/components/layout/navItems.js';
 
 const MENUS = { 'menu latéral': SIDE_NAV_ITEMS, 'barre basse': BOTTOM_NAV_ITEMS };
@@ -68,4 +68,57 @@ test('la garde : une route sans requiresProfile admet tout profil, sinon la list
   assert.equal(routeAdmits(kpis, 'director'), true);
   assert.equal(routeAdmits(kpis, 'employee'), false);
   assert.ok(routes.some((r) => r.redirect), 'la route de repli existe');
+});
+
+// ── MANDAT-14, VERDICT-MANDAT-14-PC1B ─────────────────────────────────────────────────────────────
+
+test('Q19 : le planning, le planning des collègues et le dossier étudiant ne sont plus au directeur', () => {
+  for (const path of ['/planning', '/planning/search', '/students/ETU-1']) {
+    const route = matchRoute(path);
+    assert.ok(route, `${path} ne mène à aucune route`);
+    assert.equal(routeAdmits(route, 'director'), false, `${path} admet encore le directeur`);
+  }
+  assert.equal(routeAdmits(matchRoute('/planning'), 'student'), true);
+  assert.equal(routeAdmits(matchRoute('/planning/search'), 'instructor'), true);
+  assert.equal(routeAdmits(matchRoute('/students/ETU-1'), 'instructor'), true);
+  for (const items of Object.values(MENUS)) {
+    assert.ok(!navItemsFor(items, 'director').some((i) => i.to.startsWith('/planning')),
+      'une entrée de planning reste offerte au directeur');
+  }
+});
+
+test('Q20 : « Mes démarches » remplace « Congé académique » au menu de l’étudiant', () => {
+  const student = navItemsFor(SIDE_NAV_ITEMS, 'student').map((i) => i.to);
+  assert.ok(student.includes('/demarches'));
+  assert.ok(!student.includes('/account/leave-requests'));
+});
+
+test('E-M9 : l’enseignant a ses modules et ses heures au menu (P7)', () => {
+  const instructor = navItemsFor(SIDE_NAV_ITEMS, 'instructor').map((i) => i.to);
+  assert.ok(instructor.includes('/modules'));
+  assert.ok(instructor.includes('/hours'));
+});
+
+test('P23 : une page atteinte par « Mes démarches » allume « Mes démarches », et elle seule', () => {
+  const lit = (path, profile) => navItemsFor(SIDE_NAV_ITEMS, profile)
+    .filter((i) => isNavActive(i, { path, meta: matchRoute(path)?.meta || {} }))
+    .map((i) => i.label);
+  for (const path of ['/demarches', '/account/leave-requests', '/demarches/reorientation',
+    '/demarches/retour-conge', '/demarches/demission', '/demarches/abandon', '/demarches/discipline']) {
+    assert.deepEqual(lit(path, 'student'), ['Mes démarches'], path);
+  }
+  assert.deepEqual(lit('/account', 'student'), ['Mon compte']);
+  assert.deepEqual(lit('/modules/GL-S3-ALGO2/submit', 'instructor'), ['Mes modules']);
+  assert.deepEqual(lit('/planning/search', 'instructor'), ['Planning']);
+  assert.deepEqual(lit('/', 'student'), ['Accueil']);
+});
+
+test('P16 : aucun libellé anglais au menu ni au titre des routes', () => {
+  const ANGLAIS = /\b(Leaves|attendance|sync|Email|KPI)\b/;
+  for (const item of [...SIDE_NAV_ITEMS, ...BOTTOM_NAV_ITEMS]) {
+    assert.ok(!ANGLAIS.test(item.label), `menu : « ${item.label} »`);
+  }
+  for (const r of routes) {
+    if (r.meta?.label) assert.ok(!ANGLAIS.test(r.meta.label), `route ${r.path} : « ${r.meta.label} »`);
+  }
 });

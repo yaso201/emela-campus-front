@@ -5,7 +5,7 @@
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useProfileStore } from '@/stores/profile';
-import { BOTTOM_NAV_ITEMS, BOTTOM_NAV_MAX, navItemsFor } from './navItems.js';
+import { BOTTOM_NAV_ITEMS, BOTTOM_NAV_MAX, isNavActive, navItemsFor } from './navItems.js';
 // MANDAT-14 (C-3.3, P25) : `NavIcon` n'était importé nulle part — la barre basse n'avait aucune icône.
 import NavIcon from './NavIcon.vue';
 
@@ -16,11 +16,9 @@ const profile = useProfileStore();
 const visibleItems = computed(() => navItemsFor(BOTTOM_NAV_ITEMS, profile.profile || 'generic')
   .slice(0, BOTTOM_NAV_MAX));
 
+// P23 : la même règle que le menu latéral (`isNavActive`, `navItems.js`).
 function isActive(item) {
-  if (item.to === '/') {
-    return route.path === '/';
-  }
-  return route.path.startsWith(item.to);
+  return isNavActive(item, route);
 }
 </script>
 

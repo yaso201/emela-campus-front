@@ -2,6 +2,7 @@
 // PlanningPage — wrapper avec 4 vues (agenda / jour / semaine / mois) + export iCal
 // Phase 5 — remplace la version placeholder de Phase 3
 import { ref, computed, reactive, watch } from 'vue';
+import { useProfileStore } from '@/stores/profile';
 import PlanningToolbar from '@/components/planning/PlanningToolbar.vue';
 import PlanningAgenda from '@/components/planning/PlanningAgenda.vue';
 import PlanningDay from '@/components/planning/PlanningDay.vue';
@@ -22,6 +23,7 @@ import {
   normalizePlanningSession,
 } from '@/utils/planning';
 
+const profileStore = useProfileStore();
 const currentView = ref('agenda');
 const currentDate = ref(toLocalIsoDate(new Date()));
 
@@ -150,9 +152,16 @@ function exportIcal() {
 
 <template>
   <div class="flex flex-col gap-6">
-    <header>
-      <h1 class="text-2xl font-bold text-ln-gray-900 mb-1">Planning</h1>
-      <p class="text-sm text-ln-gray-600">Vos prochaines séances de cours.</p>
+    <header class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-ln-gray-900 mb-1">Planning</h1>
+        <p class="text-sm text-ln-gray-600">Vos prochaines séances de cours.</p>
+      </div>
+      <!-- MANDAT-14 (P7) : le planning d'un collègue (/planning/search) depuis le planning. -->
+      <router-link v-if="profileStore.profile === 'instructor'" to="/planning/search"
+                   class="text-sm font-semibold text-ln-blue-800 hover:underline min-h-[44px] inline-flex items-center">
+        Planning d’un collègue →
+      </router-link>
     </header>
 
     <PlanningToolbar

@@ -321,7 +321,7 @@ function detailSummary(row) {
       v-if="hasCritical"
       severity="warning"
       title="Anomalies critiques"
-      :description="`${formatCount(summary.critical)} revue(s) critique(s) dans le périmètre affiché.`"
+      :description="`${formatCount(summary.critical)} ${summary.critical >= 2 ? 'revues critiques' : 'revue critique'} dans le périmètre affiché.`"
     />
 
     <AlertBlock

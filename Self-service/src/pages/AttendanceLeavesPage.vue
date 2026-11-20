@@ -342,7 +342,7 @@ function statusVisual(status) {
   <div class="space-y-6">
     <header class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-ln-gray-900">Leaves attendance</h1>
+        <h1 class="text-2xl font-bold text-ln-gray-900">Absences justifiées</h1>
         <p class="mt-1 text-sm text-ln-gray-600">
           Demandes justifiées et décisions pédagogiques.
         </p>
@@ -631,7 +631,7 @@ function statusVisual(status) {
 
     <section v-if="dashboard" class="overflow-hidden rounded-md-ln border border-ln-gray-200 bg-white">
       <div class="border-b border-ln-gray-100 px-4 py-3">
-        <h2 class="text-sm font-semibold text-ln-gray-900">Demandes Leave</h2>
+        <h2 class="text-sm font-semibold text-ln-gray-900">Demandes d’absence justifiée</h2>
       </div>
       <EmptyState
         v-if="rows.length === 0"

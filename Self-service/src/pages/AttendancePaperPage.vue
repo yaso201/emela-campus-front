@@ -312,7 +312,7 @@ async function submitRows() {
       reason: form.reason.trim(),
       scan_file_url: form.scan_file_url.trim(),
     });
-    success.value = `Ressaisie enregistrée: ${result.events_created} ligne(s), consolidation ${result.consolidation?.status || 'terminée'}.`;
+    success.value = `Ressaisie enregistrée : ${result.events_created} ${result.events_created >= 2 ? 'lignes' : 'ligne'}, consolidation ${result.consolidation?.status || 'terminée'}.`;
     await loadPendingSessions();
     await loadCandidateSessions();
     await loadSession(selectedSessionName.value);
@@ -357,6 +357,12 @@ function fileNameFromUrl(value) {
         <p class="text-sm text-ln-gray-600 mt-1">
           Feuilles préremplies et ressaisie administrative des séances basculées.
         </p>
+        <!-- MANDAT-14 (P7) : la séance QR d'émargement (page serveur) a un chemin PERMANENT depuis le menu —
+             la tuile « QR d'émargement » de l'accueil n'existe que lorsque le serveur la montre. -->
+        <a v-if="profile.profile === 'instructor'" href="/app-emela/attendance-session"
+           class="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-ln-blue-800 hover:underline min-h-[44px]">
+          Ouvrir une séance d’émargement par QR →
+        </a>
       </div>
       <button
         type="button"
@@ -720,7 +726,7 @@ function fileNameFromUrl(value) {
             <div v-else class="rounded-md-ln border border-ln-gray-200 overflow-hidden">
               <div class="border-b border-ln-gray-100 bg-ln-gray-50 px-4 py-3">
                 <h3 class="text-sm font-semibold text-ln-gray-900">
-                  Roster prérempli · {{ detail.roster?.length || 0 }} étudiant(s)
+                  Liste préremplie · {{ detail.roster?.length || 0 }} {{ (detail.roster?.length || 0) >= 2 ? 'étudiants' : 'étudiant' }}
                 </h3>
               </div>
               <div class="divide-y divide-ln-gray-100">

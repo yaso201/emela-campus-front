@@ -40,7 +40,7 @@ const props = defineProps({
       class="mt-2 text-xs text-ln-error font-medium"
       role="alert"
     >
-      ⚠ MHC obligatoire(s) non validé(s) — bloque la validation du semestre (Art. 4.5)
+      ⚠ Les MHC obligatoires ne sont pas tous validés : la validation du semestre attend (Art. 4.5)
     </div>
   </div>
 </template>

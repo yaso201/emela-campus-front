@@ -12,8 +12,17 @@ import BlockSkeleton from '@/components/ui/BlockSkeleton.vue';
 import BlockError from '@/components/ui/BlockError.vue';
 import StatusBadge from '@/components/ui/StatusBadge.vue';
 import EmptyState from '@/components/ui/EmptyState.vue';
+// MANDAT-14 (E-M7) : l'onglet « Mes demandes » — demander un relevé, suivre ses demandes.
+import { useRoute, useRouter } from 'vue-router';
+import MesDemandesDocuments from '@/components/documents/MesDemandesDocuments.vue';
 
 const profile = useProfileStore();
+const route = useRoute();
+const router = useRouter();
+const onglet = computed(() => (route.query.onglet === 'demandes' ? 'demandes' : 'documents'));
+function choisirOnglet(o) {
+  router.replace({ query: { ...route.query, onglet: o === 'documents' ? undefined : o } });
+}
 
 // ── API principale ───────────────────────────────────────────────────
 const libraryResource = useFrappeCall(
@@ -262,6 +271,18 @@ const showProfileGuard = computed(() => !profile.isLoading && !profile.isGuest &
       </p>
     </header>
 
+    <div v-if="isStudent" class="flex gap-1 border-b border-ln-gray-200" role="tablist">
+      <button v-for="o in [{ k: 'documents', l: 'Mes documents' }, { k: 'demandes', l: 'Mes demandes' }]" :key="o.k"
+              type="button" role="tab" :aria-selected="onglet === o.k" @click="choisirOnglet(o.k)"
+              class="px-4 py-2 text-sm font-semibold min-h-[44px] -mb-px border-b-2"
+              :class="onglet === o.k ? 'border-ln-blue-800 text-ln-blue-800' : 'border-transparent text-ln-gray-600 hover:text-ln-gray-900'">
+        {{ o.l }}
+      </button>
+    </div>
+
+    <MesDemandesDocuments v-if="isStudent && onglet === 'demandes'" />
+    <template v-else>
+
     <!-- Guard : profil non étudiant -->
     <div
       v-if="showProfileGuard"
@@ -507,6 +528,7 @@ const showProfileGuard = computed(() => !profile.isLoading && !profile.isGuest &
         </template>
       </div>
     </div>
+    </template>
 
     <!-- Modale de prévisualisation HTML -->
     <Teleport to="body">

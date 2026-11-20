@@ -2,7 +2,7 @@
 // PlanningInstructorPage — Recherche planning collègues (Zone A lecture)
 // NRM-001/002/003/004/005/006 — Recherche enseignants + planning
 // Réf : D10-NRM-Enseignant.md §2, U03 §8.8
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { Search, Calendar } from 'lucide-vue-next';
 import Card from '@/components/ui/Card.vue';
 import EmptyState from '@/components/ui/EmptyState.vue';
@@ -99,6 +99,30 @@ async function loadPlanning(instructorName) {
     loading.value = false;
   }
 }
+
+// MANDAT-14 (P16) : les séances par jour, la date en clair (« lundi 23 novembre 2026 », « 1er ») ; sans elle, deux
+// séances semblables ne se distinguaient pas. La lecture ne rend pas de nom de séance : la clé est composée.
+const jours = computed(() => {
+  const out = [];
+  const sorted = [...planning.value].sort((a, b) =>
+    `${a.date || ''}${a.from_time || ''}`.localeCompare(`${b.date || ''}${b.from_time || ''}`));
+  for (const s of sorted) {
+    let j = out.find((x) => x.date === s.date);
+    if (!j) {
+      j = {
+        date: s.date,
+        titre: s.date
+          ? new Date(`${s.date}T12:00:00`).toLocaleDateString('fr-FR',
+            { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).replace(/(^|\s)1 /, '$11er ')
+          : 'Date non renseignée',
+        seances: [],
+      };
+      out.push(j);
+    }
+    j.seances.push(s);
+  }
+  return out;
+});
 </script>
 
 <template>
@@ -170,10 +194,13 @@ async function loadPlanning(instructorName) {
         <EmptyState label="Aucune séance planifiée sur la période" />
       </div>
 
-      <div v-else class="space-y-3">
-        <Card v-for="session in planning" :key="session.name" padding="sm">
-          <PlanningEntry :session="session" />
-        </Card>
+      <div v-else class="space-y-4">
+        <section v-for="j in jours" :key="j.date" class="space-y-2">
+          <h3 class="text-sm font-semibold text-ln-gray-700">{{ j.titre }}</h3>
+          <Card v-for="session in j.seances" :key="`${session.date}${session.from_time}${session.student_group}`" padding="sm">
+            <PlanningEntry :session="session" />
+          </Card>
+        </section>
       </div>
     </div>
   </div>

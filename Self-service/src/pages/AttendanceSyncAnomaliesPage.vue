@@ -173,9 +173,9 @@ function detailSummary(row) {
   <div class="space-y-6">
     <header class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-ln-gray-900">Anomalies sync</h1>
+        <h1 class="text-2xl font-bold text-ln-gray-900">Anomalies de synchronisation</h1>
         <p class="mt-1 text-sm text-ln-gray-600">
-          Divergences local, central et états consolidés.
+          Écarts entre les données locales, centrales et consolidées.
         </p>
       </div>
       <button
@@ -193,7 +193,7 @@ function detailSummary(row) {
       v-if="hasCritical"
       severity="warning"
       title="Anomalies critiques"
-      :description="`${formatCount(summary.critical)} anomalie(s) critique(s) dans le périmètre affiché.`"
+      :description="`${formatCount(summary.critical)} ${summary.critical >= 2 ? 'anomalies critiques' : 'anomalie critique'} dans le périmètre affiché.`"
     />
 
     <AlertBlock v-if="success" severity="success" title="Traitement enregistré" :description="success" />

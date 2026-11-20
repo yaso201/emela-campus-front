@@ -108,7 +108,7 @@ function titleClass(state) {
         </h2>
       </div>
       <span class="rounded-full bg-ln-gray-100 px-3 py-1 text-xs font-semibold text-ln-gray-600">
-        {{ daySessions.length }} séance(s)
+        {{ daySessions.length }} {{ daySessions.length >= 2 ? 'séances' : 'séance' }}
       </span>
     </header>
 

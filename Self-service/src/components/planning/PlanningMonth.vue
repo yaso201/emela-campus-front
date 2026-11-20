@@ -96,7 +96,7 @@ function selectDay(iso) {
             v-if="sessionsByDay[cell.iso].length > 2"
             class="text-[10px] font-semibold text-ln-gray-500"
           >
-            +{{ sessionsByDay[cell.iso].length - 2 }} autre(s)
+            +{{ sessionsByDay[cell.iso].length - 2 }} {{ sessionsByDay[cell.iso].length - 2 >= 2 ? 'autres' : 'autre' }}
           </span>
         </div>
       </button>

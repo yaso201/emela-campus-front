@@ -372,7 +372,7 @@ onMounted(async () => {
             v-if="form.category === 'Réclamation'"
             severity="info"
             title="Processus formel de réclamation"
-            description="Pour une réclamation de note, suivez la procédure formelle définie par la Scolarité. Le support n'est pas le canal approprié (DEC-122)."
+            description="Pour une réclamation de note, suivez la procédure formelle définie par la Scolarité. Le support n'est pas le canal approprié."
             :action-label="scolariteService && form.service !== 'SCOLARITE' ? 'Contacter la Scolarité' : ''"
             :on-action="scolariteService && form.service !== 'SCOLARITE' ? switchToScolarite : null"
           />

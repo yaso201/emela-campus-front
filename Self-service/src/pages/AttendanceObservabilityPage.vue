@@ -87,7 +87,7 @@ async function runChecks() {
     const result = await callApi('attendance_app.lanem_attendance.api.attendance_observability.run_attendance_observability_checks', filters);
     const n16 = result.notifications?.heartbeat_prolonged?.created || 0;
     const n17 = result.notifications?.sync_failed_prolonged?.created || 0;
-    success.value = `${n16} alerte(s) N-16 et ${n17} alerte(s) N-17 créées.`;
+    success.value = `${n16} ${n16 >= 2 ? 'alertes' : 'alerte'} N-16 et ${n17} ${n17 >= 2 ? 'alertes' : 'alerte'} N-17 créées.`;
     await loadDashboard();
   } catch (err) {
     error.value = err.message;
@@ -129,9 +129,9 @@ function freshnessLabel(row) {
   <div class="space-y-6">
     <header class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-ln-gray-900">Santé attendance</h1>
+        <h1 class="text-2xl font-bold text-ln-gray-900">Santé des présences</h1>
         <p class="mt-1 text-sm text-ln-gray-600">
-          Heartbeats, queues de synchronisation et anomalies techniques.
+          Signaux de vie, files de synchronisation et anomalies techniques.
         </p>
       </div>
       <div class="flex flex-wrap gap-2">
@@ -161,7 +161,7 @@ function freshnessLabel(row) {
       v-if="prolongedHeartbeats.length || prolongedSyncFailures.length"
       severity="warning"
       title="Incidents prolongés"
-      :description="`${formatCount(prolongedHeartbeats.length)} heartbeat(s) prolongé(s), ${formatCount(prolongedSyncFailures.length)} sync(s) bloquée(s).`"
+      :description="`${formatCount(prolongedHeartbeats.length)} ${prolongedHeartbeats.length >= 2 ? 'signaux de vie absents depuis longtemps' : 'signal de vie absent depuis longtemps'}, ${formatCount(prolongedSyncFailures.length)} ${prolongedSyncFailures.length >= 2 ? 'synchronisations bloquées' : 'synchronisation bloquée'}.`"
     />
     <BlockError v-if="error" title="Observabilité indisponible" :message="error" :retry="loadDashboard" />
 
@@ -178,7 +178,7 @@ function freshnessLabel(row) {
           />
         </label>
         <label class="block">
-          <span class="text-sm font-semibold text-ln-gray-900">Heartbeat prolongé</span>
+          <span class="text-sm font-semibold text-ln-gray-900">Signal de vie absent</span>
           <input
             v-model.number="filters.heartbeat_prolonged_minutes"
             type="number"
@@ -188,7 +188,7 @@ function freshnessLabel(row) {
           />
         </label>
         <label class="block">
-          <span class="text-sm font-semibold text-ln-gray-900">Sync bloquée h</span>
+          <span class="text-sm font-semibold text-ln-gray-900">Synchronisation bloquée (h)</span>
           <input
             v-model.number="filters.sync_failed_hours"
             type="number"
@@ -280,8 +280,8 @@ function freshnessLabel(row) {
           <thead class="bg-ln-gray-50">
             <tr>
               <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-ln-gray-500">Serveur</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-ln-gray-500">Heartbeat</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-ln-gray-500">Sync</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-ln-gray-500">Signal de vie</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-ln-gray-500">Synchronisation</th>
               <th class="px-4 py-3 text-right text-xs font-semibold uppercase text-ln-gray-500">Queue</th>
             </tr>
           </thead>
@@ -316,7 +316,7 @@ function freshnessLabel(row) {
           </div>
           <div class="grid grid-cols-2 gap-3 text-sm">
             <div>
-              <div class="text-xs text-ln-gray-500">Heartbeat</div>
+              <div class="text-xs text-ln-gray-500">Signal de vie</div>
               <div class="font-semibold text-ln-gray-900">{{ formatMetric(row.heartbeat_age_minutes, ' min') }}</div>
             </div>
             <div>

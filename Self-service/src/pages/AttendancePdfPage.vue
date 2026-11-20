@@ -172,7 +172,7 @@ function formatDate(value) {
   <div class="space-y-6">
     <header class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-ln-gray-900">PDF attendance</h1>
+        <h1 class="text-2xl font-bold text-ln-gray-900">Feuilles de présence (PDF)</h1>
         <p class="mt-1 text-sm text-ln-gray-600">
           Intégrité et versions des feuilles officielles.
         </p>

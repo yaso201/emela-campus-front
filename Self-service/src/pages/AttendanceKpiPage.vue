@@ -172,7 +172,7 @@ function thresholdLabel(row) {
       v-if="hasThresholdAlerts"
       severity="warning"
       title="Seuil leave"
-      :description="`${formatCount(summary.warning_count)} alerte(s) d'approche, ${formatCount(summary.exceeded_count)} dépassement(s).`"
+      :description="`${formatCount(summary.warning_count)} ${summary.warning_count >= 2 ? 'alertes' : 'alerte'} d'approche, ${formatCount(summary.exceeded_count)} ${summary.exceeded_count >= 2 ? 'dépassements' : 'dépassement'}.`"
     />
 
     <BlockError
@@ -258,12 +258,12 @@ function thresholdLabel(row) {
       <article class="rounded-md-ln border border-ln-gray-200 bg-white p-4">
         <div class="text-xs font-semibold uppercase text-ln-gray-500">Absence</div>
         <div class="mt-2 text-2xl font-bold text-ln-error">{{ formatPercent(summary.absence_percent) }}</div>
-        <div class="mt-1 text-xs text-ln-gray-500">{{ formatCount(summary.absent_count) }} ligne(s)</div>
+        <div class="mt-1 text-xs text-ln-gray-500">{{ formatCount(summary.absent_count) }} {{ summary.absent_count >= 2 ? 'lignes' : 'ligne' }}</div>
       </article>
       <article class="rounded-md-ln border border-ln-gray-200 bg-white p-4">
-        <div class="text-xs font-semibold uppercase text-ln-gray-500">Leave</div>
+        <div class="text-xs font-semibold uppercase text-ln-gray-500">Absence justifiée</div>
         <div class="mt-2 text-2xl font-bold text-ln-blue-800">{{ formatPercent(summary.leave_percent) }}</div>
-        <div class="mt-1 text-xs text-ln-gray-500">{{ formatCount(summary.leave_count) }} ligne(s)</div>
+        <div class="mt-1 text-xs text-ln-gray-500">{{ formatCount(summary.leave_count) }} {{ summary.leave_count >= 2 ? 'lignes' : 'ligne' }}</div>
       </article>
       <article class="rounded-md-ln border border-ln-gray-200 bg-white p-4">
         <div class="flex items-center gap-2 text-xs font-semibold uppercase text-ln-gray-500">
@@ -299,7 +299,7 @@ function thresholdLabel(row) {
               <th class="px-4 py-3 text-right text-xs font-semibold uppercase text-ln-gray-500">Séances</th>
               <th class="px-4 py-3 text-right text-xs font-semibold uppercase text-ln-gray-500">Présence</th>
               <th class="px-4 py-3 text-right text-xs font-semibold uppercase text-ln-gray-500">Absence</th>
-              <th class="px-4 py-3 text-right text-xs font-semibold uppercase text-ln-gray-500">Leave</th>
+              <th class="px-4 py-3 text-right text-xs font-semibold uppercase text-ln-gray-500">Absence justifiée</th>
               <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-ln-gray-500">Seuil</th>
             </tr>
           </thead>
@@ -340,7 +340,7 @@ function thresholdLabel(row) {
               <div class="font-semibold text-ln-error">{{ formatPercent(row.absence_percent) }}</div>
             </div>
             <div>
-              <div class="text-xs text-ln-gray-500">Leave</div>
+              <div class="text-xs text-ln-gray-500">Absence justifiée</div>
               <div class="font-semibold text-ln-blue-800">{{ formatPercent(row.leave_percent) }}</div>
             </div>
             <div>
