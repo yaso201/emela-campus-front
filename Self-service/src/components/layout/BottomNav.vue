@@ -6,6 +6,8 @@ import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useProfileStore } from '@/stores/profile';
 import { BOTTOM_NAV_ITEMS, BOTTOM_NAV_MAX, navItemsFor } from './navItems.js';
+// MANDAT-14 (C-3.3, P25) : `NavIcon` n'était importé nulle part — la barre basse n'avait aucune icône.
+import NavIcon from './NavIcon.vue';
 
 const route = useRoute();
 const profile = useProfileStore();

@@ -147,6 +147,10 @@ const indicatorProgress = computed(() => {
     </div>
   </div>
 
+  <!-- MANDAT-14 (P25) : le titre de la page — le bandeau n'en porte plus. Lu par les lecteurs d'écran ; le document
+       obligatoire, quand il s'affiche à la place de l'accueil, porte le sien. -->
+  <h1 v-if="!(!mdLoading && isBlocked && pendingDoc)" class="sr-only">Accueil</h1>
+
   <!-- PRIORITÉ 1 : Document obligatoire (DEC-098) — affiché avant tout autre contenu -->
   <MandatoryDocumentPage
     v-if="!mdLoading && isBlocked && pendingDoc"

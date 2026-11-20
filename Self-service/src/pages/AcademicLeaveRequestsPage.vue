@@ -146,7 +146,8 @@ function statusClass(status) {
 </script>
 
 <template>
-  <main class="max-w-5xl mx-auto px-4 py-6 space-y-6">
+  <!-- MANDAT-14 (P25) : un seul `main`, celui de la coquille. -->
+  <div class="max-w-5xl mx-auto px-4 py-6 space-y-6">
     <header class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <h1 class="text-2xl font-bold text-ln-gray-900">Congé académique</h1>
@@ -284,5 +285,5 @@ function statusClass(status) {
         </article>
       </div>
     </section>
-  </main>
+  </div>
 </template>

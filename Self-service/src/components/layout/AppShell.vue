@@ -13,7 +13,7 @@
 // UI PWA désactivée (DEC-128) — VitePWA est retiré et l'ancien SW Workbox
 // est neutralisé par le killswitch L11 côté build.
 
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useProfileStore } from '@/stores/profile';
 import { useAuth } from '@/composables/useAuth';
 import { useSessionTimeout } from '@/composables/useSessionTimeout';
@@ -30,6 +30,16 @@ const { showWarning, remainingMinutes, extendSession, dismissWarning } = useSess
 
 const sideNavOpen = ref(false);
 const showOnboarding = ref(false);
+
+// MANDAT-14 (C-3.4, P25) : UNE mise en page à la fois. Les deux (bureau, téléphone) étaient rendues et l'une cachée
+// par CSS : chaque page était montée deux fois — chaque lecture appelée deux fois, chaque formulaire en double,
+// `id="main-content"` en double. La largeur choisit la mise en page ; `tests/shell-contracts.mjs` le tient.
+const BUREAU = '(min-width: 768px)';
+const mq = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia(BUREAU) : null;
+const desktop = ref(mq ? mq.matches : true);
+const onMq = (e) => { desktop.value = e.matches; };
+onMounted(() => mq?.addEventListener('change', onMq));
+onBeforeUnmount(() => mq?.removeEventListener('change', onMq));
 
 // Shell privé : 2 états seulement (bootstrap, authenticated)
 // Pas de branche guest — élimine structurellement le crash nextSibling null
@@ -138,7 +148,7 @@ function closeSideNav() {
     />
 
     <!-- Desktop layout -->
-    <div class="hidden md:flex min-h-screen">
+    <div v-if="desktop" class="flex min-h-screen">
       <SideNav />
       <main id="main-content" class="flex-1 min-w-0 flex flex-col">
         <TopBar />
@@ -153,7 +163,7 @@ function closeSideNav() {
     </div>
 
     <!-- Mobile layout -->
-    <div class="md:hidden flex flex-col min-h-screen">
+    <div v-else class="flex flex-col min-h-screen">
       <TopBar mobile show-menu-button @toggle-side-nav="toggleSideNav" />
       <main id="main-content" class="flex-1 px-4 py-5 pb-24 overflow-y-auto">
         <router-view v-slot="{ Component }">

@@ -7,6 +7,8 @@ import { useAuthStore } from '@/stores/auth';
 import { useProfileStore } from '@/stores/profile';
 import { X, LogOut, ExternalLink, User } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
+// MANDAT-14 (C-3.3, P25) : `NavIcon` n'était importé nulle part — le menu n'avait aucune icône.
+import NavIcon from './NavIcon.vue';
 import { SIDE_NAV_ITEMS, navItemsFor } from './navItems.js';
 
 const props = defineProps({

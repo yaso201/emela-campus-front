@@ -493,7 +493,8 @@ function fileNameFromUrl(value) {
         </section>
       </aside>
 
-      <main class="min-w-0">
+      <!-- MANDAT-14 (P25) : un seul `main`, celui de la coquille. -->
+      <div class="min-w-0">
         <div v-if="loadingDetail" class="space-y-4">
           <BlockSkeleton :lines="5" />
           <BlockSkeleton :lines="6" :show-title="false" />
@@ -743,7 +744,7 @@ function fileNameFromUrl(value) {
             description="Les séances activées apparaissent dans la liste de gauche."
           />
         </section>
-      </main>
+      </div>
     </div>
   </div>
 </template>

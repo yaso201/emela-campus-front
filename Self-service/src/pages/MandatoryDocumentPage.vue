@@ -187,7 +187,8 @@ const secondaryButtonClasses =
     </header>
 
     <!-- Contenu principal -->
-    <main class="px-4 py-6 md:px-6">
+    <!-- MANDAT-14 (P25) : un seul `main`, celui de la coquille. -->
+    <div class="px-4 py-6 md:px-6">
       <div class="max-w-2xl mx-auto space-y-6">
         <!-- État d'erreur global -->
         <BlockError
@@ -444,6 +445,6 @@ const secondaryButtonClasses =
           </div>
         </section>
       </div>
-    </main>
+    </div>
   </div>
 </template>

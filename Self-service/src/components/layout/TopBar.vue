@@ -35,11 +35,12 @@ const pageTitle = computed(() => {
 // Sous-titre avec date
 const today = computed(() => {
   const d = new Date();
+  // MANDAT-14 (P16) : « vendredi 20 novembre », en minuscules ; « 1er » le premier du mois.
   return d.toLocaleDateString('fr-FR', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
-  });
+  }).replace(/(^|\s)1 /, '$11er ');
 });
 
 const greeting = computed(() => `Bonjour, ${auth.displayName}`);
@@ -91,8 +92,9 @@ function toggleMenu() {
     class="hidden md:flex items-center justify-between px-8 lg:px-10 pt-6 pb-5 bg-white border-b border-ln-gray-200"
   >
     <div>
-      <h1 class="text-2xl font-bold text-ln-gray-900">{{ pageTitle }}</h1>
-      <p class="text-sm text-ln-gray-500 mt-0.5 capitalize">{{ today }}</p>
+      <!-- MANDAT-14 (P25) : le titre du bandeau n'est pas un `h1` — chaque page porte le sien, un seul. -->
+      <p class="text-2xl font-bold text-ln-gray-900">{{ pageTitle }}</p>
+      <p class="text-sm text-ln-gray-500 mt-0.5">{{ today }}</p>
     </div>
     <div class="flex items-center gap-3">
       <div class="text-right hidden lg:block">
