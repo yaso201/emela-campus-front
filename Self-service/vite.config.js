@@ -6,9 +6,14 @@ import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { copyFileSync, mkdirSync } from 'fs';
+import { copyFileSync, mkdirSync, writeFileSync } from 'fs';
+import { buildIdentity } from './scripts/build-identity.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// MANDAT-14, E8 et P2 : l'identité de cette compilation (SHA du source, « +modifié », mode), calculée UNE fois,
+// inscrite dans le paquet (__EMELA_BUILD__ → <meta name="emela-build">, main.js) et déposée en build.json.
+const BUILD_IDENTITY = buildIdentity(__dirname);
 
 // Cible du build dans le back campus. Chemin CONFIGURABLE (clone du seul front /
 // multi-VPS futur) ; défaut sain = arbre Campus local (Fronts et Backs siblings).
@@ -36,10 +41,27 @@ function copyTokensToBack() {
   };
 }
 
+function writeBuildIdentity() {
+  return {
+    name: 'emela-build-identity',
+    apply: 'build',
+    closeBundle() {
+      mkdirSync(BACK_PUBLIC, { recursive: true });
+      writeFileSync(path.join(BACK_PUBLIC, 'build.json'), `${JSON.stringify(BUILD_IDENTITY, null, 2)}\n`);
+      // eslint-disable-next-line no-console
+      console.log('[E8] build.json :', BUILD_IDENTITY.label, BUILD_IDENTITY.mode, '→', BACK_PUBLIC);
+    },
+  };
+}
+
 export default defineConfig({
+  define: {
+    __EMELA_BUILD__: JSON.stringify(BUILD_IDENTITY),
+  },
   plugins: [
     vue(),
     copyTokensToBack(),
+    writeBuildIdentity(),
     // L11: VitePWA retiré — le SW Workbox servait des assets stale.
     // Un killswitch sw.js est maintenu dans <back>/public/emela/
     // via le script postbuild. Ne pas réintroduire VitePWA sans
