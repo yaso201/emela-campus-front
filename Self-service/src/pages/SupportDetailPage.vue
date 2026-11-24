@@ -202,6 +202,11 @@ function goBack() {
       Mes demandes
     </button>
 
+    <!-- MANDAT-14 (lot 7, recette de l'espace) : la page porte son titre dans TOUS les états — chargement, demande
+         introuvable, demande lue. Il est masqué à l'œil : l'écran ne change pas ; l'objet de la demande en est le
+         sous-titre visible. -->
+    <h1 class="sr-only">Demande d’assistance</h1>
+
     <!-- État : chargement -->
     <BlockSkeleton v-if="isLoading && !currentRequest" :lines="6" />
 
@@ -235,7 +240,7 @@ function goBack() {
             />
           </div>
         </div>
-        <h1 class="text-xl font-bold text-ln-gray-900 mb-1">{{ currentRequest.subject }}</h1>
+        <h2 class="text-xl font-bold text-ln-gray-900 mb-1">{{ currentRequest.subject }}</h2>
         <p class="text-sm text-ln-gray-600">
           <span>{{ currentRequest.target_service }}</span>
           <span v-if="currentRequest.category"> · {{ currentRequest.category }}</span>
