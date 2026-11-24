@@ -16,9 +16,10 @@ const pinia = createPinia();
 app.use(pinia);
 app.use(router);
 
-// R3: attendre que la navigation initiale soit résolue avant de monter.
-// Sans cela, mount() s'exécute pendant que les chunks de route sont encore
-// en transit (import() réseau), causant un crash nextSibling dans Vue.
+// R3 : monter après la navigation initiale résolue. Relu au lot 7 (VERDICT-MANDAT-14-PC1D §6) : le « crash
+// nextSibling » qu'il contournait venait très probablement de la double évaluation de l'entrée (deux applications
+// montées sur #emela-app), corrigée ci-dessus. Gardé pour son objet propre : la garde du routeur (routeAdmits, P8)
+// décide avant le premier rendu — une page chargée directement ne s'affiche pas sous une route qu'elle refusera.
 router.isReady().then(() => {
   app.mount('#emela-app');
 });
