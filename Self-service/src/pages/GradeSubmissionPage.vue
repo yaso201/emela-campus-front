@@ -158,9 +158,13 @@ async function loadSubmissions() {
   }
 }
 
+// Revue adversariale (lot 7, A-7) : le serveur accepte la saisie jusqu'à la fin du jour limite (`today > deadline`) ;
+// `new Date('AAAA-MM-JJ') < new Date()` fermait la saisie dès le matin de ce jour. La comparaison se fait au jour.
 const isDeadlinePassed = computed(() => {
   if (!deadline.value) return false;
-  return new Date(deadline.value) < new Date();
+  const jour = new Date();
+  const aujourdHui = `${jour.getFullYear()}-${String(jour.getMonth() + 1).padStart(2, '0')}-${String(jour.getDate()).padStart(2, '0')}`;
+  return aujourdHui > String(deadline.value).slice(0, 10);
 });
 
 const deadlineFormatted = computed(() => {

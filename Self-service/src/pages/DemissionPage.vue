@@ -41,9 +41,12 @@ async function act(row, { act: a, params }) {
       <p class="text-sm text-ln-gray-500 mt-1">Mettre fin à votre cursus. La démission devient définitive au terme d’un délai pendant lequel vous pouvez la rétracter (Art. 38).</p>
     </header>
 
-    <div v-if="error" class="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">
+    <div v-if="error" class="flex items-start gap-2 rounded-md border border-ln-error/30 bg-ln-error-bg p-3 text-sm text-ln-error" role="alert">
       <AlertCircle class="w-4 h-4 mt-0.5 flex-shrink-0" /><span>{{ error }}</span>
     </div>
+
+    <!-- Conception (lot 7 bis) : tant que la lecture n'a pas répondu, la page le dit. -->
+    <p v-if="loading && !data" class="text-sm text-ln-gray-500" aria-live="polite">Chargement…</p>
 
     <section v-for="row in items" :key="row.name" class="rounded-lg border border-ln-gray-200 bg-white p-4 space-y-3">
       <div class="flex flex-wrap items-center gap-2">
@@ -66,7 +69,7 @@ async function act(row, { act: a, params }) {
       <h2 class="text-base font-semibold text-ln-gray-900">Préparer une démission</h2>
       <p v-if="!open.available" class="text-sm text-ln-gray-600">{{ open.blocked_reason }}</p>
       <template v-else>
-        <div class="flex items-start gap-2 rounded-md border border-ln-blue-100 bg-ln-blue-50/50 p-3 text-sm text-ln-gray-800">
+        <div class="flex items-start gap-2 rounded-md border border-ln-blue-100 bg-ln-blue-50/50 p-3 text-sm text-ln-gray-900">
           <Info class="w-4 h-4 mt-0.5 flex-shrink-0 text-ln-blue-800" aria-hidden="true" />
           <div class="space-y-1">
             <p class="font-semibold">Avant de déposer (Art. 38)</p>
@@ -74,8 +77,8 @@ async function act(row, { act: a, params }) {
             <p>Après l’enregistrement, vous disposez de 15 jours ouvrables pour rétracter votre démission ; au-delà, elle est définitive.</p>
           </div>
         </div>
-        <label class="flex items-start gap-2 text-sm text-ln-gray-800">
-          <input v-model="lu" type="checkbox" class="mt-1" /> J’ai lu ces informations.
+        <label class="flex items-center gap-3 text-sm text-ln-gray-900 min-h-[44px] cursor-pointer">
+          <input v-model="lu" type="checkbox" class="w-5 h-5" /> J’ai lu ces informations.
         </label>
         <div class="flex justify-end">
           <button type="button" :disabled="!lu || busy === 'create'" @click="create"

@@ -50,3 +50,16 @@ test('le paquet et build.json portent la même identité ; main.js pose <meta na
   assert.ok(main.includes("meta.name = 'emela-build'"), '<meta name="emela-build"> manquant');
   assert.ok(main.includes('mode=${EMELA_BUILD.mode}'), 'le mode n\'est pas dit');
 });
+
+test('lot 7 bis : l\'entrée n\'importe l\'application que dynamiquement (une seule évaluation)', () => {
+  // La page serveur charge l'entrée sous `?v=<mtime>` ; un morceau de route qui l'importerait la ferait évaluer une
+  // seconde fois — deux applications, deux routeurs (§3.28 du rapport). L'entrée n'importe donc ni Vue, ni
+  // l'application, ni le routeur : seulement le style et `import('./boot.js')`.
+  const main = read('src/main.js');
+  const statiques = [...main.matchAll(/^import\s+(?:[^'"]+from\s+)?['"]([^'"]+)['"]/gm)].map((m) => m[1]);
+  assert.deepEqual(statiques, ['./assets/tailwind.css'], `imports statiques de l'entrée : ${statiques.join(', ')}`);
+  assert.ok(main.includes("import('./boot.js')"), 'l\'amorce dynamique manque');
+  assert.ok(!/\bexport\b/.test(main), 'l\'entrée ne doit rien exporter');
+  const boot = read('src/boot.js');
+  assert.ok(boot.includes("app.mount('#emela-app')") && boot.includes('router.isReady()'), 'l\'amorce ne monte pas');
+});

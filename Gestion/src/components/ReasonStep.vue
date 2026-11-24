@@ -47,8 +47,8 @@
            acte contredit la note affichée deux lignes au-dessus. -->
       <button type="button" class="ln-btn-secondary" @click="emit('cancel')">{{ cancelLabel }}</button>
       <button type="button" :class="confirmKind === 'danger' ? 'ln-btn-danger' : 'ln-btn-primary'"
-              :disabled="!complete" @click="submit">
-        {{ confirmLabel }}
+              :disabled="!complete || busy" @click="submit">
+        {{ busy ? 'Envoi…' : confirmLabel }}
       </button>
     </footer>
   </div>
@@ -88,6 +88,8 @@ const props = defineProps({
   footnote: { type: String, default: '' },
   cancelLabel: { type: String, default: 'Annuler' },
   modal: { type: Boolean, default: true },
+  // Conception (lot 7 bis) : pendant l'appel, l'acte ne se renvoie pas (un refus, une clôture : irréversibles).
+  busy: { type: Boolean, default: false },
 });
 const emit = defineEmits(['submit', 'cancel']);
 

@@ -34,7 +34,9 @@ const libraryResource = useFrappeCall(
 watch(
   () => [profile.status, profile.profile],
   ([status, currentProfile]) => {
-    if (status === 'loaded' && currentProfile === 'student') {
+    // DEC-366 (revues du lot 7, C-1/D-1) : l'étudiant à accès réduit (`dossier`) a Documents — sa bibliothèque et
+    // ses demandes ; le serveur dit ce qu'il lui ouvre (un refus s'affiche par sa phrase, pas par une garde du front).
+    if (status === 'loaded' && ['student', 'dossier'].includes(currentProfile)) {
       libraryResource.reload();
     }
   },
@@ -87,7 +89,13 @@ const hasRootWarnings = computed(() => {
   return Array.isArray(w) && w.length > 0;
 });
 
-const rootWarnings = computed(() => libraryResource.data?.warnings || []);
+// Le serveur rend certains avertissements par une clé : la page les dit en français (une clé inconnue reste dite, par
+// une phrase générique, jamais par la clé brute — conception du lot 7).
+const AVERTISSEMENTS = {
+  financial_receipts_unavailable: 'Les reçus de paiement ne sont pas disponibles pour l’instant.',
+};
+const rootWarnings = computed(() => (libraryResource.data?.warnings || []).map((w) => (
+  /^[a-z_]+$/.test(w) ? (AVERTISSEMENTS[w] || 'Une partie de vos documents n’a pas pu être lue.') : w)));
 
 // ── Preview / Actions ────────────────────────────────────────────────
 const previewOpen = ref(false);
@@ -258,7 +266,7 @@ function formatAmount(amount, currency) {
   return fmt.format(amount);
 }
 
-const isStudent = computed(() => profile.profile === 'student');
+const isStudent = computed(() => ['student', 'dossier'].includes(profile.profile));
 const showProfileGuard = computed(() => !profile.isLoading && !profile.isGuest && !isStudent.value);
 </script>
 
@@ -331,12 +339,12 @@ const showProfileGuard = computed(() => !profile.isLoading && !profile.isGuest &
           <!-- Warnings racine -->
           <div
             v-if="hasRootWarnings"
-            class="bg-amber-50 border border-amber-200 rounded-lg p-4"
+            class="bg-ln-warning-bg border border-ln-warning/40 rounded-lg p-4"
           >
             <p
               v-for="(w, idx) in rootWarnings"
               :key="`rw-${idx}`"
-              class="text-sm text-amber-800 font-medium"
+              class="text-sm text-ln-warning font-medium"
             >
               {{ w }}
             </p>

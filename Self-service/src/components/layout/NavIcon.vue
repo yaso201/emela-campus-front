@@ -60,6 +60,12 @@
       <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
     </template>
 
+    <!-- User (Mon compte) — conception du lot 7 bis : l'entrée affichait un cercle vide -->
+    <template v-else-if="name === 'user'">
+      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </template>
+
     <!-- FileText (Documents) -->
     <template v-else-if="name === 'file-text'">
       <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />

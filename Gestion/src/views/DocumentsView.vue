@@ -137,7 +137,21 @@
 
         <ObjectPanel v-else title="" state="empty"
                      state-title="Aucune demande sélectionnée"
-                     state-message="Choisissez une demande dans la file pour voir ses vérifications et son aperçu." />
+                     state-message="Choisissez une demande dans la file pour voir son état et l’émettre ou la refuser." />
+
+        <!-- Conception (lot 7 bis, D-15 ; écart E-3.8) : l'émission est irréversible (la pièce naît signée, son code de
+             vérification avec elle) — une confirmation qui nomme la pièce et l'étudiant. -->
+        <div v-if="confirmingEmit && request" class="mt-5 rounded-md-ln border border-ln-blue-200 bg-ln-blue-50 p-4"
+             role="group" aria-label="Confirmer l'émission">
+          <p class="text-body-sm text-ln-gray-900">
+            Émettre <b class="font-semibold">{{ request.doc_label }}</b> pour <b class="font-semibold">{{ request.student_name }}</b> :
+            la pièce est produite et signée, son code de vérification naît avec elle. L’émission ne se défait pas.
+          </p>
+          <div class="mt-3 flex flex-wrap justify-end gap-2">
+            <button type="button" class="ln-btn-secondary" @click="confirmingEmit = false">Revenir</button>
+            <button type="button" class="ln-btn-primary" :disabled="busy" @click="emitConfirmed">Confirmer l’émission</button>
+          </div>
+        </div>
 
         <!-- L'étape de motif : les catégories du SERVEUR, et la distinction voyage avec le
              refus parce qu'elle dit à l'étudiant s'il peut reformuler. -->
@@ -151,13 +165,13 @@
                       detail-hint="Le motif part avec le refus et reste lisible dans l'espace de l'étudiant."
                       confirm-label="Refuser la demande" confirm-kind="danger"
                       footnote="« Prématurée » annonce à l'étudiant qu'il pourra reformuler ; « irrecevable » annonce le contraire."
-                      :modal="false"
+                      :modal="false" :busy="busy"
                       @submit="submitRefusal" @cancel="cancelRefusal" />
         </div>
       </div>
     </div>
 
-    <StateBanner v-if="pending" variant="warning" lead="Acte non disponible." :text="pending" class="mt-4" />
+    <StateBanner v-if="pending" variant="info" lead="Refus abandonné." :text="pending" class="mt-4" />
   </div>
 </template>
 
@@ -276,18 +290,27 @@ const refusalGroups = computed(() => [{
   })),
 }]);
 
+const confirmingEmit = ref(false);
 function select(id) {
   selectedId.value = id;
   refusing.value = false;
+  confirmingEmit.value = false;
   done.value = ''; actError.value = '';
 }
 
 async function act(key) {
   done.value = ''; actError.value = ''; pending.value = '';
   if (key === 'refuser') {
+    confirmingEmit.value = false;
     refusing.value = true;
     return;
   }
+  // D-15 : l'émission passe d'abord par sa confirmation.
+  refusing.value = false;
+  confirmingEmit.value = true;
+}
+async function emitConfirmed() {
+  confirmingEmit.value = false;
   const r = request.value;
   busy.value = true;
   try {
@@ -311,7 +334,7 @@ async function submitRefusal(payload) {
 /** L'échappatoire dit ce qu'elle fait : elle referme, elle ne refuse pas. */
 function cancelRefusal() {
   refusing.value = false;
-  pending.value = 'Refus abandonné — la demande reste en attente, rien n’a été enregistré.';
+  pending.value = 'La demande reste en attente ; rien n’a été enregistré.';
 }
 
 function reload() { return res.load({ ...params.value }); }

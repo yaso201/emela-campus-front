@@ -228,7 +228,8 @@ const queueItems = computed(() => items.value.map((c) => ({
   id: c.name,
   title: c.student_name + ' · ' + c.kind_label,
   // MANDAT-14 (G-M6) : un dossier clos dit sa dernière évolution (`last_change_on`, C8).
-  subtitle: c.name + (c.closed ? ' · clos — dernière évolution le ' + frDate(c.last_change_on)
+  // Revue du lot 7 (C-5) : `closed` est porté par l'enveloppe de la liste, pas par chaque ligne.
+  subtitle: c.name + (closedMode.value ? ' · clos — dernière évolution le ' + frDate(c.last_change_on)
     : ' · ouvert le ' + frDate(c.created)),
   status: c.status_tone || 'brouillon',
   statusLabel: c.status,

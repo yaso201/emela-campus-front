@@ -32,6 +32,9 @@ export function useResource(loader, options = {}) {
     isEmpty = (data) => !data || (Array.isArray(data.items) && data.items.length === 0),
     expectedCount = null,
     label = 'lignes',
+    // MANDAT-14 (lot 7 bis, régression R-1) : un PANNEAU secondaire d'une page garde son refus pour lui — la page qui
+    // l'accueille reste lisible. Sans cette option, un refus remonte à la coquille, qui remplace la page entière.
+    localDenial = false,
   } = options;
 
   const state = ref('loading');          // loading | ready | empty | error | denied
@@ -63,7 +66,7 @@ export function useResource(loader, options = {}) {
     } catch (err) {
       if (seq !== latest) return;      // l'échec d'un chargement dépassé n'efface pas le récent
       if (isDenied(err)) {
-        denial.value = err;            // règle 5 — la coquille prend la suite
+        if (!localDenial) denial.value = err;   // règle 5 — la coquille prend la suite (sauf refus local)
         state.value = 'denied';
       } else {
         error.value = err;

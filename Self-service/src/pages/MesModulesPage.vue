@@ -38,7 +38,7 @@ onMounted(async () => {
       <h1 class="text-2xl font-bold text-ln-gray-900">Mes modules</h1>
       <p class="text-sm text-ln-gray-500 mt-1">Les modules de votre service : saisir et soumettre les notes, revenir sur une note soumise, voir les statistiques.</p>
     </header>
-    <div v-if="error" class="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">
+    <div v-if="error" class="flex items-start gap-2 rounded-md border border-ln-error/30 bg-ln-error-bg p-3 text-sm text-ln-error" role="alert">
       <AlertCircle class="w-4 h-4 mt-0.5 flex-shrink-0" /><span>{{ error }}</span>
     </div>
     <p v-if="loading" class="text-sm text-ln-gray-500">Chargement…</p>

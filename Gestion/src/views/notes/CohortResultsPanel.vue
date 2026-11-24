@@ -1,5 +1,5 @@
 <template>
-  <section class="mb-5 overflow-hidden rounded-md-ln border border-ln-gray-200" aria-label="Résultats d'une cohorte">
+  <section v-if="state !== 'denied'" class="mb-5 overflow-hidden rounded-md-ln border border-ln-gray-200" aria-label="Résultats d'une cohorte">
     <header class="flex flex-wrap items-end gap-3 border-b border-ln-gray-200 bg-ln-gray-50 px-4 py-3">
       <div class="mr-auto">
         <h2 class="text-h2 text-ln-gray-900">Résultats d’une cohorte, avant le jury</h2>
@@ -26,8 +26,11 @@
 
     <StateBanner v-if="done" variant="success" lead="Calcul fait." :text="done" class="m-4" />
     <StateBanner v-if="actError" variant="warning" lead="Calcul refusé." :text="actError" class="m-4" />
-    <BlockState v-if="state !== 'ready'" :state="state === 'denied' ? 'loading' : state" title="Aucun étudiant dans la cohorte"
-                message="Personne n’a de résultat d’UE de ce programme, à ce niveau, ce semestre." :rows="4" :row-height="44" @retry="reload" />
+    <StateBanner v-if="manque" variant="info" lead="Rien à calculer." :text="manque" class="m-4" />
+    <BlockState v-else-if="state !== 'ready'" :state="state === 'denied' ? 'loading' : state"
+                :title="state === 'error' ? 'Les résultats ne se lisent pas' : 'Aucun étudiant dans la cohorte'"
+                :message="state === 'error' ? erreur : 'Personne n’a de résultat d’UE de ce programme, à ce niveau, ce semestre.'"
+                :rows="4" :row-height="44" @retry="reload" />
     <template v-else>
       <!-- P16 : des pluriels accordés ; Q18 : la filière et le niveau par leur libellé. -->
       <p class="px-4 py-2 text-caption text-ln-gray-700">
@@ -93,8 +96,13 @@ import { listPrograms, getProgram } from '../../api/structure.js';
 
 const { can } = useSession();
 const { params } = useAcademicContext();
-const res = useResource(listSemesterResults, { isEmpty: (d) => !d?.rows?.length });
+// R-1 (lot 7 bis) : le panneau est l'en-tête de la page du jury, que le RF lit (liste des jurys) sans lire les résultats
+// d'une cohorte : son refus reste LOCAL, et le panneau ne s'affiche pas — la page du jury reste la sienne.
+const res = useResource(listSemesterResults, { isEmpty: (d) => !d?.rows?.length, localDenial: true });
 const state = res.state;
+// Conception (lot 7 bis) : en erreur, le bloc dit l'erreur et la phrase du serveur — pas la phrase de l'état vide.
+const erreur = computed(() => res.error.value?.message || 'La lecture a échoué.');
+
 const data = computed(() => res.data.value);
 const programs = ref([]);
 const levels = ref([]);
@@ -103,12 +111,20 @@ const level = ref('');
 const busy = ref(false);
 const done = ref('');
 const actError = ref('');
+// Conception (lot 7 bis) : sans filière lisible ni niveau, le calcul n'est jamais chargé — l'écran le DIT au lieu d'un
+// squelette sans fin.
+const manque = ref('');
 const nb = (n, mot) => `${n} ${n >= 2 ? mot + 's' : mot}`;
 
 async function loadLevels() {
   if (!program.value) { levels.value = []; level.value = ''; return; }
-  try { levels.value = (await getProgram(program.value))?.levels || []; } catch { levels.value = []; }
+  try { levels.value = (await getProgram(program.value))?.levels || []; } catch (e) {
+    levels.value = [];
+    manque.value = `La filière ne se lit pas : ${e.message}`;
+    return;
+  }
   if (!levels.value.some((l) => l.name === level.value)) level.value = levels.value[0]?.name || '';
+  manque.value = levels.value.length ? '' : 'Cette filière n’a pas de niveau : aucune cohorte à calculer.';
 }
 function reload() {
   // Le contexte rend `{academic_year, term}` (`useAcademicContext`) : le semestre est `term`.
@@ -130,7 +146,12 @@ async function compute() {
 watch(program, async () => { await loadLevels(); reload(); });
 watch(level, reload);
 onMounted(async () => {
-  try { programs.value = (await listPrograms({}))?.filter?.((p) => p.custom_is_active !== 0) || []; } catch { programs.value = []; }
+  try { programs.value = (await listPrograms({}))?.filter?.((p) => p.custom_is_active !== 0) || []; } catch (e) {
+    programs.value = [];
+    manque.value = `Les filières ne se lisent pas : ${e.message}`;
+    return;
+  }
   program.value = programs.value[0]?.name || '';
+  if (!program.value) manque.value = 'Aucune filière active : aucune cohorte à calculer.';
 });
 </script>

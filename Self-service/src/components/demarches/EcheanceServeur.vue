@@ -9,12 +9,12 @@ const props = defineProps({ deadline: { type: Object, required: true } });
 
 const tone = computed(() => {
   const s = props.deadline.state;
-  if (s === 'échue') return 'border-red-200 bg-red-50 text-red-800';
+  if (s === 'échue') return 'border-ln-error/30 bg-ln-error-bg text-ln-error';
   if (s === 'en cours' && props.deadline.days_remaining !== null && props.deadline.days_remaining <= 3) {
-    return 'border-amber-300 bg-amber-50 text-amber-900';
+    return 'border-ln-warning/40 bg-ln-warning-bg text-ln-warning';
   }
-  if (s === 'suspendue par appel') return 'border-blue-200 bg-blue-50 text-blue-800';
-  return 'border-ln-gray-200 bg-ln-gray-50 text-ln-gray-800';
+  if (s === 'suspendue par appel') return 'border-ln-blue-200 bg-ln-blue-50 text-ln-blue-800';
+  return 'border-ln-gray-200 bg-ln-gray-50 text-ln-gray-900';
 });
 
 // P16 : les pluriels s'accordent (« 1 jour ouvrable », « 6 jours ouvrables »).

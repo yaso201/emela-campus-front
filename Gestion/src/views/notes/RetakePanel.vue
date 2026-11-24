@@ -21,8 +21,10 @@
     <p v-if="!course.trim() && state !== 'ready'" class="text-caption text-ln-gray-500">
       Saisissez le code d’un module pour lire ses candidats au rattrapage.
     </p>
-    <BlockState v-else-if="state !== 'ready'" :state="state === 'denied' ? 'loading' : state" title="Aucun candidat"
-                message="Aucun résultat d’UE ne porte ce module pour ce semestre." :rows="5" :row-height="44" @retry="reload" />
+    <BlockState v-else-if="state !== 'ready'" :state="state === 'denied' ? 'loading' : state"
+                :title="state === 'error' ? 'Les candidats ne se lisent pas' : 'Aucun candidat'"
+                :message="state === 'error' ? erreur : 'Aucun résultat d’UE ne porte ce module pour ce semestre.'"
+                :rows="5" :row-height="44" @retry="reload" />
     <div v-else class="overflow-x-auto rounded-md-ln border border-ln-gray-200">
       <table class="w-full border-collapse text-body-sm">
         <thead>
@@ -53,11 +55,22 @@
                   <input v-model="grades[r.ue_result]" type="number" min="0" max="20" step="0.25" placeholder="/20"
                          :aria-label="'Note de rattrapage — ' + r.student_name"
                          class="h-9 w-[90px] rounded-sm-ln border border-ln-gray-300 px-2 text-body-sm" />
-                  <button type="button" class="ln-btn-primary"
+                  <button v-if="confirmer !== r.ue_result" type="button" class="ln-btn-primary"
                           :disabled="busy || grades[r.ue_result] === undefined || grades[r.ue_result] === ''"
-                          @click="record(r)">Enregistrer</button>
+                          @click="demanderConfirmation(r)">Enregistrer…</button>
                 </div>
-                <p class="mt-1 text-caption text-ln-gray-500">Une seule session (Art. 26.1) : la note remplace celle du module.</p>
+                <div v-if="confirmer === r.ue_result" class="mt-2 rounded-sm-ln border border-ln-blue-200 bg-ln-blue-50 p-2"
+                     role="group" :aria-label="'Confirmer la note de rattrapage de ' + r.student_name">
+                  <p class="text-caption text-ln-gray-900">
+                    <b class="font-semibold">{{ num(grades[r.ue_result]) }}/20</b> au rattrapage pour {{ r.student_name }} :
+                    la note est définitive (une seule session, Art. 26.1) ; le module et l’UE sont recalculés.
+                  </p>
+                  <div class="mt-2 flex flex-wrap justify-end gap-2">
+                    <button type="button" class="ln-btn-secondary" @click="confirmer = ''">Revenir</button>
+                    <button type="button" class="ln-btn-primary" :disabled="busy" @click="record(r)">Confirmer la note</button>
+                  </div>
+                </div>
+                <p v-else class="mt-1 text-caption text-ln-gray-500">Une seule session (Art. 26.1) : la note remplace celle du module.</p>
               </template>
               <p v-else-if="r.eligible" class="text-caption text-ln-gray-600">Éligible — la saisie revient au responsable de la scolarité.</p>
               <p v-else-if="allBlocked" class="text-caption text-ln-gray-500">Fermée (voir ci-dessus).</p>
@@ -89,6 +102,9 @@ const { can } = useSession();
 const { params } = useAcademicContext();
 const res = useResource(listRetakeCandidates, { isEmpty: (d) => !d?.rows?.length });
 const state = res.state;
+// Conception (lot 7 bis) : en erreur, le bloc dit l'erreur et la phrase du serveur — pas la phrase de l'état vide.
+const erreur = computed(() => res.error.value?.message || 'La lecture a échoué.');
+
 const data = computed(() => res.data.value);
 const course = ref(new URLSearchParams(location.search).get('module') || '');
 // Le semestre du contexte : `params.term` (l'identifiant de l'Academic Term), jamais une clé fabriquée.
@@ -106,7 +122,25 @@ function reload() {
   if (!course.value.trim()) return;
   res.load({ course: course.value.trim(), academic_term: term.value });
 }
+// Conception (lot 7 bis, D-2 ; écart E-3.8 du rapport) : la note est contrôlée AVANT l'envoi (0 à 20, au quart de point,
+// comme le champ le dit), puis l'acte, irréversible à l'écran (une session unique, Art. 26.1), passe par une
+// confirmation qui dit l'effet. Le serveur reste le juge : sa phrase s'affiche s'il refuse.
+const confirmer = ref('');
+function noteValide(v) {
+  if (v === undefined || v === null || v === '') return false;
+  const n = Number(String(v).replace(',', '.'));
+  return Number.isFinite(n) && n >= 0 && n <= 20 && Math.round(n * 4) === n * 4;
+}
+function demanderConfirmation(r) {
+  actError.value = ''; done.value = '';
+  if (!noteValide(grades[r.ue_result])) {
+    actError.value = 'La note de rattrapage va de 0 à 20, au quart de point près.';
+    return;
+  }
+  confirmer.value = r.ue_result;
+}
 async function record(r) {
+  confirmer.value = '';
   busy.value = true; done.value = ''; actError.value = '';
   try {
     await recordRetakeGrade({ ue_result: r.ue_result, course: course.value.trim(), retake_grade: grades[r.ue_result] });

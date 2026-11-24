@@ -14,7 +14,8 @@ const busy = ref('');
 const success = ref('');
 const form = reactive({ resume_date: '', message: '' });
 const open = computed(() => data.value?.open || null);
-const canCreate = computed(() => open.value?.available && form.resume_date && form.message.trim().length >= 10);
+// Revue adversariale (lot 7, A-7) : le serveur exige un message, pas une longueur — l'écran n'ajoute pas de règle.
+const canCreate = computed(() => open.value?.available && form.resume_date && form.message.trim().length > 0);
 
 onMounted(load);
 
@@ -50,10 +51,10 @@ async function act({ act: a, params }) {
       <p class="text-sm text-ln-gray-500 mt-1">Demander à reprendre vos études à la fin, ou avant la fin, de votre congé académique (Art. 37.6).</p>
     </header>
 
-    <div v-if="error" class="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">
+    <div v-if="error" class="flex items-start gap-2 rounded-md border border-ln-error/30 bg-ln-error-bg p-3 text-sm text-ln-error" role="alert">
       <AlertCircle class="w-4 h-4 mt-0.5 flex-shrink-0" /><span>{{ error }}</span>
     </div>
-    <div v-if="success" class="flex items-start gap-2 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700" role="status">
+    <div v-if="success" class="flex items-start gap-2 rounded-md border border-ln-success/30 bg-ln-success-bg p-3 text-sm text-ln-success" role="status">
       <CheckCircle2 class="w-4 h-4 mt-0.5 flex-shrink-0" /><span>{{ success }}</span>
     </div>
 
@@ -83,17 +84,17 @@ async function act({ act: a, params }) {
       <p v-if="loading" class="text-sm text-ln-gray-500">Chargement…</p>
       <p v-else-if="open && !open.available" class="text-sm text-ln-gray-600">{{ open.blocked_reason }}</p>
       <form v-else-if="open" class="grid gap-4 sm:grid-cols-2" @submit.prevent="create">
-        <div class="sm:col-span-2 rounded-md bg-ln-blue-50/50 border border-ln-blue-100 p-3 text-sm text-ln-gray-800">
+        <div class="sm:col-span-2 rounded-md bg-ln-blue-50/50 border border-ln-blue-100 p-3 text-sm text-ln-gray-900">
           Congé repris : <span class="font-semibold">{{ leavePeriod(open.leave_period) }}</span>.
           Reprise possible au plus tôt le <span class="font-semibold">{{ formatDate(open.earliest_resume_date) }}</span>.
         </div>
         <label class="space-y-1">
-          <span class="text-sm font-medium text-ln-gray-700">Date de reprise</span>
+          <span class="text-sm font-medium text-ln-gray-700">Date de reprise <span class="font-normal text-ln-gray-500">(obligatoire)</span></span>
           <input v-model="form.resume_date" type="date" lang="fr" :min="open.earliest_resume_date"
                  class="w-full rounded-md border border-ln-gray-300 px-3 py-2 text-sm min-h-[44px]" />
         </label>
         <label class="space-y-1 sm:col-span-2">
-          <span class="text-sm font-medium text-ln-gray-700">Message à la scolarité</span>
+          <span class="text-sm font-medium text-ln-gray-700">Message à la scolarité <span class="font-normal text-ln-gray-500">(obligatoire)</span></span>
           <textarea v-model="form.message" rows="3" class="w-full rounded-md border border-ln-gray-300 px-3 py-2 text-sm" />
         </label>
         <div class="sm:col-span-2 flex justify-end">

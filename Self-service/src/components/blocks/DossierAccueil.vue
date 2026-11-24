@@ -48,13 +48,13 @@ const OUVERT = [
 
 <template>
   <div class="flex flex-col gap-6">
-    <section class="rounded-lg border border-amber-300 bg-amber-50 p-4 space-y-2" role="status">
-      <h2 class="flex items-center gap-2 text-base font-semibold text-amber-900">
+    <section class="rounded-lg border border-ln-warning/40 bg-ln-warning-bg p-4 space-y-2" role="status">
+      <h2 class="flex items-center gap-2 text-base font-semibold text-ln-warning">
         <Info class="w-5 h-5 flex-shrink-0" aria-hidden="true" /> Votre espace est réduit à votre dossier et à vos démarches
       </h2>
 
       <!-- Suspension : la période. -->
-      <p v-if="periode" class="text-sm text-amber-900">
+      <p v-if="periode" class="text-sm text-ln-warning">
         Une suspension court du <span class="font-semibold">{{ formatDate(periode.period_start) }}</span>
         au <span class="font-semibold">{{ formatDate(periode.period_end) }}</span>.
         Pendant cette période, vous gardez votre dossier et vos démarches, dont l’appel.
@@ -62,16 +62,16 @@ const OUVERT = [
 
       <!-- P31 : en congé, la fin du congé et le retour, d'abord. -->
       <template v-else-if="enConge">
-        <p v-if="conge" class="text-sm text-amber-900">
+        <p v-if="conge" class="text-sm text-ln-warning">
           Vous êtes en congé académique du <span class="font-semibold">{{ formatDate(conge.from_date) }}</span>
           au <span class="font-semibold">{{ formatDate(conge.to_date) }}</span>.
         </p>
-        <p v-else-if="retourErreur" class="text-sm text-amber-900">{{ retourErreur }}</p>
-        <p v-else-if="retour" class="text-sm text-amber-900">Statut : <span class="font-semibold">{{ f.academic_status_label || f.academic_status }}</span>.</p>
-        <p v-if="demandeEnCours" class="text-sm text-amber-900">
+        <p v-else-if="retourErreur" class="text-sm text-ln-warning">{{ retourErreur }}</p>
+        <p v-else-if="retour" class="text-sm text-ln-warning">Statut : <span class="font-semibold">{{ f.academic_status_label || f.academic_status }}</span>.</p>
+        <p v-if="demandeEnCours" class="text-sm text-ln-warning">
           Votre demande de retour est <span class="font-semibold">{{ demandeEnCours.status.toLowerCase() }}</span>.
         </p>
-        <p v-else-if="retour?.open?.available && retour.open.earliest_resume_date" class="text-sm text-amber-900">
+        <p v-else-if="retour?.open?.available && retour.open.earliest_resume_date" class="text-sm text-ln-warning">
           Vous pouvez demander votre retour : reprise au plus tôt le
           <span class="font-semibold">{{ formatDate(retour.open.earliest_resume_date) }}</span>.
         </p>
@@ -79,11 +79,11 @@ const OUVERT = [
 
       <!-- Sortie (exclusion, démission, diplôme) : le statut, puis le dernier jour de l'accès. -->
       <template v-else>
-        <p class="text-sm text-amber-900">
+        <p class="text-sm text-ln-warning">
           Statut : <span class="font-semibold">{{ f.academic_status_label || f.academic_status }}</span><template
             v-if="f.since">, depuis le {{ formatDate(f.since) }}</template>.
         </p>
-        <p v-if="sortie && f.access_until" class="text-sm text-amber-900">
+        <p v-if="sortie && f.access_until" class="text-sm text-ln-warning">
           Votre accès reste ouvert jusqu’au <span class="font-semibold">{{ formatDate(f.access_until) }}</span>{{
             f.days_left ? ` (${plural(f.days_left, 'jour restant', 'jours restants')})` : '' }}.
           Au-delà, vos relevés s’obtiennent auprès de la scolarité.

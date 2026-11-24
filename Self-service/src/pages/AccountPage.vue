@@ -176,7 +176,7 @@ const matricule = computed(
       </button>
     </section>
 
-    <p v-if="buildLine" class="text-center text-xs text-ln-gray-400" data-emela-build-line>
+    <p v-if="buildLine" class="text-center text-xs text-ln-gray-600" data-emela-build-line>
       Version de l’espace : <span class="font-mono">{{ buildLine.sha }}</span>
       <span v-if="buildLine.dirty" class="font-semibold text-red-600"> +modifié</span>
       · mode {{ buildLine.mode }} · compilée le {{ buildLine.quand }}

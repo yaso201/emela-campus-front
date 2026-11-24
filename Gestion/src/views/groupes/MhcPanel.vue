@@ -15,8 +15,10 @@
       <span v-if="cohorte" class="ml-auto text-caption text-ln-gray-500">Semestre du contexte · {{ cohorte }}</span>
     </div>
 
-    <BlockState v-if="state !== 'ready'" :state="state === 'denied' ? 'loading' : state" title="Aucune inscription à un MHC"
-                message="Aucun étudiant n’est inscrit à un MHC pour ce semestre." :rows="5" :row-height="52" @retry="reload" />
+    <BlockState v-if="state !== 'ready'" :state="state === 'denied' ? 'loading' : state"
+                :title="state === 'error' ? 'Les inscriptions aux MHC ne se lisent pas' : 'Aucune inscription à un MHC'"
+                :message="state === 'error' ? erreur : 'Aucun étudiant n’est inscrit à un MHC pour ce semestre.'"
+                :rows="5" :row-height="52" @retry="reload" />
     <!-- P19 (PC1B) : le tableau tient dans sa largeur — colonnes fixes, textes qui passent à la ligne ; le formulaire
          de décision s'ouvre sur une ligne pleine largeur sous l'inscription, il ne déborde plus du bord droit. -->
     <div v-else class="overflow-x-auto rounded-md-ln border border-ln-gray-200">
@@ -59,7 +61,7 @@
                 <!-- Règle 3 : le bouton n'existe que pour qui porte l'acte (`decide:mhc` et `can_decide` du serveur).
                      Une décision se révise : l'acte reste offert sur toute ligne. -->
                 <button v-if="canDecide && deciding !== r.name" type="button" class="mt-1 text-caption font-semibold text-ln-blue-800"
-                        @click="deciding = r.name; decision = ''; comment = ''">
+                        @click="ouvrir(r)">
                   {{ r.validated_by ? 'Réviser la décision…' : 'Statuer…' }}
                 </button>
               </td>
@@ -68,13 +70,20 @@
               <td colspan="5" :class="bodyTd" class="!text-left">
                 <div class="flex flex-col gap-2">
                   <p class="text-caption font-semibold text-ln-gray-900">{{ r.student_name }} — {{ r.mhc_code }} {{ r.mhc_name }}</p>
-                  <div class="flex flex-wrap gap-4">
-                    <label v-for="d in data.decisions" :key="d" class="inline-flex items-center gap-1.5 text-caption">
-                      <input v-model="decision" type="radio" :name="'mhc-' + r.name" :value="d" class="accent-ln-blue-900" /> {{ d }}
+                  <!-- Conception (lot 7 bis) : les décisions forment un groupe nommé ; le commentaire a son étiquette ; à
+                       l'ouverture, le focus va au premier choix (le bouton « Statuer… » vient de disparaître). -->
+                  <fieldset class="flex flex-wrap gap-4">
+                    <legend class="sr-only">Décision sur l’inscription au MHC</legend>
+                    <label v-for="(d, i) in data.decisions" :key="d" class="inline-flex items-center gap-1.5 text-caption">
+                      <input v-model="decision" type="radio" :name="'mhc-' + r.name" :value="d" class="accent-ln-blue-900"
+                             :data-premier="i === 0 ? 'oui' : null" /> {{ d }}
                     </label>
-                  </div>
-                  <textarea v-model="comment" rows="2" placeholder="Commentaire (facultatif ; lu dans le dossier)"
-                            class="w-full rounded-sm-ln border border-ln-gray-300 p-2 text-caption" />
+                  </fieldset>
+                  <label class="flex flex-col gap-1 text-caption font-semibold text-ln-gray-700">
+                    Commentaire <span class="font-normal text-ln-gray-500">(facultatif ; lu dans le dossier)</span>
+                    <textarea v-model="comment" rows="2"
+                              class="w-full rounded-sm-ln border border-ln-gray-300 p-2 text-caption font-normal" />
+                  </label>
                   <div class="flex justify-end gap-2">
                     <button type="button" class="ln-btn-secondary" @click="deciding = null">Annuler</button>
                     <button type="button" class="ln-btn-primary" :disabled="!decision || busy" @click="submit(r)">Enregistrer</button>
@@ -97,7 +106,7 @@
  * MANDAT-14 (G-M1, C4 ; étape 5) — statuer sur les inscriptions aux MHC. La liste et le vocabulaire des décisions
  * viennent du serveur ; l'Education Manager décide (clé `decide:mhc`), le GA et le DE lisent sans bouton (Q5, P12).
  */
-import { computed, onMounted, ref } from 'vue';
+import { computed, nextTick, onMounted, ref } from 'vue';
 import { StateBanner, StatusPill, headTh, bodyTd } from '../../components/index.js';
 import BlockState from '../../components/internal/BlockState.vue';
 import { useResource } from '../../composables/useResource.js';
@@ -109,6 +118,9 @@ const { can } = useSession();
 const { params } = useAcademicContext();
 const res = useResource(listMhcEnrollments, { isEmpty: (d) => !d?.items?.length });
 const state = res.state;
+// Conception (lot 7 bis) : en erreur, le bloc dit l'erreur et la phrase du serveur — pas la phrase de l'état vide.
+const erreur = computed(() => res.error.value?.message || 'La lecture a échoué.');
+
 const data = computed(() => res.data.value);
 const STATUTS = [{ k: 'tous', l: 'Toutes' }, { k: 'Inscrit', l: 'À statuer' }, { k: 'Validé', l: 'Validées' },
   { k: 'Non validé', l: 'Non validées' }];
@@ -122,6 +134,11 @@ const cohorte = computed(() => {
   return niveaux.length === 1 ? niveaux[0] : '';
 });
 const deciding = ref(null);
+async function ouvrir(r) {
+  deciding.value = r.name; decision.value = ''; comment.value = '';
+  await nextTick();
+  document.querySelector('input[data-premier="oui"]')?.focus();
+}
 const decision = ref('');
 const comment = ref('');
 const busy = ref(false);

@@ -15,7 +15,7 @@ const busy = ref('');
 const form = reactive({ case: '', target_program: '', motivation: '', notification_event_date: '' });
 const open = computed(() => data.value?.open || null);
 const canCreate = computed(() => open.value?.available && form.case && form.target_program
-  && form.motivation.trim().length >= 20);
+  && form.motivation.trim().length > 0);   // le serveur exige une motivation, pas une longueur (A-7)
 const taux = (v) => String(v).replace('.', ',');
 
 onMounted(load);
@@ -47,7 +47,7 @@ async function act(row, { act: a, params }) {
       <p class="text-sm text-ln-gray-500 mt-1">Changer de filière : la demande est examinée par une commission, qui peut reconnaître vos acquis (Art. 42).</p>
     </header>
 
-    <div v-if="error" class="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">
+    <div v-if="error" class="flex items-start gap-2 rounded-md border border-ln-error/30 bg-ln-error-bg p-3 text-sm text-ln-error" role="alert">
       <AlertCircle class="w-4 h-4 mt-0.5 flex-shrink-0" /><span>{{ error }}</span>
     </div>
 
@@ -68,7 +68,7 @@ async function act(row, { act: a, params }) {
       </dl>
       <p class="text-sm text-ln-gray-700">{{ row.motivation }}</p>
       <div v-if="row.mutualization_rate !== null && row.mutualization_rate !== undefined"
-           class="flex items-start gap-2 rounded-md border border-ln-blue-100 bg-ln-blue-50/50 p-3 text-sm text-ln-gray-800">
+           class="flex items-start gap-2 rounded-md border border-ln-blue-100 bg-ln-blue-50/50 p-3 text-sm text-ln-gray-900">
         <Info class="w-4 h-4 mt-0.5 flex-shrink-0 text-ln-blue-800" aria-hidden="true" />
         <span>Taux de mutualisation entre les deux filières : <span class="font-semibold">{{ taux(row.mutualization_rate) }} %</span>.
           Il éclaire la commission ; il ne décide pas de la demande.</span>
@@ -111,7 +111,7 @@ async function act(row, { act: a, params }) {
         <label class="space-y-1 sm:col-span-2">
           <span class="text-sm font-medium text-ln-gray-700">Motivation</span>
           <textarea v-model="form.motivation" rows="4" class="w-full rounded-md border border-ln-gray-300 px-3 py-2 text-sm" />
-          <span class="text-xs text-ln-gray-500">20 caractères au moins.</span>
+          <span class="text-xs text-ln-gray-500">Obligatoire.</span>
         </label>
         <div class="sm:col-span-2 flex justify-end">
           <button type="submit" :disabled="!canCreate || busy === 'create'"

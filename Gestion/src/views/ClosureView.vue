@@ -168,7 +168,7 @@
               <span>Je clos l’année <b class="font-semibold">avant la fin de ses semestres</b>.</span>
             </label>
             <label class="flex flex-col gap-1">
-              <span class="text-caption font-semibold text-ln-gray-700">Motif de la clôture anticipée</span>
+              <span class="text-caption font-semibold text-ln-gray-700">Motif de la clôture anticipée <span class="font-normal text-ln-gray-500">(obligatoire)</span></span>
               <textarea v-model="earlyReason" rows="4" class="rounded-sm-ln border border-ln-gray-300 px-3 py-2 text-body-sm"
                         placeholder="Ce qui justifie de clore avant la fin du semestre…" />
               <span class="text-micro text-ln-gray-500">Porté par l’acte « Clôture anticipée » du registre ; il ne remplace pas le motif d’anomalie.</span>
@@ -176,10 +176,10 @@
             <div class="flex justify-end gap-2">
               <button type="button" class="ln-btn-secondary" @click="early = false">Revenir</button>
               <button type="button" class="ln-btn-primary"
-                      :disabled="busy || !earlyAck || earlyReason.trim().length < 10 || !newCurrentYear"
+                      :disabled="busy || !earlyAck || !earlyReason.trim() || !newCurrentYear"
                       @click="submitEarly">Clôturer par anticipation</button>
             </div>
-            <p class="text-micro text-ln-gray-500">Réservé au Director — non à la Direction : deux rôles de nom voisin.</p>
+            <p class="text-micro text-ln-gray-500">Réservé au directeur (rôle « Director ») — non à la Direction : deux rôles de nom voisin.</p>
           </div>
         </section>
 
@@ -193,8 +193,8 @@
                     detail-placeholder="Ce qui justifie de clore malgré ces anomalies…"
                     detail-hint="Le motif reste lisible avec l'acte de clôture, et ne s'efface pas."
                     confirm-label="Clôturer l'année"
-                    footnote="Réservé au Director — non à la Direction : deux rôles de nom voisin."
-                    :modal="false"
+                    footnote="Réservé au directeur (rôle « Director ») — non à la Direction : deux rôles de nom voisin."
+                    :modal="false" :busy="busy"
                     @submit="submitClosure" @cancel="cancelClosure" />
 
         <section class="rounded-md-ln border border-ln-gray-200 bg-ln-gray-50 px-4 py-3">
@@ -230,7 +230,7 @@
             </li>
           </ul>
           <footer class="flex items-center gap-3 border-t border-ln-gray-200 bg-ln-gray-50 px-4 py-3">
-            <p class="mr-auto text-caption text-ln-gray-500">Réservé au Director.</p>
+            <p class="mr-auto text-caption text-ln-gray-500">Réservé au directeur (rôle « Director »).</p>
             <button type="button" class="ln-btn-secondary" @click="reopen">
               Rouvrir {{ data.previous.year_label }}…
             </button>

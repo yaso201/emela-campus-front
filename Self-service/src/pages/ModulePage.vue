@@ -80,7 +80,7 @@ const planningDe = (ins) => ({ path: '/planning/search', query: { enseignant: in
       <p v-if="repere" class="text-sm text-ln-gray-500 mt-1">{{ repere }}</p>
     </header>
 
-    <div v-if="error" class="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">
+    <div v-if="error" class="flex items-start gap-2 rounded-md border border-ln-error/30 bg-ln-error-bg p-3 text-sm text-ln-error" role="alert">
       <AlertCircle class="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" /><span>{{ error }}</span>
     </div>
     <p v-if="loading" class="text-sm text-ln-gray-500">Chargement…</p>
@@ -107,7 +107,7 @@ const planningDe = (ins) => ({ path: '/planning/search', query: { enseignant: in
                 :class="s.is_mine ? 'bg-ln-blue-50/40' : ''">
               <span class="w-28 flex-shrink-0 text-sm font-semibold text-ln-gray-900">{{ jour(s.date) }}</span>
               <span class="w-32 flex-shrink-0 text-sm text-ln-gray-700">{{ heure(s.from_time) }} – {{ heure(s.to_time) }}</span>
-              <span class="min-w-0 flex-1 text-sm text-ln-gray-800">
+              <span class="min-w-0 flex-1 text-sm text-ln-gray-900">
                 <span class="font-medium">{{ ACTIVITES[s.activity] || s.activity || 'Séance' }}</span>
                 <template v-for="x in [s.student_group, s.room].filter(Boolean)" :key="x"> · {{ x }}</template>
                 <span class="block text-ln-gray-600">

@@ -32,20 +32,20 @@ async function act(row, { act: a, params }) {
       <p class="text-sm text-ln-gray-500 mt-1">Quand la scolarité constate une absence prolongée, elle vous met en demeure de vous expliquer (Art. 39).</p>
     </header>
 
-    <div v-if="error" class="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">
+    <div v-if="error" class="flex items-start gap-2 rounded-md border border-ln-error/30 bg-ln-error-bg p-3 text-sm text-ln-error" role="alert">
       <AlertCircle class="w-4 h-4 mt-0.5 flex-shrink-0" /><span>{{ error }}</span>
     </div>
 
     <p v-if="loading" class="text-sm text-ln-gray-500">Chargement…</p>
     <section v-else-if="!items.length" class="rounded-lg border border-ln-gray-200 bg-white p-6 text-center text-sm text-ln-gray-600">
-      <ShieldCheck class="w-6 h-6 mx-auto mb-2 text-emerald-600" aria-hidden="true" />
+      <ShieldCheck class="w-6 h-6 mx-auto mb-2 text-ln-success" aria-hidden="true" />
       Aucune procédure d’abandon ne vous concerne.
     </section>
 
     <section v-for="row in items" :key="row.name" class="rounded-lg border border-ln-gray-200 bg-white p-4 space-y-3">
       <div class="flex flex-wrap items-center gap-2">
         <h2 class="text-base font-semibold text-ln-gray-900">{{ row.name }}</h2>
-        <span class="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-900">{{ row.status }}</span>
+        <span class="inline-flex items-center rounded-full border border-ln-warning/40 bg-ln-warning-bg px-2 py-0.5 text-xs font-medium text-ln-warning">{{ row.status }}</span>
       </div>
       <dl class="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
         <div><dt class="text-ln-gray-500">Semestre</dt><dd class="text-ln-gray-900">{{ row.academic_term }}</dd></div>
@@ -57,8 +57,8 @@ async function act(row, { act: a, params }) {
       <div v-if="row.response_received_on" class="rounded-md bg-ln-gray-50 p-3 text-sm text-ln-gray-700">
         Votre réponse du {{ formatDate(row.response_received_on) }} : « {{ row.response_text }} »
       </div>
-      <p v-if="row.pronounced_on" class="text-sm text-ln-gray-800">Abandon prononcé le {{ formatDate(row.pronounced_on) }} : {{ row.pronounce_reason }}</p>
-      <p v-if="row.dismissed_on" class="text-sm text-ln-gray-800">Procédure classée le {{ formatDate(row.dismissed_on) }} : {{ row.dismiss_reason }}</p>
+      <p v-if="row.pronounced_on" class="text-sm text-ln-gray-900">Abandon prononcé le {{ formatDate(row.pronounced_on) }} : {{ row.pronounce_reason }}</p>
+      <p v-if="row.dismissed_on" class="text-sm text-ln-gray-900">Procédure classée le {{ formatDate(row.dismissed_on) }} : {{ row.dismiss_reason }}</p>
       <ActesServeur :available="row.available_acts" :blocked="row.blocked_acts" :busy="busy"
                     @act="(e) => act(row, e)" />
     </section>

@@ -29,6 +29,25 @@ const BACK_TOKENS_DIR =
   path.resolve(BACK_PUBLIC, '../design-system/tokens');
 const TOKENS_SRC = path.resolve(__dirname, '../shared/design-system/tokens/tokens.css');
 
+// MANDAT-14 (lot 7 bis, §3.28 du rapport) : la page serveur charge l'entrée sous `emela.bundle.js?v=<mtime>`. Un
+// morceau qui l'importerait (`../emela.bundle.js`, sans la requête) la ferait évaluer une seconde fois — deux
+// applications, deux routeurs. La compilation échoue si un morceau importe l'entrée.
+function entreeUnique() {
+  return {
+    name: 'emela-entree-unique',
+    generateBundle(_options, bundle) {
+      const fautifs = Object.values(bundle)
+        .filter((c) => c.type === 'chunk' && !c.isEntry
+          && [...c.imports, ...c.dynamicImports].includes('emela.bundle.js'))
+        .map((c) => c.fileName);
+      if (fautifs.length) {
+        this.error(`l'entrée est importée par ${fautifs.length} morceau(x) (${fautifs.slice(0, 3).join(', ')}…) : `
+          + 'elle serait évaluée deux fois');
+      }
+    },
+  };
+}
+
 function copyTokensToBack() {
   return {
     name: 'emela-copy-tokens-to-back',
@@ -62,6 +81,7 @@ export default defineConfig({
     vue(),
     copyTokensToBack(),
     writeBuildIdentity(),
+    entreeUnique(),
     // L11: VitePWA retiré — le SW Workbox servait des assets stale.
     // Un killswitch sw.js est maintenu dans <back>/public/emela/
     // via le script postbuild. Ne pas réintroduire VitePWA sans
@@ -84,6 +104,12 @@ export default defineConfig({
       output: {
         entryFileNames: 'emela.bundle.js',
         chunkFileNames: 'chunks/[name]-[hash].js',
+        // MANDAT-14 (lot 7 bis) : l'aide de chargement de Vite vit dans SON morceau — sinon elle reste dans l'entrée,
+        // et chaque morceau de route importe l'entrée (servie sous `?v=`) : double évaluation (§3.28 du rapport).
+        manualChunks(id) {
+          if (id.includes('vite/preload-helper') || id.includes('vite/modulepreload-polyfill')) return 'vite-amorce';
+          return undefined;
+        },
         assetFileNames: (assetInfo) => {
           if (assetInfo.name && assetInfo.name.endsWith('.css')) {
             return 'emela.bundle.css';

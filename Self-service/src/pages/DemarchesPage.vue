@@ -116,9 +116,9 @@ const attendu = computed(() => cartes.value.filter((c) => vues.value[c.key].acti
       </button>
     </header>
 
-    <section v-if="attendu.length" class="rounded-lg border border-amber-300 bg-amber-50 p-4" role="status">
-      <h2 class="text-sm font-semibold text-amber-900">Une action vous est demandée</h2>
-      <ul class="mt-2 space-y-1 text-sm text-amber-900">
+    <section v-if="attendu.length" class="rounded-lg border border-ln-warning/40 bg-ln-warning-bg p-4" role="status">
+      <h2 class="text-sm font-semibold text-ln-warning">Une action vous est demandée</h2>
+      <ul class="mt-2 space-y-1 text-sm text-ln-warning">
         <li v-for="c in attendu" :key="c.key">
           <RouterLink :to="c.to" class="underline underline-offset-2">{{ c.titre }}</RouterLink> :
           {{ vues[c.key].action }}<template v-if="vues[c.key].delai">,
@@ -134,7 +134,9 @@ const attendu = computed(() => cartes.value.filter((c) => vues.value[c.key].acti
           <component :is="c.icone" class="w-5 h-5 mt-0.5 text-ln-blue-800 flex-shrink-0" aria-hidden="true" />
           <div class="min-w-0 flex-1">
             <h2 class="text-base font-semibold text-ln-gray-900">{{ c.titre }}</h2>
-            <p v-if="erreurs[c.key]" class="text-sm text-red-700 mt-1">{{ erreurs[c.key] }}</p>
+            <p v-if="erreurs[c.key]" class="text-sm text-ln-error mt-1">{{ erreurs[c.key] }}</p>
+            <!-- Conception (lot 7, D-3) : tant que la lecture n'a pas répondu, la carte le dit — pas « aucune démarche ». -->
+            <p v-else-if="!(c.key in reponses)" class="text-sm text-ln-gray-500 mt-1" aria-live="polite">Chargement…</p>
             <template v-else-if="vues[c.key].dossier">
               <p class="text-sm text-ln-gray-700 mt-1">
                 <span class="font-medium">{{ titre(c, vues[c.key].dossier) }}</span> ·
@@ -145,7 +147,7 @@ const attendu = computed(() => cartes.value.filter((c) => vues.value[c.key].acti
               </p>
               <p v-else class="text-sm text-ln-gray-500 mt-2">Aucune action de votre part n’est attendue.</p>
               <p v-if="vues[c.key].delai" class="text-sm mt-1"
-                 :class="vues[c.key].delai.days_remaining <= 3 ? 'text-amber-800 font-semibold' : 'text-ln-gray-700'">
+                 :class="vues[c.key].delai.days_remaining <= 3 ? 'text-ln-warning font-semibold' : 'text-ln-gray-700'">
                 {{ vues[c.key].delai.label }} : jusqu’au {{ formatDate(vues[c.key].delai.due_on) }}
               </p>
               <p v-if="vues[c.key].autres" class="text-xs text-ln-gray-500 mt-1">

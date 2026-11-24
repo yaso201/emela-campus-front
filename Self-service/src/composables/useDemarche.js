@@ -2,7 +2,7 @@
 // P1 (VERDICT-MANDAT-14-PC1) : l'écran ne garde aucune machine. La lecture `get_my_*` rend, pour chaque dossier,
 // les actes possibles MAINTENANT (`available_acts`, avec leur chemin) et ceux qui ne le sont pas, avec la phrase de
 // la garde (`blocked_acts`) ; et l'ouverture d'une démarche (`open`). L'écran rend ce que le serveur dit.
-import { ref } from 'vue';
+import { nextTick, ref, watch } from 'vue';
 
 export async function callApi(method, params = {}) {
   const body = new URLSearchParams();
@@ -41,6 +41,18 @@ export function useDemarche(method, itemsKey = 'items') {
   const items = ref([]);
   const loading = ref(false);
   const error = ref('');
+  // Conception (lot 7 bis, D-7) : un acte refusé s'affiche en haut de la page, loin de son bouton (au téléphone, hors de
+  // l'écran). L'alerte est amenée à l'écran et prend le focus : le refus est vu, et lu par le lecteur d'écran.
+  watch(error, (message) => {
+    if (!message || typeof document === 'undefined') return;
+    nextTick(() => {
+      const alerte = document.querySelector('[role="alert"]');
+      if (!alerte) return;
+      alerte.setAttribute('tabindex', '-1');
+      alerte.scrollIntoView?.({ block: 'center' });
+      alerte.focus?.({ preventScroll: true });
+    });
+  });
 
   async function load() {
     loading.value = true;

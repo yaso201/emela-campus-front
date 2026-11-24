@@ -22,7 +22,11 @@ async function act(row, { act: a, params }) {
 }
 
 // La sanction telle que la procédure l'a prononcée — rien n'est dit avant le conseil, ni quand il n'en prononce pas.
+// Revue adversariale (lot 7, A-7) : après un appel INFIRMÉ ou une levée, la sanction n'est plus celle prononcée — l'écran
+// lit la décision d'appel et la levée que le serveur rend (`appeal_decision`, `lifted_on`), il ne garde pas « Exclusion ».
 function sanction(row) {
+  if (row.appeal_decision === 'Infirmée') return 'Sanction annulée en appel';
+  if (row.lifted_on) return `Sanction levée le ${formatDate(row.lifted_on)}`;
   if (row.status === 'Convoquée') return 'À prononcer par le conseil de discipline';
   if (row.status === 'Sans sanction' || !row.duration_weeks) return 'Aucune sanction';
   return `Exclusion de ${plural(row.duration_weeks, 'semaine')}${row.is_suspended_sentence ? ' avec sursis' : ''}`;
@@ -39,13 +43,13 @@ function sanction(row) {
       <p class="text-sm text-ln-gray-500 mt-1">Les procédures disciplinaires qui vous concernent, la sanction notifiée et votre droit d’appel (Art. 18).</p>
     </header>
 
-    <div v-if="error" class="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">
+    <div v-if="error" class="flex items-start gap-2 rounded-md border border-ln-error/30 bg-ln-error-bg p-3 text-sm text-ln-error" role="alert">
       <AlertCircle class="w-4 h-4 mt-0.5 flex-shrink-0" /><span>{{ error }}</span>
     </div>
 
     <p v-if="loading" class="text-sm text-ln-gray-500">Chargement…</p>
     <section v-else-if="!items.length" class="rounded-lg border border-ln-gray-200 bg-white p-6 text-center text-sm text-ln-gray-600">
-      <ShieldCheck class="w-6 h-6 mx-auto mb-2 text-emerald-600" aria-hidden="true" />
+      <ShieldCheck class="w-6 h-6 mx-auto mb-2 text-ln-success" aria-hidden="true" />
       Aucune procédure disciplinaire ne vous concerne.
     </section>
 
