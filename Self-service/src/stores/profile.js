@@ -16,6 +16,9 @@ export const useProfileStore = defineStore('profile', {
     // — statut, son libellé, l'échéance de l'accès, la période disciplinaire. Le serveur garde le profil GÉNÉRIQUE ;
     // l'espace en tire le profil de navigation `dossier` (accueil, menu et routes réduits).
     dossier: null,
+    // MANDAT-14 (lot 7, VERDICT-PC1D §6 : un seul appel de get_my_profile par chargement) : le matricule (étudiant,
+    // sinon candidat) que rend get_my_profile, lu par « Mon compte » ici plutôt que par un second appel.
+    matricule: null,
   }),
   getters: {
     isLoaded: (state) => state.status === 'loaded',
@@ -42,9 +45,11 @@ export const useProfileStore = defineStore('profile', {
       this.canAccessDesk = false;
       this.displayName = null;
       this.dossier = null;
+      this.matricule = null;
     },
 
-    setResolvedProfile(profile, user, canAccessDesk, displayName = null, dossier = null) {
+    setResolvedProfile(profile, user, canAccessDesk, displayName = null, dossier = null, matricule = null) {
+      this.matricule = matricule || null;
       this.sessionUser = user || window.user || 'Guest';
       // DEC-366 : un profil générique qui porte la facette « dossier » est un étudiant à accès réduit.
       this.dossier = (profile || 'generic') === 'generic' && dossier ? dossier : null;
@@ -105,7 +110,8 @@ export const useProfileStore = defineStore('profile', {
         }
 
         // R2: can_access_desk vient du backend — plus de lecture frontend des rôles système.
-        this.setResolvedProfile(resolvedProfile, data?.user, data?.can_access_desk, data?.display_name, data?.dossier);
+        this.setResolvedProfile(resolvedProfile, data?.user, data?.can_access_desk, data?.display_name, data?.dossier,
+          data?.student_id || data?.student_applicant_id || null);
       } catch (err) {
         this.error = err;
         this.status = 'error';

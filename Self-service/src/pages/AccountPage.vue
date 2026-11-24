@@ -35,7 +35,8 @@ const buildLine = computed(() => {
 const auth = useAuthStore();
 const profile = useProfileStore();
 const { logout } = useAuth();
-const profileResource = useFrappeCall('portal_app.api.portal_access.get_my_profile');
+// MANDAT-14 (lot 7, VERDICT-PC1D §6) : la page lisait get_my_profile une seconde fois ; elle lit le store du profil,
+// déjà chargé par la garde du routeur — un seul appel par chargement (recette de l'espace, 14 pages sur 518).
 
 // UI-INST-V1 — Fetch Moodle service (conditionnel sur compte actif, parité Student/Instructor)
 const moodleResource = useFrappeCall('portal_app.api.portal_access.get_moodle_service');
@@ -50,12 +51,9 @@ const displayName = computed(() => auth.displayName);
 const email = computed(() => auth.user);
 const profileTypeLabel = computed(() => profile.profileLabel);
 
-const profilePayload = computed(() => profileResource.data || {});
-const profileError = computed(() => profileResource.error ? "Impossible de charger les informations du profil." : '');
-const fullName = computed(() => profilePayload.value.display_name || auth.displayName);
-const matricule = computed(
-  () => profilePayload.value.student_id || profilePayload.value.student_applicant_id || null,
-);
+const profileError = computed(() => profile.status === 'error' ? "Impossible de charger les informations du profil." : '');
+const fullName = computed(() => profile.displayName || auth.displayName);
+const matricule = computed(() => profile.matricule);
 </script>
 
 <template>
