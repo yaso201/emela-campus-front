@@ -71,7 +71,7 @@
         </button>
       </div>
 
-      <div class="grid items-start gap-5 xl:grid-cols-[1fr_396px]">
+      <div class="grid grid-cols-1 items-start gap-5 xl:grid-cols-[1fr_396px]">
         <ul class="flex flex-col gap-3">
           <!-- ⚠️ LE SEUL ORDONNANCEMENT DE CETTE LISTE : ce qui MANQUE au dossier
                que le jury lira vient en tête. Ce n'est pas un tri par gravité

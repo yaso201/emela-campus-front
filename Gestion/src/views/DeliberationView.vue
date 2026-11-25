@@ -5,10 +5,16 @@
         <p class="mb-2 text-caption text-ln-gray-500">
           Notes · <b class="font-semibold text-ln-gray-900">Délibération annuelle</b>
         </p>
-        <h1 class="text-h1 tracking-tight text-ln-gray-900">Jury de fin d'année — {{ dash.program || '…' }}</h1>
-        <p class="mt-1 text-body-sm text-ln-gray-500">{{ subtitle }}</p>
+        <!-- P20 (PC1B) : sans jury choisi, la page a SON titre — elle ne reste pas sur « Jury de fin d'année — … »
+             ni sur « Chargement du jury ». -->
+        <h1 v-if="!subject" class="text-h1 tracking-tight text-ln-gray-900">Avant le jury</h1>
+        <h1 v-else class="text-h1 tracking-tight text-ln-gray-900">Jury de fin d'année — {{ dash.program_label || dash.program || '…' }}</h1>
+        <p v-if="!subject" class="mt-1 text-body-sm text-ln-gray-500">
+          Les résultats de semestre de la cohorte, leur calcul, et le jury à ouvrir
+        </p>
+        <p v-else class="mt-1 text-body-sm text-ln-gray-500">{{ subtitle }}</p>
       </div>
-      <div class="flex flex-wrap items-center gap-2">
+      <div v-if="subject" class="flex flex-wrap items-center gap-2">
         <!-- ⚠️ La synthèse est le DÉFAUT, pas une option. Le lot 2 l'a tranché
              comme une mesure : quatorze colonnes ne tiennent pas dans 1280 px
              avec le bloc de décision épinglé. -->
@@ -32,6 +38,8 @@
          montre aucune délibération arbitraire (un lien qui ressemble à un
          succès est pire qu'un lien mort — la leçon du bilan de charge). -->
     <template v-if="!subject">
+      <!-- MANDAT-14 (G-M2, C5) : avant le jury, les résultats de semestre de la cohorte et leur calcul. -->
+      <CohortResultsPanel />
       <div v-if="can('deliberate')" class="mb-4">
         <button type="button" class="ln-btn-primary" @click="openOpenPanel">Ouvrir une délibération…</button>
       </div>
@@ -42,7 +50,7 @@
       </StateBanner>
       <section class="overflow-hidden rounded-md-ln border border-ln-gray-200" aria-label="Choisir une délibération">
         <BlockState v-if="listState !== 'ready'" :state="listState" title="Aucune délibération"
-                    message="Aucun jury n'existe pour ce contexte. Les délibérations se créent à l'instruction, par l'Education Manager."
+                    message="Aucun jury n'existe pour ce contexte. Les délibérations se créent à l'instruction, par le responsable de la scolarité."
                     :rows="4" :row-height="40" @retry="loadList" />
         <table v-else class="w-full text-body-sm">
           <thead>
@@ -59,10 +67,11 @@
                 class="cursor-pointer border-b border-ln-gray-100 last:border-0 hover:bg-ln-gray-50"
                 @click="openDeliberation(d.name)">
               <td class="px-4 py-2.5 font-mono text-[12px] text-ln-blue-700">{{ d.name }}</td>
-              <td class="px-4 py-2.5">{{ d.program }}</td>
+              <!-- Q18 : la filière par son libellé ; P16 : la date au format français. -->
+              <td class="px-4 py-2.5">{{ d.program_label || d.program }}</td>
               <td class="px-4 py-2.5">{{ d.academic_term }}</td>
               <td class="px-4 py-2.5">{{ d.status }}</td>
-              <td class="px-4 py-2.5">{{ d.deliberation_date }}</td>
+              <td class="px-4 py-2.5">{{ jourFr(d.deliberation_date) }}</td>
             </tr>
           </tbody>
         </table>
@@ -84,7 +93,7 @@
 
     <BlockState v-if="tableState !== 'ready'" :state="tableState === 'denied' ? 'loading' : tableState"
                 title="Aucun étudiant à délibérer"
-                message="Ce jury n'a pas encore d'étudiant instruit. La liste se construit à l'instruction, par l'Education Manager."
+                message="Ce jury n'a pas encore d'étudiant instruit. La liste se construit à l'instruction, par le responsable de la scolarité."
                 :rows="8" :row-height="44" class="mb-4" @retry="reload" />
 
     <template v-else>
@@ -245,12 +254,14 @@
       </div>
 
       <!-- ⚠️ Ce que le point d'entrée ne rend pas, dit à l'écran. -->
-      <p v-if="missingRoster" class="mt-4 flex items-start gap-3 rounded-md-ln border border-dashed border-ln-warning bg-ln-warning-bg p-4 text-caption leading-relaxed text-[#6B4415]">
+      <p v-if="missingRoster" class="mt-4 flex items-start gap-3 rounded-md-ln border border-dashed border-ln-warning bg-ln-warning-bg p-4 text-caption leading-relaxed text-[var(--ln-warning-ink)]">
         <svg class="mt-0.5 h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4 2.5 20h19z" /><path d="M12 10v4.5M12 17.4v.2" /></svg>
         <span>
-          <b class="font-semibold">{{ instructed }} décisions instruites sur {{ total }} étudiants.</b>
+          <b class="font-semibold">{{ instructed }} {{ instructed >= 2 ? 'décisions instruites' : 'décision instruite' }}
+            sur {{ total }} {{ total >= 2 ? 'étudiants' : 'étudiant' }}.</b>
           Le tableau du jury est alimenté par les décisions <b class="font-semibold">déjà instruites</b> :
-          les {{ total - instructed }} autres étudiants n'y figureraient pas. Ils sont affichés ici depuis
+          {{ total - instructed >= 2 ? 'les ' + (total - instructed) + ' autres étudiants n’y figureraient pas.'
+            : 'l’autre étudiant n’y figurerait pas.' }} Ils sont affichés ici depuis
           une lecture <b class="font-semibold">qui n'existe pas encore côté serveur</b> — sans elle, cet écran
           liste ce qui est fait au lieu de ce qui reste à décider, ce qui est l'inverse de son usage.
         </span>
@@ -265,7 +276,8 @@
           <h3 class="mt-0.5 text-h3 text-ln-gray-900">{{ panel.title }}</h3>
           <p class="mt-0.5 text-caption text-ln-gray-500">{{ panel.student_name }}</p>
         </div>
-        <button type="button" class="ml-auto text-ln-gray-500" aria-label="Fermer" @click="panel = null">✕</button>
+        <!-- D-FRONT-LARGEURS-ETROITES-01 : une cible de 24 px au moins. -->
+        <button type="button" class="ml-auto inline-flex h-6 w-6 items-center justify-center text-ln-gray-500" aria-label="Fermer" @click="panel = null">✕</button>
       </header>
 
       <div v-if="panel.kind === 'ue'" class="px-5 py-4">
@@ -327,7 +339,7 @@
             <b class="font-semibold text-ln-gray-900">Constat :</b> {{ p.finding }}
             <span class="text-ln-gray-500">— posé le {{ p.closed_on }}</span>
           </p>
-          <p v-else-if="p.kind.includes('Contrat')" class="mt-2 border-t border-ln-gray-100 pt-2 text-caption leading-relaxed text-[#6B4415]">
+          <p v-else-if="p.kind.includes('Contrat')" class="mt-2 border-t border-ln-gray-100 pt-2 text-caption leading-relaxed text-[var(--ln-warning-ink)]">
             <b class="font-semibold">Aucun constat n'a été posé.</b> Le contrat a été rendu ; son constat
             manque. Le jury le lit <b class="font-semibold">tel quel</b> — ce n'est pas un blocage, et le
             propriétaire du contrat peut encore le poser.
@@ -372,10 +384,10 @@
           <!-- ⚠️ La dérogation d'assiduité est exigée À LA CLÔTURE, pas à
                l'instruction — deux moments distincts. -->
           <div v-if="attendanceCases.length" class="mt-4 rounded-md-ln border border-ln-warning bg-ln-warning-bg p-4">
-            <p class="text-body-sm font-semibold text-[#6B4415]">
+            <p class="text-body-sm font-semibold text-[var(--ln-warning-ink)]">
               {{ plural(attendanceCases.length, 'passage') }} en dépassement d'absences
             </p>
-            <p class="mt-1 text-caption leading-relaxed text-[#6B4415]">
+            <p class="mt-1 text-caption leading-relaxed text-[var(--ln-warning-ink)]">
               {{ attendanceCases.map((r) => r.student_name).join(', ') }} —
               un motif de dérogation est exigé à la clôture pour chacun. Le jury reste souverain
               (Art. 31.2) : le dépassement ne refuse pas le passage, il refuse un passage sans motif.
@@ -452,6 +464,10 @@ import { listDeliberationRoster, listDeliberations } from '../api/deliberation.j
 import { listStructureOptions, getStructureTree } from '../api/structure.js';
 import DecisionForm from './notes/DecisionForm.vue';
 import DeliberationOpenPanel from './notes/DeliberationOpenPanel.vue';
+import CohortResultsPanel from './notes/CohortResultsPanel.vue';
+// P16 : « 28 juin 2027 », « 1er juillet 2027 » ; jamais « 2027-06-28 ».
+const jourFr = (iso) => (iso ? new Date(String(iso).slice(0, 10) + 'T12:00:00')
+  .toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).replace(/^1 /, '1er ') : '—');
 
 const { can } = useSession();
 const { params } = useAcademicContext();

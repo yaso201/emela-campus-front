@@ -164,7 +164,7 @@ say('\n2 · Simulacre');
  * inatteignable pour sa propre défaillance, et le contrat du script — une ligne
  * ÉCHEC nommée, puis code 1 — était rompu.
  */
-let fx, fxG, fxP, fxN, fxD, fxC, fxZ, fxK;
+let fx, fxG, fxP, fxN, fxD, fxC, fxZ, fxK, fxL;
 const FIXTURE_MODULES = {};
 try {
   /**
@@ -192,9 +192,11 @@ try {
   fxZ = FIXTURE_MODULES['fixtures-fin-de-cycle.js'];
   // MANDAT-10, E3' : la charpente (calendrier académique, catalogue des filières).
   fxK = FIXTURE_MODULES['fixtures-charpente.js'];
+  // MANDAT-14 (L4-C) : les lectures neuves (étapes 5 et 11, recherche de personnes, semestres d'accueil).
+  fxL = FIXTURE_MODULES['fixtures-l4c.js'];
   const missing = ['fixtures.js', 'fixtures-groupes.js', 'fixtures-planning.js',
     'fixtures-notes.js', 'fixtures-dossiers.js', 'fixtures-conseil.js',
-    'fixtures-fin-de-cycle.js', 'fixtures-charpente.js'].filter((n) => !FIXTURE_MODULES[n]);
+    'fixtures-fin-de-cycle.js', 'fixtures-charpente.js', 'fixtures-l4c.js'].filter((n) => !FIXTURE_MODULES[n]);
   if (missing.length) throw new Error('modules attendus absents : ' + missing.join(', '));
 } catch (e) {
   check('le module de simulacre se charge', [e.message]);
@@ -289,7 +291,17 @@ const probes = [
   ['documentRequests', () => fxZ.documentRequests({}).items.length],
   // ⚠️ Sondée avec un NOM RÉEL : la fixture lève sur une demande inconnue, donc la
   // sonde garde aussi contre le renommage d'une demande du jeu d'essai.
-  ['documentRequest', () => fxZ.documentRequest({ name: 'DOC-2027-0188' }).checks.length],
+  // MANDAT-14 (C1) : la forme du serveur — plus de `checks` ; la demande porte sa période et son éligibilité.
+  ['documentRequest', () => fxZ.documentRequest({ name: 'DRQ-2026-00091' }).eligibility_note.length],
+  // MANDAT-14 (L4-C) — les lectures et les actes neufs des étapes 5, 11 et 12.
+  ['semesterResults', () => fxL.semesterResults({ academic_level: 'L2-GL' }).rows.length],
+  ['computeSemesterResults', () => fxL.computeSemesterResults({ academic_level: 'L2-GL' }).rows.length],
+  ['mhcEnrollments', () => fxL.mhcEnrollments().items.length],
+  ['validateMhcEnrollment', () => fxL.validateMhcEnrollment({ decision: 'Validé' }).status],
+  ['retakeCandidates', () => fxL.retakeCandidates({ course: 'INF-204' }).rows.length],
+  ['recordRetakeGrade', () => fxL.recordRetakeGrade({ retake_grade: '12' }).retake_grade],
+  ['searchPeople', () => fxL.searchPeople({ query: 'Kponou' }).students.length],
+  ['targetTerms', () => fxL.targetTerms({ target_program: 'LRC' }).terms.length],
   ['yearClosure', () => fxZ.yearClosure({}).anomalies.length],
   ['mentionOf', () => fxZ.mentionOf(15.82)],
   ['graduationDossiers', () => fxZ.graduationDossiers({}).items.length],
@@ -2697,6 +2709,32 @@ const main = read(join(SRC, 'assets/main.css'));
 check('aucun @import après les directives @tailwind',
   main.slice(main.indexOf('@tailwind')).includes('@import')
     ? ['un @import suit une directive — CSS invalide, postcss-import peu fiable'] : []);
+
+// ─── 8 bis. LES FENÊTRES (MANDAT-14, D-FRONT-DIALOGUES-FOCUS-01) ─────────────
+// `composables/dialogFocus.js` donne le focus à toute fenêtre (`role="dialog"`, `role="alertdialog"`), la ferme
+// par Échap en déclenchant SON bouton d'échappée, et rend le focus au déclencheur. Deux invariants, ici :
+//   - l'observateur est installé (main.js) ;
+//   - chaque fichier qui ouvre une fenêtre porte une échappée au libellé EXACT (ou `data-dialog-cancel`) — sans
+//     quoi Échap ne ferme rien ; et aucun ACTE (« Annuler la séance… ») ne se lit comme une échappée.
+say('\n8 bis · Fenêtres : focus et Échap');
+{
+  const { ESCAPE_LABEL } = await import(pathToFileURL(join(SRC, 'composables/dialogFocus.js')));
+  const dlgBad = [];
+  if (!/installDialogFocus\(\)/.test(read(join(SRC, 'main.js')))) dlgBad.push('main.js : installDialogFocus() n’est pas appelé');
+  for (const p of vue) {
+    const s = read(p);
+    if (!/role="(?:alert)?dialog"/.test(s)) continue;
+    const labels = [...s.matchAll(/<button[^>]*>([\s\S]*?)<\/button>/g)]
+      .map((b) => b[1].replace(/<[^>]+>/g, '').replace(/\{\{[^}]*\}\}/g, '').replace(/\s+/g, ' ').trim());
+    if (!labels.some((l) => ESCAPE_LABEL.test(l)) && !/data-dialog-cancel/.test(s)) {
+      dlgBad.push(basename(p) + ' : une fenêtre sans échappée (« Annuler », « Fermer », « Revenir » ou data-dialog-cancel)');
+    }
+  }
+  for (const l of ['Annuler la séance…', 'Annuler la demande', 'Fermer la session']) {
+    if (ESCAPE_LABEL.test(l)) dlgBad.push('« ' + l + ' » serait pris pour une échappée : Échap déclencherait un acte');
+  }
+  check('chaque fenêtre se ferme par Échap, et Échap ne déclenche aucun acte', dlgBad);
+}
 
 // ─── 9. LA RÉPONSE PÉRIMÉE (MANDAT-12, D-FRONT-REPONSE-PERIMEE-01) ───────────
 // La course O-5 de MANDAT-10, rendue DÉTERMINISTE : deux chargements, dont les

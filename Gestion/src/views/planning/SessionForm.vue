@@ -27,7 +27,8 @@
         <StateBanner v-if="optionsError" variant="error" compact lead="Options indisponibles." :text="optionsError" />
 
         <template v-if="mode !== 'instructor'">
-          <div class="grid grid-cols-3 gap-4">
+          <!-- MANDAT-14 (D-FRONT-LARGEURS-ETROITES-01) : une colonne en étroit, trois en large. -->
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
               <label for="ses-date" class="text-body-sm font-semibold text-ln-gray-900">Date</label>
               <input id="ses-date" v-model="form.schedule_date" type="date" :class="field" @change="reload" />
@@ -45,7 +46,7 @@
           <StateBanner v-if="options?.group_busy" variant="warning" lead="Le groupe a déjà une séance sur ce créneau."
                        text="Le serveur refusera le chevauchement à l'enregistrement." />
 
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label for="ses-course" class="text-body-sm font-semibold text-ln-gray-900">Module</label>
               <select id="ses-course" v-model="form.course" :class="field" :disabled="mode === 'edit'">

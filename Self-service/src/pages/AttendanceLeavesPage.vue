@@ -98,7 +98,7 @@ async function loadDashboard() {
   error.value = '';
   success.value = '';
   try {
-    dashboard.value = await callApi('portal_app.api.attendance_leaves.get_attendance_leave_dashboard', filters);
+    dashboard.value = await callApi('attendance_app.lanem_attendance.api.attendance_leaves.get_attendance_leave_dashboard', filters);
   } catch (err) {
     dashboard.value = null;
     error.value = err.message;
@@ -247,7 +247,7 @@ async function createLeave() {
   error.value = '';
   success.value = '';
   try {
-    const result = await callApi('portal_app.api.attendance_leaves.create_student_leave_request', requestForm);
+    const result = await callApi('attendance_app.lanem_attendance.api.attendance_leaves.create_student_leave_request', requestForm);
     success.value = `Demande ${result.name} soumise`;
     requestForm.reason = '';
     requestForm.attendance_sessions = '';
@@ -300,7 +300,7 @@ async function decideLeave(row, decision) {
   error.value = '';
   success.value = '';
   try {
-    const result = await callApi('portal_app.api.attendance_leaves.decide_student_leave_request', {
+    const result = await callApi('attendance_app.lanem_attendance.api.attendance_leaves.decide_student_leave_request', {
       leave_application: row.name,
       decision,
       decision_reason: reason,
@@ -342,7 +342,7 @@ function statusVisual(status) {
   <div class="space-y-6">
     <header class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-ln-gray-900">Leaves attendance</h1>
+        <h1 class="text-2xl font-bold text-ln-gray-900">Absences justifiées</h1>
         <p class="mt-1 text-sm text-ln-gray-600">
           Demandes justifiées et décisions pédagogiques.
         </p>
@@ -631,7 +631,7 @@ function statusVisual(status) {
 
     <section v-if="dashboard" class="overflow-hidden rounded-md-ln border border-ln-gray-200 bg-white">
       <div class="border-b border-ln-gray-100 px-4 py-3">
-        <h2 class="text-sm font-semibold text-ln-gray-900">Demandes Leave</h2>
+        <h2 class="text-sm font-semibold text-ln-gray-900">Demandes d’absence justifiée</h2>
       </div>
       <EmptyState
         v-if="rows.length === 0"

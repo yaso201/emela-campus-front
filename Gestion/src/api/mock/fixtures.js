@@ -81,20 +81,21 @@ export const session = {
  *   `de` — directeur des études : lecture seule de la charpente.
  * Un simulacre de lecteur, pas une politique : les clés retirées sont celles que la matrice serveur ne lui donne pas.
  */
+// MANDAT-14 (C15) : `decide:mhc` = {EM} ; `read:mhc` = {EM, GA, DE} (Q5, P12) — retirées aux autres lecteurs.
 const AS = {
   // M9 : `instruct:dossiers` = {EM} (matrice ; K-e) — ni le RF, ni le DE, ni le GA, ni le Director n'ouvrent un dossier.
   rf: { roles: ['Responsable de formation'], drop: ['write:calendar', 'write:charpente', 'write:groups', 'publish:planning',
-    'instruct:dossiers'] },
+    'instruct:dossiers', 'read:mhc', 'decide:mhc'] },
   de: { roles: ['Directeur des Études'], drop: ['write:calendar', 'write:charpente', 'write:structure', 'write:groups',
-    'write:planning', 'publish:planning', 'write:modules', 'instruct:dossiers'] },
+    'write:planning', 'publish:planning', 'write:modules', 'instruct:dossiers', 'decide:mhc'] },
   // MANDAT-12 (maquettes) : le gestionnaire seul — il publie, il ne déroge pas (Q15 de MANDAT-10,
   // VERDICT-MANDAT-10-PC2.md §4).
-  ga: { roles: ['Gestionnaire académique'], drop: ['derogate:planning', 'write:structure', 'instruct:dossiers'] },
+  ga: { roles: ['Gestionnaire académique'], drop: ['derogate:planning', 'write:structure', 'instruct:dossiers', 'decide:mhc'] },
   director: { roles: ['Director'], drop: ['write:calendar', 'write:charpente', 'write:structure', 'write:groups',
-    'write:planning', 'publish:planning', 'write:modules', 'instruct:dossiers'] },
+    'write:planning', 'publish:planning', 'write:modules', 'instruct:dossiers', 'read:mhc', 'decide:mhc'] },
   // Q19 : la Direction statue sur l'appel disciplinaire (Art. 18.6).
   direction: { roles: ['Direction'], drop: ['write:calendar', 'write:charpente', 'write:structure', 'write:groups',
-    'write:planning', 'publish:planning', 'write:modules', 'instruct:dossiers'] },
+    'write:planning', 'publish:planning', 'write:modules', 'instruct:dossiers', 'read:mhc', 'decide:mhc'] },
 };
 export function sessionAs(as) {
   const v = AS[as];
@@ -122,9 +123,9 @@ const QUEUE = [
     status: 'incomplete', statusLabel: '3 signalements', due: 'depuis 2 jours', overdue: true, to: 'grades' },
   { id: 'GRD-204', domain: 'grades', title: 'INF-204 · projet', subtitle: 'Pr. Hounkpatin · 38 notes',
     status: 'propose', statusLabel: 'À contrôler', due: 'depuis 1 jour', to: 'grades' },
-  { id: 'DOC-0091', domain: 'documents', title: 'Marie Kponou · relevé semestriel S1', subtitle: 'Reçue le 14 mars · dossier de candidature',
-    status: 'propose', statusLabel: 'À traiter', due: 'depuis 2 jours', to: 'documents' },
-  { id: 'DOC-0092', domain: 'documents', title: 'Ange Sossou · relevé annuel 2025-2026', subtitle: 'Les deux semestres sont délibérés',
+  { id: 'DRQ-2026-00091', domain: 'documents', title: 'Marie Kponou · relevé officiel 2025-2026 (S2)', subtitle: 'Demandée le 4 septembre · le semestre est publié',
+    status: 'propose', statusLabel: 'À traiter', due: 'depuis 6 jours', to: 'documents' },
+  { id: 'DRQ-2026-00092', domain: 'documents', title: 'Ange Sossou · relevé annuel 2025-2026', subtitle: 'Les deux semestres sont publiés',
     status: 'propose', statusLabel: 'À traiter', due: 'depuis 3 jours', to: 'documents' },
   { id: 'PLN-W38', domain: 'planning', title: 'Semaine du 14 septembre · 3 brouillons', subtitle: 'L2 Génie logiciel — groupe A',
     status: 'brouillon', statusLabel: 'À publier', due: 'avant le 12 septembre', overdue: true, to: 'planning' },

@@ -30,7 +30,7 @@
       remplacement.
     </StateBanner>
 
-    <div class="grid items-start gap-5 xl:grid-cols-[1fr_372px]">
+    <div class="grid grid-cols-1 items-start gap-5 xl:grid-cols-[1fr_372px]">
       <div>
         <TimeGrid :days="week.days" :hours="week.hours" :slot-height="44"
                   :items="gridItems" :legend="legend" :selected-id="selectedId"
@@ -54,7 +54,7 @@
               {{ detail.course }} — {{ detail.course_name }}
             </h3>
             <p class="mt-0.5 text-caption text-ln-gray-500">
-              {{ dayLabel(detail.day) }} · {{ detail.from_time }} – {{ detail.to_time }} · {{ detail.room }}
+              {{ dayLabel(detail.day) }} · {{ hm(detail.from_time) }} – {{ hm(detail.to_time) }} · {{ detail.room }}
             </p>
           </header>
           <div class="px-4 py-3">
@@ -74,7 +74,7 @@
             </dl>
 
             <p v-if="detail.custom_status === 'Annulé' && detail.custom_planning_status === 'Publié'"
-               class="mb-3 rounded-sm-ln bg-ln-warning-bg p-3 text-caption leading-snug text-[#6B4415]">
+               class="mb-3 rounded-sm-ln bg-ln-warning-bg p-3 text-caption leading-snug text-[var(--ln-warning-ink)]">
               <b class="font-semibold">Annulée, et toujours publiée.</b> Les étudiants la voient, barrée :
               retirer la séance de leur emploi du temps effacerait la trace de l'annulation. Ce sont deux
               états distincts, portés par deux champs.
@@ -110,8 +110,10 @@
             <div v-if="detail.j7_derogations?.length" class="mt-3 border-t border-ln-gray-100 pt-3">
               <p class="text-caption text-ln-gray-500">Dérogation au préavis</p>
               <p v-for="d in detail.j7_derogations" :key="d.at" class="mt-1 text-caption leading-snug text-ln-gray-700">
-                <b class="font-semibold text-ln-gray-900">{{ d.at.slice(8, 10) }}/{{ d.at.slice(5, 7) }}/{{ d.at.slice(0, 4) }}</b>
-                · publiée à {{ d.days_ahead }} jour{{ d.days_ahead > 1 ? 's' : '' }} de l'épreuve · par {{ d.by_label || d.by }}
+                <b class="font-semibold text-ln-gray-900">{{ jour(d.at) }}</b>
+                <!-- P16 : jamais « -63 jour » — un écart négatif se dit « après l'épreuve », et le pluriel s'accorde. -->
+                · publiée {{ Math.abs(d.days_ahead) }} jour{{ Math.abs(d.days_ahead) >= 2 ? 's' : '' }}
+                {{ d.days_ahead < 0 ? 'après' : 'avant' }} l'épreuve · par {{ d.by_label || d.by }}
                 <span class="mt-0.5 block text-ln-gray-600">« {{ d.reason }} »</span>
               </p>
             </div>
@@ -120,15 +122,15 @@
             <StateBanner v-if="detailState === 'error'" class="mt-3" variant="error" compact lead="Détail de la séance illisible."
                          text="Les dérogations J-7 et l'état du préavis n'ont pas pu être lus ; seule la ligne de la semaine est affichée." />
             <div v-if="detail.j7_publication?.needs_derogation" class="mt-3 rounded-sm-ln border border-ln-warning bg-ln-warning-bg p-3">
-              <p class="text-caption font-semibold text-[#6B4415]">
+              <p class="text-caption font-semibold text-[var(--ln-warning-ink)]">
                 Épreuve à moins de {{ detail.j7_publication.min_days }} jours : la publier exige la dérogation au préavis.
               </p>
               <template v-if="can('derogate:planning')">
-                <p class="mt-1 text-caption leading-snug text-[#6B4415]">
+                <p class="mt-1 text-caption leading-snug text-[var(--ln-warning-ink)]">
                   Vous publiez cette épreuve vous-même, avec un motif : il est enregistré sur la séance et reste lisible.
                 </p>
                 <div v-if="derogateOne" class="mt-2">
-                  <label for="pl-derog" class="text-caption font-semibold text-[#6B4415]">Motif de la dérogation <span class="text-ln-error">obligatoire</span></label>
+                  <label for="pl-derog" class="text-caption font-semibold text-[var(--ln-warning-ink)]">Motif de la dérogation <span class="text-ln-error">obligatoire</span></label>
                   <textarea id="pl-derog" v-model="overrideReason" rows="3"
                             class="mt-1 w-full rounded-sm-ln border border-ln-gray-300 bg-white p-2.5 text-body-sm text-ln-gray-900"
                             placeholder="Ce qui justifie de publier cette épreuve à moins de sept jours…" />
@@ -140,7 +142,7 @@
                 </div>
                 <button v-else type="button" class="ln-btn-primary mt-2" @click="derogateOne = true">Publier en dérogation…</button>
               </template>
-              <p v-else class="mt-1 text-caption leading-snug text-[#6B4415]">
+              <p v-else class="mt-1 text-caption leading-snug text-[var(--ln-warning-ink)]">
                 Cette dérogation appartient au <b class="font-semibold">directeur des études</b> : la publication de la
                 semaine laissera l'épreuve en brouillon, et il la publiera lui-même, avec un motif.
               </p>
@@ -181,7 +183,7 @@
                      class="border-b border-ln-gray-100 px-4 py-3 last:border-b-0">
               <p class="text-body-sm font-semibold text-ln-gray-900">{{ e.course }} — {{ e.exam_type }}</p>
               <p class="mt-0.5 text-caption text-ln-gray-500">
-                {{ e.schedule_date }} · {{ e.from_time }} – {{ e.to_time }} · {{ e.room }}
+                {{ jour(e.schedule_date) }} · {{ hm(e.from_time) }} – {{ hm(e.to_time) }} · {{ e.room }}
               </p>
               <p class="mt-1.5 flex flex-wrap items-center gap-2">
                 <StatusPill :status="publishTone(e)" :label="e.custom_planning_status" />
@@ -253,8 +255,8 @@
 
           <!-- La dérogation : le motif, pas le bouton -->
           <div v-if="derogationOpen" class="mt-4 rounded-md-ln border border-ln-warning bg-ln-warning-bg p-4">
-            <p class="text-body-sm font-semibold text-[#6B4415]">Dérogation au préavis</p>
-            <p class="mt-1 text-caption leading-relaxed text-[#6B4415]">
+            <p class="text-body-sm font-semibold text-[var(--ln-warning-ink)]">Dérogation au préavis</p>
+            <p class="mt-1 text-caption leading-relaxed text-[var(--ln-warning-ink)]">
               <template v-if="can('derogate:planning')">
                 Le motif est enregistré sur chaque séance publiée par dérogation et reste lisible.
               </template>
@@ -522,6 +524,18 @@ function shortGroup(name) {
 function dayLabel(key) {
   const d = DAYS.find((x) => x.key === key);
   return d ? d.label + ' ' + d.dayNumber : '';
+}
+/** MANDAT-14 (P16, D-FRONT-LARGEURS-ETROITES-01) : « 14:00:00 » → « 14 h 00 » — jamais de secondes à l'écran. */
+function hm(t) {
+  const m = /^(\d{1,2}):(\d{2})/.exec(String(t || ''));
+  return m ? `${Number(m[1])} h ${m[2]}` : (t || '—');
+}
+/** P16 : « 2027-06-28 » → « 28 juin 2027 », « 1er ». */
+function jour(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
+  if (!m) return iso || '—';
+  return new Date(`${m[1]}-${m[2]}-${m[3]}T12:00:00`)
+    .toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).replace(/^1 /, '1er ');
 }
 function plural(n, word) {
   const v = Number(n) || 0;

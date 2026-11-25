@@ -49,9 +49,14 @@ const scheduleDisplay = computed(() => {
   const parts = [];
   const session = normalizedSession.value;
 
-  // Horaire : "14:00 – 16:00"
-  const from = session.from_time?.slice(0, 5);
-  const to = session.to_time?.slice(0, 5);
+  // Horaire, au format français (P16, MANDAT-14) : « 14 h 00 – 16 h 00 »
+  const hfr = (t) => {
+    if (!t) return null;
+    const [h, m] = String(t).split(':');
+    return `${Number(h)} h ${(m || '00').padStart(2, '0')}`;
+  };
+  const from = hfr(session.from_time);
+  const to = hfr(session.to_time);
   if (from && to) {
     parts.push(`${from} – ${to}`);
   } else if (from) {

@@ -160,7 +160,7 @@
         <header class="border-b border-ln-gray-200 p-5">
           <h3 class="text-[17px] font-semibold text-ln-gray-900">Préparer la séance du conseil</h3>
           <p class="mt-1 text-body-sm leading-normal text-ln-gray-500">
-            {{ retainedCount }} cas retenus deviennent l'ordre du jour. La séance s'ouvre en brouillon —
+            {{ retainedCount }} {{ retainedCount >= 2 ? 'cas retenus deviennent' : 'cas retenu devient' }} l'ordre du jour. La séance s'ouvre en brouillon —
             personne n'est convoqué avant que le directeur des études ne la tienne.
           </p>
         </header>

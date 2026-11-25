@@ -40,7 +40,7 @@
                    footnote="Le parcours naît en Brouillon ; ses unités se composent dans l'éditeur de maquette, puis il suit le cycle de validation."
                    @cancel="close" @submit="submitParcours($event)" />
 
-    <div class="grid items-start gap-5 xl:grid-cols-[352px_1fr]">
+    <div class="grid grid-cols-1 items-start gap-5 xl:grid-cols-[352px_1fr]">
       <WorkQueue title="Filières" :items="queueItems" :selected-id="selectedId" :total="queueItems.length"
                  :state="listState === 'denied' ? 'loading' : listState" state-title="Aucune filière"
                  state-message="Le catalogue est vide. Une filière se crée ici ; ses niveaux et ses parcours s'y ajoutent ensuite."
@@ -84,7 +84,7 @@
                     state-title="Aucun niveau"
                     :state-message="maquetteWritable
                       ? 'Sans niveau, la filière n’accueille ni inscription ni maquette.'
-                      : 'Sans niveau, la filière n’accueille ni inscription ni maquette. Ses niveaux sont ajoutés par son responsable de formation ou par l’Education Manager.'">
+                      : 'Sans niveau, la filière n’accueille ni inscription ni maquette. Ses niveaux sont ajoutés par son responsable de formation ou par le responsable de la scolarité.'">
           <template #head>
             <tr>
               <th :class="headTh" class="!text-left">Code</th>

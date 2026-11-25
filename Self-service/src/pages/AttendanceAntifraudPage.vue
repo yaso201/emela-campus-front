@@ -135,7 +135,7 @@ async function loadDashboard() {
   error.value = '';
   success.value = '';
   try {
-    dashboard.value = await callApi('portal_app.api.attendance_antifraud.get_antifraud_review_dashboard', filters);
+    dashboard.value = await callApi('attendance_app.lanem_attendance.api.attendance_antifraud.get_antifraud_review_dashboard', filters);
   } catch (err) {
     dashboard.value = null;
     error.value = err.message;
@@ -147,7 +147,7 @@ async function loadDashboard() {
 async function loadStatistics() {
   statsLoading.value = true;
   try {
-    statistics.value = await callApi('portal_app.api.attendance_antifraud.get_antifraud_statistics', {
+    statistics.value = await callApi('attendance_app.lanem_attendance.api.attendance_antifraud.get_antifraud_statistics', {
       days: 30,
       student_group: filters.student_group,
     });
@@ -162,7 +162,7 @@ async function loadStatistics() {
 async function loadSettings() {
   settingsLoading.value = true;
   try {
-    const result = await callApi('portal_app.api.attendance_antifraud.get_antifraud_detection_settings');
+    const result = await callApi('attendance_app.lanem_attendance.api.attendance_antifraud.get_antifraud_detection_settings');
     settingsPayload.value = result;
     Object.entries(result.settings || {}).forEach(([key, value]) => {
       if (Object.prototype.hasOwnProperty.call(settingsForm, key)) {
@@ -205,7 +205,7 @@ async function saveSettings() {
   error.value = '';
   success.value = '';
   try {
-    const result = await callApi('portal_app.api.attendance_antifraud.update_antifraud_detection_settings', {
+    const result = await callApi('attendance_app.lanem_attendance.api.attendance_antifraud.update_antifraud_detection_settings', {
       settings_json: JSON.stringify(settingsForm),
     });
     settingsPayload.value = result;
@@ -231,7 +231,7 @@ async function decide(row, action) {
   error.value = '';
   success.value = '';
   try {
-    const result = await callApi('portal_app.api.attendance_antifraud.decide_antifraud_review', {
+    const result = await callApi('attendance_app.lanem_attendance.api.attendance_antifraud.decide_antifraud_review', {
       review: row.name,
       action,
       notes,
@@ -321,7 +321,7 @@ function detailSummary(row) {
       v-if="hasCritical"
       severity="warning"
       title="Anomalies critiques"
-      :description="`${formatCount(summary.critical)} revue(s) critique(s) dans le périmètre affiché.`"
+      :description="`${formatCount(summary.critical)} ${summary.critical >= 2 ? 'revues critiques' : 'revue critique'} dans le périmètre affiché.`"
     />
 
     <AlertBlock

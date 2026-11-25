@@ -1,5 +1,20 @@
 <template>
   <div>
+    <!-- MANDAT-14 (G-M3, C6) : deux onglets — le contrôle des soumissions, et la note de rattrapage (étape 11). -->
+    <div class="mb-4 inline-flex overflow-hidden rounded-sm-ln border border-ln-gray-300" role="tablist" aria-label="Notes">
+      <button v-for="o in [{ k: 'controle', l: 'Contrôle des soumissions' }, { k: 'rattrapage', l: 'Rattrapage' }]" :key="o.k"
+              type="button" role="tab" :aria-selected="onglet === o.k" class="h-[32px] px-3 text-caption font-semibold"
+              :class="onglet === o.k ? 'bg-ln-blue-900 text-white' : 'bg-white text-ln-gray-700'" @click="onglet = o.k">{{ o.l }}</button>
+    </div>
+    <template v-if="onglet === 'rattrapage'">
+      <header class="mb-4">
+        <p class="mb-2 text-caption text-ln-gray-500">Notes · <b class="font-semibold text-ln-gray-900">Rattrapage</b></p>
+        <h1 class="text-h1 tracking-tight text-ln-gray-900">Notes de rattrapage</h1>
+        <p class="mt-1 text-body-sm text-ln-gray-500">Après la session principale, avant le jury de fin d’année (Art. 26, 29, 31.1).</p>
+      </header>
+      <RetakePanel />
+    </template>
+    <template v-else>
     <header class="mb-4 flex flex-wrap items-start justify-between gap-5">
       <div>
         <p class="mb-2 text-caption text-ln-gray-500">
@@ -31,7 +46,7 @@
     <StateBanner v-if="pending" variant="warning" lead="Acte non disponible." :text="pending" />
     <StateBanner v-if="actError" variant="error" lead="L'acte a échoué." :text="actError" />
 
-    <div class="grid items-start gap-5 xl:grid-cols-[368px_1fr]">
+    <div class="grid grid-cols-1 items-start gap-5 xl:grid-cols-[368px_1fr]">
       <WorkQueue title="Soumissions en attente" :items="queueItems" :selected-id="selectedId"
                  :total="queueItems.length"
                  :state="queueState === 'denied' ? 'loading' : queueState"
@@ -87,7 +102,7 @@
                 {{ l.proposed_grade === null ? 'absent' : l.proposed_grade.toFixed(2) }}
               </td>
               <td :class="bodyTd">{{ l.unexcused_absences }} / {{ l.attendance_rows }} séances</td>
-              <td :class="bodyTd" class="!text-left !whitespace-normal !leading-snug text-[12.5px] text-[#6B4415]">
+              <td :class="bodyTd" class="!text-left !whitespace-normal !leading-snug text-[12.5px] text-[var(--ln-warning-ink)]">
                 {{ flagOf(l) }}
               </td>
             </tr>
@@ -123,6 +138,7 @@
         </p>
       </section>
     </div>
+    </template>
   </div>
 </template>
 
@@ -153,6 +169,9 @@ import { useSession } from '../composables/useSession.js';
 import { useAcademicContext } from '../composables/useAcademicContext.js';
 import { useResource } from '../composables/useResource.js';
 import { listSubmissionsForControl, processSubmission, integrateSubmission, rejectSubmission } from '../api/grades.js';
+import RetakePanel from './notes/RetakePanel.vue';
+// MANDAT-14 (G-M3) : l'onglet du rattrapage ; `?onglet=rattrapage` l'ouvre directement.
+const onglet = ref(new URLSearchParams(location.search).get('onglet') === 'rattrapage' ? 'rattrapage' : 'controle');
 
 const { can } = useSession();
 const { params } = useAcademicContext();

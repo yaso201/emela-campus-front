@@ -50,7 +50,7 @@
                   confirm-label="Désigner l'année courante" @cancel="designating = false" @submit="submitCurrent" />
     </div>
 
-    <div class="grid items-start gap-5 xl:grid-cols-[320px_1fr]">
+    <div class="grid grid-cols-1 items-start gap-5 xl:grid-cols-[320px_1fr]">
       <WorkQueue title="Années académiques" :items="queueItems" :selected-id="selectedId" :total="queueItems.length"
                  :state="state === 'denied' ? 'loading' : state" state-title="Aucune année académique"
                  state-message="Aucune année n'est ouverte. Rien ne fonctionne sans année courante (RUN-06) : ouvrez la première année, puis désignez-la."

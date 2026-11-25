@@ -16,7 +16,7 @@
       </button>
       <!-- MANDAT-12 (M8, Q8 b) : plusieurs semestres en cours — le serveur n'en choisit aucun ; le
            lecteur choisit, et son choix vit dans l'adresse comme tout contexte. -->
-      <span v-else-if="candidates.length" class="inline-flex items-center gap-2 rounded-sm-ln bg-ln-warning-bg px-2.5 py-1 text-caption text-[#6B4415]"
+      <span v-else-if="candidates.length" class="inline-flex items-center gap-2 rounded-sm-ln bg-ln-warning-bg px-2.5 py-1 text-caption text-[var(--ln-warning-ink)]"
             role="group" aria-label="Choisir le semestre">
         <b class="font-semibold">Plusieurs semestres en cours :</b>
         <button v-for="t in candidates" :key="t.id" type="button" class="ln-ctx-pick !h-[26px]" @click="emit('choose', t.id)">{{ t.label }}</button>

@@ -22,6 +22,8 @@ import * as D from './fixtures-dossiers.js';
 import * as C from './fixtures-conseil.js';
 import * as Z from './fixtures-fin-de-cycle.js';
 import * as K from './fixtures-charpente.js';
+// MANDAT-14 (L4-C, G-M1 à G-M8) : les lectures neuves du back.
+import * as L from './fixtures-l4c.js';
 
 
 const LATENCY = 260;
@@ -122,6 +124,17 @@ const S18_BY_NAME = {
   },
 };
 function s18Dossier(p = {}) {
+  // MANDAT-14 (G-M6) : le détail se lit par nom, CLOS COMPRIS ; un dossier clos n'offre plus aucun acte.
+  const closed = (D.dossiers({ closed: 1 }).items || []).find((i) => i.name === p.name);
+  if (closed) {
+    // Le champ du décideur est celui de SA procédure (`decision_by` au congé, `decided_by` ailleurs) : un seul,
+    // sinon « Décidé par » s'affiche deux fois (P18). Q18 : le libellé porte le nom.
+    const field = closed.kind === 'conge' ? 'decision_by' : 'decided_by';
+    return { ...closed, domain: closed.kind, status: closed.status, decider_role: closed.decider_role, machine: {},
+      detail: { decision_reason: closed.decision_reason, decision_on: closed.last_change_on, [field]: closed.decided_by },
+      detail_labels: { [field]: closed.decided_by_name || closed.decided_by },
+      available_acts: [], blocked_acts: [], waiting_for_roles: [] };
+  }
   const item = (D.dossiers({}).items || []).find((i) => i.name === p.name);
   if (!item) throw Object.assign(new Error('Dossier introuvable : ' + p.name + '.'), { status: 404 });
   const spec = S18_BY_NAME[item.name] || S18[item.kind] || { domain: item.kind, status: item.status, machine: {}, detail: {},
@@ -191,6 +204,41 @@ const SA = 'portal_app.api.academic.service_allocation.';
 const HANDLERS = {
   // AN-09 (M3) : fermeture de session — cœur Frappe, no-op en simulacre.
   logout: (p) => ({}),
+  // ─── MANDAT-14 (L4-C) · lectures neuves ─────────────────────────────────
+  'portal_app.api.academic.people_search.search_people': (p) => L.searchPeople(p),
+  'portal_app.api.academic.reorientation.list_target_terms': (p) => L.targetTerms(p),
+  [MG + 'list_mhc_enrollments']: () => L.mhcEnrollments(),
+  [DL + 'list_semester_results']: (p) => L.semesterResults(p),
+  [DL + 'compute_semester_results']: (p) => L.computeSemesterResults(p),
+  [MG + 'list_retake_candidates']: (p) => L.retakeCandidates(p),
+  [MG + 'validate_mhc_enrollment']: (p) => L.validateMhcEnrollment(p),
+  // MANDAT-14 (G-M7, C10) : la clôture — refus par défaut tant qu'un semestre court (`?etat=anticipee`) ; l'acte
+  // anticipé, explicite et motivé, passe.
+  'portal_app.api.academic.year_closure.close_academic_year': (p) => {
+    const court = new URLSearchParams(location.search).get('etat') === 'anticipee';
+    if (!p.new_current_year) {
+      throw Object.assign(new Error('Préciser l’année qui devient courante.'), { code: 'VALIDATION' });
+    }
+    if (court && !Number(p.early_closure)) {
+      throw Object.assign(new Error('L’année a un semestre qui court encore (2026-2027 (S2), fin le 2027-07-31) : '
+        + 'clôture refusée. Une clôture anticipée est un acte explicite, motivé à part.'), { code: 'VALIDATION' });
+    }
+    if (Number(p.early_closure) && !(p.early_closure_reason || '').trim()) {
+      throw Object.assign(new Error('Une clôture anticipée se motive (early_closure_reason).'), { code: 'VALIDATION' });
+    }
+    return { academic_year: p.academic_year, action: Number(p.early_closure) ? 'Clôture anticipée' : 'Clôture',
+      new_current_year: p.new_current_year };
+  },
+  // MANDAT-14 (G-M4, Q10) : délivrer et refuser une demande de relevé.
+  'portal_app.api.academic.document_requests.fulfill_document_request': (p) =>
+    ({ request: p.name, status: 'Émise', issued_document: 'AID-2026-00140' }),
+  'portal_app.api.academic.document_requests.refuse_document_request': (p) => {
+    if (!(p.refusal_reason || '').trim()) {
+      throw Object.assign(new Error('Un refus SE MOTIVE (refusal_reason).'), { code: 'VALIDATION' });
+    }
+    return { name: p.name, status: 'Refusée', refusal_category: p.refusal_category || null };
+  },
+  [MG + 'record_retake_grade']: (p) => L.recordRetakeGrade(p),
   // ─── Grappe 1 · châssis ─────────────────────────────────────────────────
   // E3' (maquette) : `?as=rf` ou `?as=de` rend un lecteur SANS les droits de charpente — pour voir la règle 3.
   'portal_app.api.identity.session_context.get_session_context': () =>

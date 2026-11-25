@@ -58,7 +58,7 @@
       </div>
 
       <!-- Succès partiel : ce qui est passé, ce qui ne l'est pas -->
-      <p v-if="partial" class="border-t border-[#F3D9A6] bg-ln-warning-bg px-4 py-3 text-caption leading-snug text-[#6B4415]">{{ partial }}</p>
+      <p v-if="partial" class="border-t border-[#F3D9A6] bg-ln-warning-bg px-4 py-3 text-caption leading-snug text-[var(--ln-warning-ink)]">{{ partial }}</p>
 
       <div v-if="legend.length" class="flex flex-wrap gap-4 border-t border-ln-gray-200 bg-ln-gray-50 px-4 py-3 text-caption text-ln-gray-500">
         <span v-for="l in legend" :key="l.label" class="flex items-center gap-1.5">
@@ -166,7 +166,7 @@ function stateLabelClass(item) {
   }[item.tone] || 'text-ln-gray-500';
 }
 function conflictClass(c) {
-  return { ko: 'bg-ln-error-bg text-[#7A2020]', wa: 'bg-ln-warning-bg text-[#6B4415]' }[c.level] || 'bg-ln-success-bg text-[#0B5341]';
+  return { ko: 'bg-ln-error-bg text-[#7A2020]', wa: 'bg-ln-warning-bg text-[var(--ln-warning-ink)]' }[c.level] || 'bg-ln-success-bg text-[#0B5341]';
 }
 function conflictDot(c) {
   return { ko: 'bg-ln-error', wa: 'bg-ln-warning' }[c.level] || 'bg-ln-success';

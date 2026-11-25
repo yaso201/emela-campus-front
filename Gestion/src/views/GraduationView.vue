@@ -20,7 +20,7 @@
 
     <BlockState v-if="state !== 'ready'" :state="state === 'denied' ? 'loading' : state"
                 title="Aucun dossier de diplomation"
-                message="Aucun dossier n’a été instruit sur cette année. L’instruction appartient à l’Education Manager et au gestionnaire académique."
+                message="Aucun dossier n’a été instruit sur cette année. L’instruction appartient au responsable de la scolarité et au gestionnaire académique."
                 :rows="4" :row-height="56" :skeleton-widths="[180, 240, 120]"
                 @retry="reload" />
 
@@ -162,7 +162,7 @@
 
           <template #actions>
             <ActionBar :actions="actions"
-                       attribution="Décision <b>souveraine</b> de la Direction. L'instruction appartient à l'Education Manager."
+                       attribution="Décision <b>souveraine</b> de la Direction. L'instruction appartient au responsable de la scolarité."
                        :hint="hint" @act="act" />
           </template>
         </ObjectPanel>

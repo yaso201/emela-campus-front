@@ -15,12 +15,28 @@ import {
   Settings,
   LogOut,
   ChevronRight,
+  KeyRound,
 } from 'lucide-vue-next';
+import { formatDate } from '@/composables/useDemarche';
+
+// MANDAT-14 (E8, E-M8) : la version servie — le SHA du source, « +modifié » s'il y en a, le mode (P2).
+const BUILD = typeof __EMELA_BUILD__ !== 'undefined' ? __EMELA_BUILD__ : null;
+const buildLine = computed(() => {
+  if (!BUILD) return null;
+  let quand = '—';
+  if (BUILD.built_at) {
+    const d = new Date(BUILD.built_at);
+    quand = `${formatDate(d)} à ${d.getHours()} h ${String(d.getMinutes()).padStart(2, '0')}`;
+  }
+  return { sha: BUILD.sha || 'inconnu', dirty: Boolean(BUILD.dirty),
+    mode: BUILD.mode === 'server' ? 'serveur' : BUILD.mode, quand };
+});
 
 const auth = useAuthStore();
 const profile = useProfileStore();
 const { logout } = useAuth();
-const profileResource = useFrappeCall('portal_app.api.portal_access.get_my_profile');
+// MANDAT-14 (lot 7, VERDICT-PC1D §6) : la page lisait get_my_profile une seconde fois ; elle lit le store du profil,
+// déjà chargé par la garde du routeur — un seul appel par chargement (recette de l'espace, 14 pages sur 518).
 
 // UI-INST-V1 — Fetch Moodle service (conditionnel sur compte actif, parité Student/Instructor)
 const moodleResource = useFrappeCall('portal_app.api.portal_access.get_moodle_service');
@@ -35,12 +51,9 @@ const displayName = computed(() => auth.displayName);
 const email = computed(() => auth.user);
 const profileTypeLabel = computed(() => profile.profileLabel);
 
-const profilePayload = computed(() => profileResource.data || {});
-const profileError = computed(() => profileResource.error ? "Impossible de charger les informations du profil." : '');
-const fullName = computed(() => profilePayload.value.display_name || auth.displayName);
-const matricule = computed(
-  () => profilePayload.value.student_id || profilePayload.value.student_applicant_id || null,
-);
+const profileError = computed(() => profile.status === 'error' ? "Impossible de charger les informations du profil." : '');
+const fullName = computed(() => profile.displayName || auth.displayName);
+const matricule = computed(() => profile.matricule);
 </script>
 
 <template>
@@ -74,7 +87,7 @@ const matricule = computed(
           <span class="text-sm font-medium text-ln-gray-900">{{ fullName }}</span>
         </div>
         <div class="flex justify-between items-center py-2 border-b border-ln-gray-100">
-          <span class="text-sm text-ln-gray-500">Email</span>
+          <span class="text-sm text-ln-gray-500">Courriel</span>
           <span class="text-sm font-medium text-ln-gray-900">{{ email }}</span>
         </div>
         <div v-if="matricule" class="flex justify-between items-center py-2">
@@ -123,6 +136,21 @@ const matricule = computed(
         <ChevronRight class="w-5 h-5 text-ln-gray-500" />
       </router-link>
 
+      <!-- MANDAT-14 (P7) : le PIN de l'enseignant (préalable des corrections) a un chemin depuis l'accueil. -->
+      <router-link
+        v-if="profile.profile === 'instructor'"
+        to="/account/security"
+        class="flex items-center justify-between p-4 bg-white border border-ln-gray-200 rounded-lg hover:border-ln-gray-300 hover:bg-ln-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25 min-h-[44px]"
+      >
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-md bg-ln-blue-50 flex items-center justify-center">
+            <KeyRound class="w-5 h-5 text-ln-blue-800" />
+          </div>
+          <span class="text-sm font-medium text-ln-gray-900">Mon code PIN (corrections de présence)</span>
+        </div>
+        <ChevronRight class="w-5 h-5 text-ln-gray-500" />
+      </router-link>
+
       <router-link
         to="/account/preferences"
         class="flex items-center justify-between p-4 bg-white border border-ln-gray-200 rounded-lg hover:border-ln-gray-300 hover:bg-ln-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25 min-h-[44px]"
@@ -145,5 +173,11 @@ const matricule = computed(
         Se déconnecter
       </button>
     </section>
+
+    <p v-if="buildLine" class="text-center text-xs text-ln-gray-600" data-emela-build-line>
+      Version de l’espace : <span class="font-mono">{{ buildLine.sha }}</span>
+      <span v-if="buildLine.dirty" class="font-semibold text-red-600"> +modifié</span>
+      · mode {{ buildLine.mode }} · compilée le {{ buildLine.quand }}
+    </p>
   </div>
 </template>

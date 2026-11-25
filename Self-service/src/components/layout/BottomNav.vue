@@ -5,28 +5,20 @@
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useProfileStore } from '@/stores/profile';
+import { BOTTOM_NAV_ITEMS, BOTTOM_NAV_MAX, isNavActive, navItemsFor } from './navItems.js';
+// MANDAT-14 (C-3.3, P25) : `NavIcon` n'était importé nulle part — la barre basse n'avait aucune icône.
+import NavIcon from './NavIcon.vue';
 
 const route = useRoute();
 const profile = useProfileStore();
 
-const allNavItems = [
-  { to: '/', label: 'Accueil', icon: 'home', profiles: ['student', 'instructor', 'director', 'candidate', 'generic', 'employee'] },
-  { to: '/planning', label: 'Planning', icon: 'calendar', profiles: ['student', 'instructor'] },
-  { to: '/results', label: 'Résultats', icon: 'chart', profiles: ['student'] },
-  { to: '/support', label: 'Aide', icon: 'help-circle', profiles: ['student', 'instructor', 'director', 'candidate', 'generic', 'employee'] },
-  { to: '/notifications', label: 'Notifs', icon: 'bell', profiles: ['student', 'instructor', 'director', 'candidate', 'generic', 'employee'] },
-];
+// P8 (MANDAT-14) : les entrées et leurs droits viennent de `navItems.js`, qui suit la garde du routeur.
+const visibleItems = computed(() => navItemsFor(BOTTOM_NAV_ITEMS, profile.profile || 'generic')
+  .slice(0, BOTTOM_NAV_MAX));
 
-const visibleItems = computed(() => {
-  const current = profile.profile || 'generic';
-  return allNavItems.filter((item) => item.profiles.includes(current)).slice(0, 5);
-});
-
+// P23 : la même règle que le menu latéral (`isNavActive`, `navItems.js`).
 function isActive(item) {
-  if (item.to === '/') {
-    return route.path === '/';
-  }
-  return route.path.startsWith(item.to);
+  return isNavActive(item, route);
 }
 </script>
 

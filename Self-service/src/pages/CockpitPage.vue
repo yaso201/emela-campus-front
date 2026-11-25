@@ -59,6 +59,11 @@ const InternshipBlock = defineAsyncComponent(() =>
   import('@/components/blocks/InternshipBlock.vue')
 );
 
+// DEC-366 (MANDAT-14, E-M11, P31) : l'accueil de l'étudiant à accès réduit.
+const DossierAccueil = defineAsyncComponent(() =>
+  import('@/components/blocks/DossierAccueil.vue')
+);
+
 // Blocs employee — lazy loading conformément à DEC-134 (B-003)
 const HrSelfServiceBlock = defineAsyncComponent(() =>
   import('@/components/blocks/HrSelfServiceBlock.vue')
@@ -147,6 +152,10 @@ const indicatorProgress = computed(() => {
     </div>
   </div>
 
+  <!-- MANDAT-14 (P25) : le titre de la page — le bandeau n'en porte plus. Lu par les lecteurs d'écran ; le document
+       obligatoire, quand il s'affiche à la place de l'accueil, porte le sien. -->
+  <h1 v-if="!(!mdLoading && isBlocked && pendingDoc)" class="sr-only">Accueil</h1>
+
   <!-- PRIORITÉ 1 : Document obligatoire (DEC-098) — affiché avant tout autre contenu -->
   <MandatoryDocumentPage
     v-if="!mdLoading && isBlocked && pendingDoc"
@@ -203,6 +212,12 @@ const indicatorProgress = computed(() => {
       <NotificationsBlock />
     </div>
     <ServicesBlock />
+  </div>
+
+  <!-- DEC-366 : l'étudiant à accès réduit (profil générique + facette « dossier ») — son dossier et ses démarches. -->
+  <div v-else-if="profileName === 'dossier'" :key="`dossier-${refreshKey}`" class="flex flex-col gap-8">
+    <DossierAccueil />
+    <NotificationsBlock />
   </div>
 
   <div v-else-if="profileName === 'instructor'" :key="`instructor-${refreshKey}`" class="flex flex-col gap-8">

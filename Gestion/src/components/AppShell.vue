@@ -11,7 +11,7 @@
 
       <button v-if="!compact" type="button" class="flex h-[34px] max-w-md flex-1 items-center gap-2 rounded-sm-ln border border-white/15 bg-white/10 px-3 text-body-sm text-white/70" @click="emit('search')">
         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4 4" /></svg>
-        Rechercher un étudiant, une UE, un groupe…
+        Rechercher un étudiant ou un membre du personnel…
       </button>
 
       <div class="ml-auto flex flex-shrink-0 items-center gap-3">

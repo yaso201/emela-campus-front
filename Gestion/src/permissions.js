@@ -47,6 +47,10 @@ export const PERMISSIONS = [
 
   // Notes et délibération
   'control:grades', 'deliberate', 'close:deliberation',
+  // MANDAT-14 (C15) : les inscriptions aux MHC (étape 5) — l'EM, le GA et le DE
+  // les lisent (garde MHC_READ_ROLES ; Q5 et P12 du verdict PC1), l'EM seul
+  // décide (MHC_DECISION_ROLES). Lire n'est pas décider : deux clés.
+  'read:mhc', 'decide:mhc',
 
   // Dossiers. `arbitrate:leave` et `decide:appeal` étaient une seule clé jusqu'à
   // la version 02 : l'arbitrage d'un congé appartient au Director, la décision
@@ -69,6 +73,11 @@ export const PERMISSIONS = [
   // Clôture et administration. `close:year` appartient au **Director**, non à la
   // Direction : deux rôles de nom voisin, confondus dans la version 01.
   'close:year', 'grant_role',
+
+  // MANDAT-14 (C7, D-RECHERCHE-PERSONNE-01) : chercher une personne (étudiants
+  // et personnel) — le personnel de gestion (garde PEOPLE_SEARCH_ROLES), un RF
+  // dans la portée de sa filière.
+  'read:people',
 ];
 
 /** Pour une recherche en temps constant, dans l'audit comme à l'exécution. */

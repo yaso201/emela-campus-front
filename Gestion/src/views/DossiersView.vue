@@ -41,8 +41,28 @@
       </button>
     </div>
 
-    <div class="grid items-start gap-5 xl:grid-cols-[368px_1fr]">
-      <WorkQueue title="Dossiers ouverts" :items="queueItems" :selected-id="selectedId"
+    <!-- MANDAT-14 (G-M6, C8) : les dossiers CLOS se lisent — un onglet, et l'ouverture par numéro (lecture par nom,
+         clos compris, S-18). Un congé décidé depuis plus de 7 jours y est (DEC-364 : son arbitrage ne s'exerce plus). -->
+    <div class="mb-3 flex flex-wrap items-center gap-3">
+      <div class="inline-flex overflow-hidden rounded-sm-ln border border-ln-gray-300" role="tablist" aria-label="Ouverts ou clos">
+        <button v-for="m in [{ k: false, l: 'Ouverts' }, { k: true, l: 'Clos' }]" :key="m.l" type="button" role="tab"
+                :aria-selected="closedMode === m.k" class="h-[30px] px-3 text-caption font-semibold"
+                :class="closedMode === m.k ? 'bg-ln-blue-900 text-white' : 'bg-white text-ln-gray-700'"
+                @click="setClosed(m.k)">{{ m.l }}</button>
+      </div>
+      <form class="flex flex-wrap items-center gap-2 sm:ml-auto" @submit.prevent="openByNumber">
+        <label for="dossier-numero" class="text-caption font-semibold text-ln-gray-700">Ouvrir par numéro</label>
+        <input id="dossier-numero" v-model="numero" type="text" placeholder="CNG-2026-007"
+               class="h-[30px] w-[160px] rounded-sm-ln border border-ln-gray-300 px-2 font-mono text-caption" />
+        <button type="submit" class="ln-btn-secondary" :disabled="!numero.trim()">Ouvrir</button>
+      </form>
+    </div>
+    <StateBanner v-if="numeroError" variant="warning" lead="Introuvable." :text="numeroError" />
+
+    <!-- D-FRONT-LARGEURS-ETROITES-01 : `grid-cols-1` borne la colonne unique en étroit (minmax(0, 1fr)) — sans
+         elle, la colonne implicite prenait la largeur du plus long texte de la file. -->
+    <div class="grid grid-cols-1 items-start gap-5 xl:grid-cols-[368px_1fr]">
+      <WorkQueue :title="closedMode ? 'Dossiers clos' : 'Dossiers ouverts'" :items="queueItems" :selected-id="selectedId"
                  :total="queueItems.length"
                  :state="listState === 'denied' ? 'loading' : listState"
                  state-title="Aucun dossier"
@@ -207,7 +227,10 @@ const filters = computed(() => {
 const queueItems = computed(() => items.value.map((c) => ({
   id: c.name,
   title: c.student_name + ' · ' + c.kind_label,
-  subtitle: c.name + ' · ouvert le ' + frDate(c.created),
+  // MANDAT-14 (G-M6) : un dossier clos dit sa dernière évolution (`last_change_on`, C8).
+  // Revue du lot 7 (C-5) : `closed` est porté par l'enveloppe de la liste, pas par chaque ligne.
+  subtitle: c.name + (closedMode.value ? ' · clos — dernière évolution le ' + frDate(c.last_change_on)
+    : ' · ouvert le ' + frDate(c.created)),
   status: c.status_tone || 'brouillon',
   statusLabel: c.status,
 })));
@@ -307,10 +330,12 @@ const subtitle = computed(() => {
 });
 
 function plural(n, w) { const v = Number(n) || 0; return v + ' ' + w + (v > 1 ? 's' : ''); }
-/** « 2027-03-09 10:12:00 » → « 09/03/2027 » ; une date absente reste un tiret. */
+/** P16 (MANDAT-14) : « 2027-03-09 10:12:00 » → « 9 mars 2027 », « 1er » le premier ; une date absente reste un tiret. */
 function frDate(v) {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(v || '');
-  return m ? m[3] + '/' + m[2] + '/' + m[1] : '—';
+  if (!m) return '—';
+  return new Date(`${m[1]}-${m[2]}-${m[3]}T12:00:00`)
+    .toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }).replace(/^1 /, '1er ');
 }
 function setKind(k) { kind.value = k; selectedId.value = null; reload(); }
 
@@ -339,10 +364,28 @@ watch(() => detailOf.value?.detail?.target_program, async (prog) => {
     if (mine === levelsSeq) levels.value = out;
   } catch { if (mine === levelsSeq) levels.value = []; }
 });
+// MANDAT-14 (C9) : le semestre COUVERT d'une reconnaissance (X1) se choisit parmi ceux où la filière visée offre au
+// moins une UE (`list_target_terms`, année du contexte, sans niveau) ; le semestre d'ACCUEIL d'une décision, lui,
+// dépend du niveau décidé et se lit dans le panneau des actes (P22). Garde de séquence comme les niveaux.
+const targetTerms = ref([]);
+let targetSeq = 0;
+watch(() => [detailOf.value?.detail?.target_program, params.value?.academic_year], async ([prog, year]) => {
+  const mine = ++targetSeq;
+  targetTerms.value = [];
+  if (!prog) return;
+  try {
+    const out = ((await DOS.listTargetTerms({ target_program: prog, target_academic_year: year }))?.terms || [])
+      .map((t) => ({ value: t.academic_term,
+        label: `${t.academic_term} — ${t.ue_count} ${t.ue_count >= 2 ? 'UE offertes' : 'UE offerte'}` }));
+    if (mine === targetSeq) targetTerms.value = out;
+  } catch { if (mine === targetSeq) targetTerms.value = []; }
+}, { immediate: true });
 const choices = computed(() => ({
   years: years.value.map((y) => ({ value: y.id, label: y.label })),
   terms: terms.value.map((t) => ({ value: t.id, label: t.label })),
   levels: levels.value,
+  target_terms: targetTerms.value,
+  target_program: detailOf.value?.detail?.target_program || null,
   // Q19 : les jours non purgés au dépôt de l'appel — la durée prononcée moins les jours purgés (faits du dossier) ;
   // 0 pour un sursis ou une période purgée : la reprise n'a alors rien à fixer.
   appeal_cap: appealCap.value,
@@ -361,7 +404,9 @@ function shapeValues(act, values) {
 }
 
 /* ── MANDAT-12 (M9, Q16 ; K-e) — ouvrir un dossier : un constat d'abandon ou un dossier disciplinaire. ── */
-const openForm = ref(false);
+// MANDAT-14 (C7) : la recherche du bandeau ouvre le formulaire, l'étudiant prérempli (`?ouvrir=`).
+const openForm = ref(Boolean(new URLSearchParams(location.search).get('ouvrir')
+  || new URLSearchParams((location.hash.split('?')[1]) || '').get('ouvrir')));
 const openError = ref('');
 const opened = ref('');
 async function onOpen({ kind: k, values }) {
@@ -393,11 +438,26 @@ async function onAct({ act, outcome, reason, values }) {
   finally { busy.value = false; }
 }
 
-function reload() {
-  res.load({ ...params.value, kind: kind.value === 'all' ? null : kind.value });
+// MANDAT-14 (G-M6, C8) : ouverts ou clos ; l'ouverture par numéro lit le dossier par son nom (clos compris).
+const closedMode = ref(new URLSearchParams(location.search).get('clos') === '1');
+const numero = ref(new URLSearchParams(location.search).get('numero') || '');
+const numeroError = ref('');
+function setClosed(v) { closedMode.value = v; kind.value = 'all'; selectedId.value = null; reload(); }
+async function openByNumber() {
+  numeroError.value = '';
+  const name = numero.value.trim();
+  try {
+    const d = await getDossier({ name });
+    if (Boolean(d.closed) !== closedMode.value) { closedMode.value = Boolean(d.closed); kind.value = 'all'; await reload(); }
+    selectedId.value = d.name;
+  } catch (e) { numeroError.value = e.message || ('Dossier introuvable : ' + name + '.'); }
 }
 
-onMounted(reload);
+function reload() {
+  return res.load({ ...params.value, kind: kind.value === 'all' ? null : kind.value, closed: closedMode.value ? 1 : 0 });
+}
+
+onMounted(async () => { await reload(); if (numero.value) openByNumber(); });
 watch(params, reload);
 watch(items, (v) => { if (v.length && !selectedId.value) selectedId.value = v[0].name; });
 </script>

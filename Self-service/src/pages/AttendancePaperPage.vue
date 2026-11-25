@@ -118,7 +118,7 @@ async function loadPendingSessions() {
   loadingList.value = true;
   error.value = '';
   try {
-    const payload = await callApi('portal_app.api.attendance_paper_mode.list_pending_paper_sessions');
+    const payload = await callApi('attendance_app.lanem_attendance.api.attendance_paper_mode.list_pending_paper_sessions');
     pendingSessions.value = payload.sessions || [];
   } catch (err) {
     error.value = err.message;
@@ -139,7 +139,7 @@ async function loadCandidateSessions() {
   loadingCandidates.value = true;
   error.value = '';
   try {
-    const payload = await callApi('portal_app.api.attendance_paper_mode.list_paper_candidate_sessions');
+    const payload = await callApi('attendance_app.lanem_attendance.api.attendance_paper_mode.list_paper_candidate_sessions');
     candidateSessions.value = payload.sessions || [];
   } catch (err) {
     candidateSessions.value = [];
@@ -169,8 +169,8 @@ async function loadSession(name) {
   manualSessionName.value = name;
   try {
     const method = canReenter.value
-      ? 'portal_app.api.attendance_paper_mode.get_paper_reentry_session'
-      : 'portal_app.api.attendance_paper_mode.get_paper_sheet_session';
+      ? 'attendance_app.lanem_attendance.api.attendance_paper_mode.get_paper_reentry_session'
+      : 'attendance_app.lanem_attendance.api.attendance_paper_mode.get_paper_sheet_session';
     const payload = await callApi(method, {
       attendance_session: name,
     });
@@ -267,7 +267,7 @@ async function printSheet() {
   error.value = '';
   success.value = '';
   try {
-    const payload = await callApi('portal_app.api.attendance_paper_mode.generate_paper_sheet', {
+    const payload = await callApi('attendance_app.lanem_attendance.api.attendance_paper_mode.generate_paper_sheet', {
       attendance_session: selectedSessionName.value,
       reason: form.reason || 'assistant_print',
       force: 1,
@@ -306,13 +306,13 @@ async function submitRows() {
       status: row.status,
       punctuality_status: row.status === 'Present' ? row.punctuality_status : 'N/A',
     }));
-    const result = await callApi('portal_app.api.attendance_paper_mode.submit_paper_attendance', {
+    const result = await callApi('attendance_app.lanem_attendance.api.attendance_paper_mode.submit_paper_attendance', {
       attendance_session: selectedSessionName.value,
       entries: JSON.stringify(payloadEntries),
       reason: form.reason.trim(),
       scan_file_url: form.scan_file_url.trim(),
     });
-    success.value = `Ressaisie enregistrée: ${result.events_created} ligne(s), consolidation ${result.consolidation?.status || 'terminée'}.`;
+    success.value = `Ressaisie enregistrée : ${result.events_created} ${result.events_created >= 2 ? 'lignes' : 'ligne'}, consolidation ${result.consolidation?.status || 'terminée'}.`;
     await loadPendingSessions();
     await loadCandidateSessions();
     await loadSession(selectedSessionName.value);
@@ -357,6 +357,12 @@ function fileNameFromUrl(value) {
         <p class="text-sm text-ln-gray-600 mt-1">
           Feuilles préremplies et ressaisie administrative des séances basculées.
         </p>
+        <!-- MANDAT-14 (P7) : la séance QR d'émargement (page serveur) a un chemin PERMANENT depuis le menu —
+             la tuile « QR d'émargement » de l'accueil n'existe que lorsque le serveur la montre. -->
+        <a v-if="profile.profile === 'instructor'" href="/app-emela/attendance-session"
+           class="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-ln-blue-800 hover:underline min-h-[44px]">
+          Ouvrir une séance d’émargement par QR →
+        </a>
       </div>
       <button
         type="button"
@@ -493,7 +499,8 @@ function fileNameFromUrl(value) {
         </section>
       </aside>
 
-      <main class="min-w-0">
+      <!-- MANDAT-14 (P25) : un seul `main`, celui de la coquille. -->
+      <div class="min-w-0">
         <div v-if="loadingDetail" class="space-y-4">
           <BlockSkeleton :lines="5" />
           <BlockSkeleton :lines="6" :show-title="false" />
@@ -719,7 +726,7 @@ function fileNameFromUrl(value) {
             <div v-else class="rounded-md-ln border border-ln-gray-200 overflow-hidden">
               <div class="border-b border-ln-gray-100 bg-ln-gray-50 px-4 py-3">
                 <h3 class="text-sm font-semibold text-ln-gray-900">
-                  Roster prérempli · {{ detail.roster?.length || 0 }} étudiant(s)
+                  Liste préremplie · {{ detail.roster?.length || 0 }} {{ (detail.roster?.length || 0) >= 2 ? 'étudiants' : 'étudiant' }}
                 </h3>
               </div>
               <div class="divide-y divide-ln-gray-100">
@@ -743,7 +750,7 @@ function fileNameFromUrl(value) {
             description="Les séances activées apparaissent dans la liste de gauche."
           />
         </section>
-      </main>
+      </div>
     </div>
   </div>
 </template>

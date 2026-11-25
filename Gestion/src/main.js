@@ -2,6 +2,7 @@ import { createApp } from 'vue';
 import App from './App.vue';
 import { router } from './router.js';
 import { tip } from './directives/tip.js';
+import { installDialogFocus } from './composables/dialogFocus.js';
 import './assets/main.css';
 
 // CORRECTION D'UNE LIGNE (mandat branchement §8, à reverser) : le CONTRAT
@@ -9,3 +10,6 @@ import './assets/main.css';
 // index.html du dev local (que le shell serveur IGNORE).
 // M3 AN-10 : v-tip = LE mécanisme d'infobulle partagé (survol + focus clavier).
 createApp(App).use(router).directive('tip', tip).mount('#gestion-app');
+
+// MANDAT-14 (D-FRONT-DIALOGUES-FOCUS-01) : le focus des fenêtres — à l'ouverture, Échap, tabulation, retour.
+installDialogFocus();

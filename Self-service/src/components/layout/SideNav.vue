@@ -7,6 +7,9 @@ import { useAuthStore } from '@/stores/auth';
 import { useProfileStore } from '@/stores/profile';
 import { X, LogOut, ExternalLink, User } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
+// MANDAT-14 (C-3.3, P25) : `NavIcon` n'était importé nulle part — le menu n'avait aucune icône.
+import NavIcon from './NavIcon.vue';
+import { SIDE_NAV_ITEMS, isNavActive, navItemsFor } from './navItems.js';
 
 const props = defineProps({
   /**
@@ -25,33 +28,10 @@ const auth = useAuthStore();
 const profile = useProfileStore();
 const { logout } = useAuth();
 
-const allNavItems = [
-  { to: '/', label: 'Accueil', icon: 'home', profiles: ['student', 'instructor', 'director', 'candidate', 'generic', 'employee'] },
-  { to: '/planning', label: 'Planning', icon: 'calendar', profiles: ['student', 'instructor'] },
-  { to: '/results', label: 'Résultats', icon: 'chart', profiles: ['student'] },
-  { to: '/evals', label: 'Évaluations', icon: 'star', profiles: ['student'] },
-  { to: '/documents', label: 'Documents', icon: 'file-text', profiles: ['student'] },
-  { to: '/account/leave-requests', label: 'Congé académique', icon: 'file-text', profiles: ['student'] },
-  { to: '/internship', label: 'Stage', icon: 'briefcase', profiles: ['student'] },
-  { to: '/insights', label: 'Pilotage', icon: 'bar-chart', profiles: ['director'] },
-  { to: '/attendance-paper', label: 'Présences papier', icon: 'file-text', profiles: ['instructor', 'director', 'generic', 'employee'] },
-  { to: '/attendance-kpis', label: 'KPI présences', icon: 'bar-chart', profiles: ['director', 'generic', 'employee'] },
-  { to: '/attendance-corrections', label: 'Corrections', icon: 'file-text', profiles: ['student', 'instructor', 'director', 'generic', 'employee'] },
-  { to: '/attendance-leaves', label: 'Leaves', icon: 'file-text', profiles: ['student', 'director', 'generic', 'employee'] },
-  { to: '/attendance-antifraud', label: 'Revue antifraude', icon: 'shield-alert', profiles: ['director', 'generic', 'employee'] },
-  { to: '/attendance-sync-anomalies', label: 'Anomalies sync', icon: 'refresh-cw', profiles: ['director', 'generic', 'employee'] },
-  { to: '/attendance-pdfs', label: 'PDF attendance', icon: 'file-text', profiles: ['student', 'instructor', 'director', 'generic', 'employee'] },
-  { to: '/attendance-compliance', label: 'Conformité', icon: 'shield-check', profiles: ['director', 'generic', 'employee'] },
-  { to: '/attendance-observability', label: 'Santé attendance', icon: 'activity', profiles: ['director', 'generic', 'employee'] },
-  { to: '/support', label: 'Support', icon: 'help-circle', profiles: ['student', 'instructor', 'director', 'candidate', 'generic', 'employee'] },
-  { to: '/notifications', label: 'Notifications', icon: 'bell', profiles: ['student', 'instructor', 'director', 'candidate', 'generic', 'employee'] },
-  { to: '/account', label: 'Mon compte', icon: 'user', profiles: ['student', 'instructor', 'director', 'candidate', 'generic', 'employee'] },
-];
-
-const visibleItems = computed(() => {
-  const current = profile.profile || 'generic';
-  return allNavItems.filter((item) => item.profiles.includes(current) && (!item.requiresDesk || profile.canAccessDesk));
-});
+// P8 (MANDAT-14) : les entrées et leurs droits viennent de `navItems.js`, qui suit la garde du routeur.
+const visibleItems = computed(() => navItemsFor(SIDE_NAV_ITEMS, profile.profile || 'generic', {
+  canAccessDesk: profile.canAccessDesk,
+}));
 
 function close() {
   emit('update:modelValue', false);
@@ -115,8 +95,8 @@ function close() {
             :to="item.to"
             class="group flex items-center gap-3 px-3 py-2.5 rounded-md-ln mb-1 text-sm text-ln-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25 min-h-[44px]"
             :class="[
-              // Item actif : fond bleu clair + texte bleu + barre gauche
-              $route.path === item.to || ($route.path === '/' && item.to === '/') 
+              // Item actif : fond bleu clair + texte bleu + barre gauche (P23 : une seule règle, `isNavActive`)
+              isNavActive(item, $route)
                 ? 'bg-ln-blue-50 text-ln-blue-800 font-semibold border-l-4 border-l-ln-blue-800 -ml-[1px] pl-[calc(0.75rem-3px)]' 
                 : 'hover:bg-ln-gray-50 hover:text-ln-gray-900 border-l-4 border-l-transparent'
             ]"
@@ -190,8 +170,8 @@ function close() {
         :to="item.to"
         class="group flex items-center gap-3 px-3 py-2.5 rounded-md-ln mb-1 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25 min-h-[44px]"
         :class="[
-          // Item actif : fond bleu clair + texte bleu + barre gauche
-          $route.path === item.to || ($route.path.startsWith(item.to) && item.to !== '/') || (item.to === '/' && $route.path === '/')
+          // Item actif : fond bleu clair + texte bleu + barre gauche (P23 : une seule règle, `isNavActive`)
+          isNavActive(item, $route)
             ? 'bg-ln-blue-50 text-ln-blue-800 font-semibold border-l-4 border-l-ln-blue-800 -ml-[1px] pl-[calc(0.75rem-3px)]' 
             : 'text-ln-gray-700 hover:bg-ln-gray-50 hover:text-ln-gray-900 border-l-4 border-l-transparent'
         ]"

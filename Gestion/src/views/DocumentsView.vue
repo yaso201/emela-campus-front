@@ -8,13 +8,16 @@
       <p class="mt-1 text-body-sm text-ln-gray-500">{{ subtitle }}</p>
     </header>
 
+    <StateBanner v-if="done" variant="success" lead="Acte enregistré." :text="done" />
+    <StateBanner v-if="actError" variant="warning" lead="Acte refusé." :text="actError" />
+
     <BlockState v-if="state !== 'ready'" :state="state === 'denied' ? 'loading' : state"
                 title="Aucune demande en attente"
                 message="Aucun étudiant n’attend de document. C’est l’état normal d’une file traitée — et il n’y a rien à préparer d’avance."
                 :rows="5" :row-height="56" :skeleton-widths="[180, 240, 120]"
                 @retry="reload" />
 
-    <div v-else class="grid items-start gap-5 xl:grid-cols-[392px_1fr]">
+    <div v-else class="grid grid-cols-1 items-start gap-5 xl:grid-cols-[392px_1fr]">
       <div class="flex flex-col gap-5">
         <WorkQueue title="Demandes" :items="queueItems" :selected-id="selectedId"
                    :total="data.count" state="ready" @select="select" />
@@ -31,16 +34,19 @@
             </p>
           </header>
           <ul class="px-4 py-3">
-            <li v-for="c in catalogue" :key="c.key"
+            <!-- MANDAT-14 (G-M4, C1) : le catalogue du SERVEUR — `requestable`, et la raison quand il ne l'est pas. -->
+            <li v-for="c in catalogue" :key="c.document_type"
                 class="mb-3 border-b border-ln-gray-100 pb-3 last:mb-0 last:border-b-0 last:pb-0">
               <p class="text-body-sm font-semibold"
                  :class="c.requestable ? 'text-ln-gray-900' : 'text-ln-gray-500'">
                 {{ c.label }}
                 <span v-if="!c.requestable" class="ml-1 rounded-sm-ln bg-ln-gray-100 px-1.5 py-0.5 text-micro font-semibold text-ln-gray-600">
-                  émis par la {{ c.source.toLowerCase() }}
+                  ne se demande pas ici
                 </span>
               </p>
-              <p class="mt-0.5 text-caption leading-relaxed text-ln-gray-600">{{ c.condition }}</p>
+              <p class="mt-0.5 text-caption leading-relaxed text-ln-gray-600">
+                {{ c.reason || 'L’étudiant le demande depuis son espace (Documents › Mes demandes).' }}
+              </p>
             </li>
           </ul>
           <p class="border-t border-ln-gray-200 bg-ln-gray-50 px-4 py-3 text-caption leading-relaxed text-ln-gray-600">
@@ -60,49 +66,33 @@
                      :subtitle="panelSubtitle" state="ready"
                      :warning="request.blocked_reason ? { lead: 'Émission impossible en l’état.', text: request.blocked_reason } : null">
           <template #header-right>
-            <StatusPill :status="request.status" :label="request.status_label" />
+            <StatusPill :status="pastille(request)" :label="request.status_label" />
           </template>
 
-          <!-- Les quatre vérifications sont CALCULÉES, jamais saisies : c'est ce
-               que l'étudiant ne pouvait pas voir en déposant sa demande. -->
+          <!-- MANDAT-14 (G-M4, C1) : ce que le serveur rend de la demande — la période, les programmes de la
+               période (DEC-351 ; C12 : un réorienté reçoit UN document en sections par programme), l'éligibilité
+               RECALCULÉE en file. Rien n'est saisi ni recompté ici. -->
           <dl class="mb-5 flex flex-wrap gap-x-10 gap-y-3 rounded-md-ln border border-ln-gray-200 bg-ln-gray-50 px-4 py-3">
-            <div v-for="c in request.checks" :key="c.label">
-              <dt class="text-caption text-ln-gray-500">{{ c.label }}</dt>
-              <dd class="text-body-sm font-semibold text-ln-gray-900">{{ c.value }}</dd>
+            <div>
+              <dt class="text-caption text-ln-gray-500">Période</dt>
+              <dd class="text-body-sm font-semibold text-ln-gray-900">{{ periode(request) }}</dd>
             </div>
-            <p class="ml-auto max-w-[280px] self-center text-caption leading-relaxed text-ln-gray-500">
-              Ces vérifications conditionnent l'émission. Elles sont calculées, jamais saisies.
-            </p>
+            <div>
+              <dt class="text-caption text-ln-gray-500">{{ (request.programs || []).length > 1 ? 'Programmes' : 'Programme' }} de la période</dt>
+              <dd class="text-body-sm font-semibold text-ln-gray-900">{{ request.program_label }}</dd>
+            </div>
+            <div class="basis-full">
+              <dt class="text-caption text-ln-gray-500">Éligibilité, recalculée en file</dt>
+              <dd class="text-body-sm text-ln-gray-900">{{ request.eligibility_note }}</dd>
+            </div>
           </dl>
+          <p v-if="(request.programs || []).length > 1"
+             class="mb-5 rounded-md-ln border border-ln-blue-100 bg-ln-blue-50 px-4 py-3 text-caption leading-relaxed text-ln-gray-700">
+            <b class="font-semibold text-ln-gray-900">Réorienté dans la période.</b> Le relevé est un seul document en
+            sections par programme : chaque section porte ses unités et ses crédits, aucun total n’additionne les deux.
+          </p>
 
-          <div v-if="request.lines.length" class="overflow-hidden rounded-md-ln border border-ln-gray-200">
-            <header class="flex items-center gap-3 border-b border-ln-gray-200 bg-ln-gray-50 px-4 py-2.5">
-              <h4 class="text-[14px] font-semibold text-ln-gray-900">Aperçu du document</h4>
-              <span class="ml-auto text-caption text-ln-gray-500">Ce que le document portera</span>
-            </header>
-            <table class="w-full border-collapse text-body-sm">
-              <thead>
-                <tr>
-                  <th :class="headTh" class="!text-left">Unité d'enseignement</th>
-                  <th :class="headTh" class="w-[80px]">Crédits</th>
-                  <th :class="headTh" class="w-[90px]">Moyenne</th>
-                  <th :class="headTh" class="!text-left">Résultat</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="l in request.lines" :key="l.code">
-                  <td :class="bodyTd" class="!text-left">
-                    <span class="font-mono text-[11.5px] text-ln-gray-500">{{ l.code }}</span>
-                    {{ l.label }}
-                  </td>
-                  <td :class="bodyTd">{{ l.ects }}</td>
-                  <td :class="bodyTd">{{ l.average }}</td>
-                  <td :class="bodyTd" class="!text-left">{{ l.outcome }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <p v-else class="rounded-md-ln border border-dashed border-ln-gray-300 px-4 py-6 text-center text-caption leading-relaxed text-ln-gray-500">
+          <p class="rounded-md-ln border border-dashed border-ln-gray-300 px-4 py-6 text-center text-caption leading-relaxed text-ln-gray-500">
             Aucun aperçu pour ce document : son contenu est produit à l'émission, depuis les données
             arrêtées de la période. Un aperçu reconstitué ici pourrait différer de ce que l'étudiant
             recevra.
@@ -115,8 +105,12 @@
             <h4 class="text-[14px] font-semibold text-ln-gray-900">Code de vérification publique</h4>
             <p v-if="request.verification_code" class="mt-1 text-body-sm text-ln-gray-700">
               <b class="font-mono text-[13px] font-semibold text-ln-gray-900">{{ request.verification_code }}</b>
-              — émis le {{ request.issued_on }} par {{ request.issued_by }}. Celui qui reçoit le
+              — pièce {{ request.issued_document }}, émise le {{ fr(request.issued_on) }}. Celui qui reçoit le
               document en contrôle l'authenticité en ligne.
+            </p>
+            <p v-else-if="request.issued_on" class="mt-1 text-body-sm leading-relaxed text-ln-gray-600">
+              Pièce {{ request.issued_document }}, émise le {{ fr(request.issued_on) }} ; le code de vérification n’est
+              pas disponible dans cette lecture.
             </p>
             <p v-else class="mt-1 text-body-sm leading-relaxed text-ln-gray-600">
               <b class="font-semibold text-ln-gray-900">Il n'existe pas encore.</b> Le code naît de
@@ -127,8 +121,11 @@
           </div>
 
           <p v-if="request.refusal_reason" class="mt-5 rounded-md-ln border border-[#F3C6C6] bg-ln-error-bg px-4 py-3 text-body-sm leading-relaxed text-[#7A2020]">
-            <b class="font-semibold">Refusée le {{ request.refused_on }}.</b> {{ request.refusal_reason }}
-            Ce motif reste lisible dans l'espace de l'étudiant.
+            <b class="font-semibold">Refusée le {{ fr(request.refused_on) }}<template v-if="request.refusal_label"> — {{ request.refusal_label }}</template>.</b>
+            {{ request.refusal_reason }}
+            <template v-if="request.reformulable === true">L’étudiant pourra reformuler ;</template>
+            <template v-else-if="request.reformulable === false">Non reformulable ;</template>
+            il lit ce motif dans son espace.
           </p>
 
           <template #actions>
@@ -140,9 +137,23 @@
 
         <ObjectPanel v-else title="" state="empty"
                      state-title="Aucune demande sélectionnée"
-                     state-message="Choisissez une demande dans la file pour voir ses vérifications et son aperçu." />
+                     state-message="Choisissez une demande dans la file pour voir son état et l’émettre ou la refuser." />
 
-        <!-- L'étape de motif : deux catégories, et la distinction voyage avec le
+        <!-- Conception (lot 7 bis, D-15 ; écart E-3.8) : l'émission est irréversible (la pièce naît signée, son code de
+             vérification avec elle) — une confirmation qui nomme la pièce et l'étudiant. -->
+        <div v-if="confirmingEmit && request" class="mt-5 rounded-md-ln border border-ln-blue-200 bg-ln-blue-50 p-4"
+             role="group" aria-label="Confirmer l'émission">
+          <p class="text-body-sm text-ln-gray-900">
+            Émettre <b class="font-semibold">{{ request.doc_label }}</b> pour <b class="font-semibold">{{ request.student_name }}</b> :
+            la pièce est produite et signée, son code de vérification naît avec elle. L’émission ne se défait pas.
+          </p>
+          <div class="mt-3 flex flex-wrap justify-end gap-2">
+            <button type="button" class="ln-btn-secondary" @click="confirmingEmit = false">Revenir</button>
+            <button type="button" class="ln-btn-primary" :disabled="busy" @click="emitConfirmed">Confirmer l’émission</button>
+          </div>
+        </div>
+
+        <!-- L'étape de motif : les catégories du SERVEUR, et la distinction voyage avec le
              refus parce qu'elle dit à l'étudiant s'il peut reformuler. -->
         <div v-if="refusing" class="mt-5">
           <ReasonStep title="Refuser cette demande"
@@ -154,19 +165,19 @@
                       detail-hint="Le motif part avec le refus et reste lisible dans l'espace de l'étudiant."
                       confirm-label="Refuser la demande" confirm-kind="danger"
                       footnote="« Prématurée » annonce à l'étudiant qu'il pourra reformuler ; « irrecevable » annonce le contraire."
-                      :modal="false"
+                      :modal="false" :busy="busy"
                       @submit="submitRefusal" @cancel="cancelRefusal" />
         </div>
       </div>
     </div>
 
-    <StateBanner v-if="pending" variant="warning" lead="Acte non disponible." :text="pending" class="mt-4" />
+    <StateBanner v-if="pending" variant="info" lead="Refus abandonné." :text="pending" class="mt-4" />
   </div>
 </template>
 
 <script setup>
 /**
- * Grappe 9 · écrans N6 et N7 du lot 7 — la file des demandes de documents.
+ * Grappe 9 · la file des demandes de documents.
  *
  * Le patron du lot 2 sans modification : file à gauche, objet à droite, motif
  * obligatoire au refus. Trois ajouts, et chacun vient d'une contrainte arrêtée :
@@ -180,75 +191,92 @@
  * ⚠️ AUCUN EXEMPLAIRE. Rien à compter, rien à retirer.
  *
  * ⚠️ LE CODE DE VÉRIFICATION NAÎT DE L'ÉMISSION. Tant qu'il n'existe pas, l'écran
- * le DIT — un champ vide se lirait comme une donnée manquante, et un agent aurait
- * pu le communiquer avant qu'il n'existe.
+ * le DIT — un champ vide se lirait comme une donnée manquante.
  *
- * 🔴 Aucun de ces chemins n'est tranché : voir `api/documents.js`.
+ * MANDAT-14 (G-M4, C1, Q10) : la forme du serveur (`list_document_requests`) ; délivrer
+ * (`fulfill_document_request`) et refuser (`refuse_document_request`, catégorie du serveur)
+ * sont BRANCHÉS — l'écran relit la file après l'acte.
  */
 import { computed, onMounted, ref } from 'vue';
-import { ActionBar, ObjectPanel, ReasonStep, StateBanner, StatusPill, WorkQueue, headTh, bodyTd }
+import { ActionBar, ObjectPanel, ReasonStep, StateBanner, StatusPill, WorkQueue }
   from '../components/index.js';
 import BlockState from '../components/internal/BlockState.vue';
 import { useAcademicContext } from '../composables/useAcademicContext.js';
 import { useResource } from '../composables/useResource.js';
-import { listDocumentRequests } from '../api/documents.js';
+import { useSession } from '../composables/useSession.js';
+import { emitDocument, listDocumentRequests, refuseDocumentRequest } from '../api/documents.js';
 
 const { params } = useAcademicContext();
+const { can } = useSession();
 const res = useResource(listDocumentRequests, { isEmpty: (d) => !d?.items?.length });
 const state = res.state;
 const pending = ref('');
+const done = ref('');
+const actError = ref('');
+const busy = ref(false);
 const selectedId = ref(null);
 const refusing = ref(false);
 
 const data = computed(() => res.data.value || {});
 const catalogue = computed(() => data.value.catalogue || []);
+// MANDAT-14 (G-M4, C1) : la file lit la forme du serveur. Le libellé de statut est celui du serveur ; la
+// couleur de la pastille est une présentation (en attente et émettable, en attente et bloquée, émise, refusée).
+// P16 : « 4 septembre », « 1er octobre » ; des pluriels accordés.
+const fr = (iso) => (iso ? new Date(String(iso).slice(0, 10) + 'T12:00:00')
+  .toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }).replace(/^1 /, '1er ') : '—');
+const nb = (n, un, plusieurs) => `${n} ${n >= 2 ? plusieurs : un}`;
+const periode = (r) => (r.academic_term ? r.academic_term : 'année ' + r.academic_year);
+const pastille = (r) => (r.status === 'Émise' ? 'valide' : r.status === 'Refusée' ? 'renvoyee'
+  : r.issuable ? 'propose' : 'incomplete');
 const queueItems = computed(() => (data.value.items || []).map((r) => ({
   id: r.name,
   title: r.student_name,
-  subtitle: r.doc_label + ' · ' + r.program_label,
-  status: r.status,
-  statusLabel: r.status_label,
-  due: r.received_on.split(' à ')[0],
-  done: !!r.issued_on || !!r.refused_on,
+  subtitle: r.doc_label + ' · ' + periode(r) + ' · ' + r.program_label,
+  status: pastille(r),
+  statusLabel: r.status === 'Demandée' && !r.issuable ? 'En attente — non émettable' : r.status_label,
+  due: 'demandée le ' + fr(r.requested_on),
+  done: r.status !== 'Demandée',
 })));
 
 /**
- * Le détail vient de la LISTE, non d'un second appel : le simulacre rend déjà tout
- * ce que `get_document_request` rendrait. Un second appel au clic aurait doublé la
- * chaîne pour la même donnée — et les deux auraient divergé.
+ * Le détail vient de la LISTE, non d'un second appel : elle rend déjà tout ce que
+ * l'écran montre. Un second appel au clic aurait doublé la chaîne pour la même
+ * donnée — et les deux auraient pu diverger.
  */
 const request = computed(() =>
   (data.value.items || []).find((r) => r.name === selectedId.value) || null);
 
 const subtitle = computed(() => {
   if (state.value !== 'ready') return 'Chargement de la file';
+  const c = data.value.counts || {};
   return [
-    data.value.pending + ' demandes en attente sur ' + data.value.count,
-    'la plus ancienne date du ' + data.value.oldest,
+    data.value.pending + ' en attente sur ' + data.value.count,
+    nb(c['Émise'] || 0, 'émise', 'émises'), nb(c['Refusée'] || 0, 'refusée', 'refusées'),
+    data.value.oldest_pending ? 'la plus ancienne attente date du ' + fr(data.value.oldest_pending) : 'aucune attente',
   ].join(' · ');
 });
 
 const panelSubtitle = computed(() => {
   const r = request.value;
   if (!r) return '';
-  return [r.name, r.program_label, 'reçue le ' + r.received_on,
-    r.purpose ? 'motif : ' + r.purpose.toLowerCase() : 'sans motif déclaré'].join(' · ');
+  return [r.name, periode(r), 'demandée le ' + fr(r.requested_on)].join(' · ');
 });
 
+// Règle 3 : l'acte n'est offert qu'à qui le porte (la clé de la matrice, `emit:documents` = {EM}).
 const actions = computed(() => {
   const r = request.value;
-  if (!r || r.issued_on || r.refused_on) return [];
+  if (!r || r.status !== 'Demandée' || !can('emit:documents')) return [];
   return [
-    { key: 'refuser', label: 'Refuser…', kind: 'secondary' },
-    { key: 'emettre', label: 'Émettre le document', kind: 'primary', disabled: !r.issuable },
+    { key: 'refuser', label: 'Refuser…', kind: 'secondary', disabled: busy.value },
+    { key: 'emettre', label: 'Émettre le document', kind: 'primary', disabled: !r.issuable || busy.value },
   ];
 });
 
 const hint = computed(() => {
   const r = request.value;
   if (!r) return '';
-  if (r.issued_on) return 'Émise le ' + r.issued_on + ' par ' + r.issued_by + '. Une année close n’y change rien : un relevé d’année close s’émet.';
-  if (r.refused_on) return 'Refusée le ' + r.refused_on + '. L’étudiant lit le motif dans son espace.';
+  if (r.issued_on) return 'Émise le ' + fr(r.issued_on) + '. Une année close n’y change rien : un relevé d’année close s’émet.';
+  if (r.refused_on) return 'Refusée le ' + fr(r.refused_on) + '. L’étudiant lit le motif dans son espace.';
   if (!r.issuable) return 'L’émission est indisponible tant que la condition affichée n’est pas remplie. Le refus reste possible — et « prématurée » annonce à l’étudiant qu’il pourra reformuler.';
   return 'Le document sera signé par la scolarité, déposé dans l’espace de l’étudiant, et portera un code de vérification publique produit par l’acte.';
 });
@@ -262,35 +290,57 @@ const refusalGroups = computed(() => [{
   })),
 }]);
 
+const confirmingEmit = ref(false);
 function select(id) {
   selectedId.value = id;
   refusing.value = false;
+  confirmingEmit.value = false;
+  done.value = ''; actError.value = '';
 }
 
-function act(key) {
+async function act(key) {
+  done.value = ''; actError.value = ''; pending.value = '';
   if (key === 'refuser') {
+    confirmingEmit.value = false;
     refusing.value = true;
     return;
   }
-  pending.value = 'Émettre appelle `emit_document`, dont le point d’entrée n’est pas tranché. '
-    + 'Aucun document n’a été produit, et aucun code de vérification n’a été créé.';
+  // D-15 : l'émission passe d'abord par sa confirmation.
+  refusing.value = false;
+  confirmingEmit.value = true;
+}
+async function emitConfirmed() {
+  confirmingEmit.value = false;
+  const r = request.value;
+  busy.value = true;
+  try {
+    const out = await emitDocument({ name: r.name });
+    done.value = `${r.doc_label} de ${r.student_name} émis${out?.issued_document ? ' — pièce ' + out.issued_document : ''}.`;
+    await reload();
+  } catch (e) { actError.value = e.message; } finally { busy.value = false; }
 }
 
-function submitRefusal(payload) {
-  refusing.value = false;
-  pending.value = 'Le refus (' + payload.reason + ') appelle `refuse_document_request`, dont le '
-    + 'point d’entrée n’est pas tranché. Le motif saisi n’a pas été enregistré et n’est pas parti.';
+async function submitRefusal(payload) {
+  const r = request.value;
+  busy.value = true; done.value = ''; actError.value = '';
+  try {
+    await refuseDocumentRequest({ name: r.name, refusal_category: payload.reason, refusal_reason: payload.detail });
+    refusing.value = false;
+    done.value = `Demande ${r.name} refusée ; ${r.student_name} lit le motif dans son espace.`;
+    await reload();
+  } catch (e) { actError.value = e.message; } finally { busy.value = false; }
 }
 
 /** L'échappatoire dit ce qu'elle fait : elle referme, elle ne refuse pas. */
 function cancelRefusal() {
   refusing.value = false;
-  pending.value = 'Refus abandonné — la demande reste en attente, rien n’a été enregistré.';
+  pending.value = 'La demande reste en attente ; rien n’a été enregistré.';
 }
 
-function reload() { res.load({ ...params.value }); }
-onMounted(() => {
-  reload();
-  selectedId.value = 'DOC-2027-0188';
+function reload() { return res.load({ ...params.value }); }
+onMounted(async () => {
+  await reload();
+  // `?demande=` ouvre une demande donnée (lien depuis la file de travail) ; sinon, la première de la file.
+  selectedId.value = new URLSearchParams(location.search).get('demande') || (data.value.items || [])[0]?.name || null;
 });
 </script>

@@ -80,7 +80,7 @@ async function loadDashboard() {
   error.value = '';
   success.value = '';
   try {
-    dashboard.value = await callApi('portal_app.api.attendance_sync_reconciliation.get_attendance_sync_anomaly_dashboard', filters);
+    dashboard.value = await callApi('attendance_app.lanem_attendance.api.attendance_sync_reconciliation.get_attendance_sync_anomaly_dashboard', filters);
   } catch (err) {
     dashboard.value = null;
     error.value = err.message;
@@ -108,17 +108,17 @@ async function act(row, action) {
   try {
     let result;
     if (action === 'Replay') {
-      result = await callApi('portal_app.api.attendance_sync_reconciliation.replay_attendance_sync_anomaly', {
+      result = await callApi('attendance_app.lanem_attendance.api.attendance_sync_reconciliation.replay_attendance_sync_anomaly', {
         anomaly: row.name,
         notes,
       });
     } else if (action === 'Request Local Replay') {
-      result = await callApi('portal_app.api.attendance_sync_reconciliation.request_local_replay_for_anomaly', {
+      result = await callApi('attendance_app.lanem_attendance.api.attendance_sync_reconciliation.request_local_replay_for_anomaly', {
         anomaly: row.name,
         notes,
       });
     } else {
-      result = await callApi('portal_app.api.attendance_sync_reconciliation.resolve_attendance_sync_anomaly', {
+      result = await callApi('attendance_app.lanem_attendance.api.attendance_sync_reconciliation.resolve_attendance_sync_anomaly', {
         anomaly: row.name,
         action,
         notes,
@@ -173,9 +173,9 @@ function detailSummary(row) {
   <div class="space-y-6">
     <header class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-ln-gray-900">Anomalies sync</h1>
+        <h1 class="text-2xl font-bold text-ln-gray-900">Anomalies de synchronisation</h1>
         <p class="mt-1 text-sm text-ln-gray-600">
-          Divergences local, central et états consolidés.
+          Écarts entre les données locales, centrales et consolidées.
         </p>
       </div>
       <button
@@ -193,7 +193,7 @@ function detailSummary(row) {
       v-if="hasCritical"
       severity="warning"
       title="Anomalies critiques"
-      :description="`${formatCount(summary.critical)} anomalie(s) critique(s) dans le périmètre affiché.`"
+      :description="`${formatCount(summary.critical)} ${summary.critical >= 2 ? 'anomalies critiques' : 'anomalie critique'} dans le périmètre affiché.`"
     />
 
     <AlertBlock v-if="success" severity="success" title="Traitement enregistré" :description="success" />

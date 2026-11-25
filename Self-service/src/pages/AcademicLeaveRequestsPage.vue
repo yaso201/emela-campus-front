@@ -1,11 +1,18 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
-import { AlertCircle, CheckCircle2, RefreshCw, Send, XCircle } from 'lucide-vue-next';
+import { AlertCircle, ArrowLeft, CheckCircle2, RefreshCw, Send } from 'lucide-vue-next';
+import { RouterLink } from 'vue-router';
+// MANDAT-14 (C-3.2, P1) : la lecture rend `{student, items, open}` ; les actes de chaque demande et l'ouverture
+// d'une nouvelle viennent du serveur — l'écran ne garde plus de machine (`canCancel` retiré).
+import ActesServeur from '@/components/demarches/ActesServeur.vue';
+// P16 (PC1B) : dates françaises, pluriels accordés ; le sigle « COA » ne s'affiche pas — un congé se nomme par sa période.
+import { formatDate, leavePeriod, plural } from '@/composables/useDemarche';
 
 const requests = ref([]);
+const open = ref(null);
 const loading = ref(false);
 const submitting = ref(false);
-const cancelling = ref('');
+const acting = ref('');
 const error = ref('');
 const success = ref('');
 
@@ -55,7 +62,10 @@ async function callApi(method, params = {}) {
   }
 
   if (!response.ok) {
-    const message = payload?._server_messages || payload?.exc || payload?.message || `HTTP ${response.status}`;
+    let message = payload?._server_messages || payload?.exc || payload?.message || `HTTP ${response.status}`;
+    try {
+      message = JSON.parse(payload._server_messages).map((m) => JSON.parse(m).message).join(' ');
+    } catch { /* message brut */ }
     throw new Error(Array.isArray(message) ? message.join(' ') : String(message));
   }
 
@@ -66,9 +76,12 @@ async function loadRequests() {
   loading.value = true;
   error.value = '';
   try {
-    requests.value = await callApi('portal_app.api.academic_leave_request.get_my_coa_requests');
+    const out = await callApi('portal_app.api.academic_leave_request.get_my_coa_requests');
+    requests.value = out?.items || [];
+    open.value = out?.open || null;
   } catch (err) {
     requests.value = [];
+    open.value = null;
     error.value = err.message || 'Impossible de charger les demandes.';
   } finally {
     loading.value = false;
@@ -107,34 +120,20 @@ async function submitRequest() {
   }
 }
 
-async function cancelRequest(row) {
-  cancelling.value = row.name;
+// Un acte rendu par la lecture (soumettre, annuler) : son chemin vient du serveur.
+async function act(row, { act: a }) {
+  acting.value = a.act;
   error.value = '';
   success.value = '';
   try {
-    await callApi('portal_app.api.academic_leave_request.cancel_coa_request', {
-      name: row.name,
-    });
-    success.value = 'Demande annulée.';
+    await callApi(a.method, { name: row.name });
+    success.value = a.act.startsWith('cancel') ? 'Demande annulée.' : 'Demande soumise.';
     await loadRequests();
   } catch (err) {
-    error.value = err.message || 'Impossible d’annuler la demande.';
+    error.value = err.message || 'Action impossible.';
   } finally {
-    cancelling.value = '';
+    acting.value = '';
   }
-}
-
-function canCancel(row) {
-  return ['Brouillon', 'Soumise'].includes(row.status);
-}
-
-function formatDate(value) {
-  if (!value) return '—';
-  return new Date(value).toLocaleDateString('fr-FR', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
 }
 
 function statusClass(status) {
@@ -146,12 +145,16 @@ function statusClass(status) {
 </script>
 
 <template>
-  <main class="max-w-5xl mx-auto px-4 py-6 space-y-6">
+  <!-- MANDAT-14 (P25) : un seul `main`, celui de la coquille. -->
+  <div class="max-w-5xl mx-auto px-4 py-6 space-y-6">
+    <RouterLink to="/demarches" class="inline-flex items-center gap-1 text-sm text-ln-blue-800 hover:underline min-h-[44px]">
+      <ArrowLeft class="w-4 h-4" /> Mes démarches
+    </RouterLink>
     <header class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <h1 class="text-2xl font-bold text-ln-gray-900">Congé académique</h1>
         <p class="text-sm text-ln-gray-500 mt-1">
-          Soumettre et suivre une demande COA.
+          Demander une suspension de vos études et suivre votre demande (Art. 37).
         </p>
       </div>
       <button
@@ -185,12 +188,14 @@ function statusClass(status) {
 
     <section class="rounded-lg border border-ln-gray-200 bg-white p-4">
       <h2 class="text-base font-semibold text-ln-gray-900 mb-4">Nouvelle demande</h2>
-      <form class="grid gap-4 sm:grid-cols-2" @submit.prevent="submitRequest">
+      <p v-if="open && !open.available" class="text-sm text-ln-gray-600">{{ open.blocked_reason }}</p>
+      <form v-else class="grid gap-4 sm:grid-cols-2" @submit.prevent="submitRequest">
         <label class="space-y-1">
           <span class="text-sm font-medium text-ln-gray-700">Date de début</span>
           <input
             v-model="form.from_date"
             type="date"
+            lang="fr"
             class="w-full rounded-md border border-ln-gray-300 px-3 py-2 text-sm min-h-[44px] focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25"
           />
         </label>
@@ -200,6 +205,7 @@ function statusClass(status) {
           <input
             v-model="form.to_date"
             type="date"
+            lang="fr"
             class="w-full rounded-md border border-ln-gray-300 px-3 py-2 text-sm min-h-[44px] focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25"
           />
         </label>
@@ -214,11 +220,11 @@ function statusClass(status) {
         </label>
 
         <label class="space-y-1 sm:col-span-2">
-          <span class="text-sm font-medium text-ln-gray-700">Pièce jointe</span>
+          <span class="text-sm font-medium text-ln-gray-700">Pièce jointe (facultative)</span>
           <input
             v-model="form.attachment"
             type="text"
-            placeholder="/private/files/justificatif.pdf"
+            placeholder="Lien vers votre justificatif déposé"
             class="w-full rounded-md border border-ln-gray-300 px-3 py-2 text-sm min-h-[44px] focus:outline-none focus:ring-2 focus:ring-ln-blue-500/25"
           />
         </label>
@@ -238,23 +244,23 @@ function statusClass(status) {
 
     <section class="rounded-lg border border-ln-gray-200 bg-white overflow-hidden">
       <div class="flex items-center justify-between border-b border-ln-gray-200 px-4 py-3">
-        <h2 class="text-base font-semibold text-ln-gray-900">Mes demandes COA</h2>
-        <span class="text-sm text-ln-gray-500">{{ requests.length }} demande(s)</span>
+        <h2 class="text-base font-semibold text-ln-gray-900">Mes demandes de congé</h2>
+        <span class="text-sm text-ln-gray-500">{{ plural(requests.length, 'demande') }}</span>
       </div>
 
       <div v-if="loading" class="p-4 text-sm text-ln-gray-500">Chargement…</div>
       <div v-else-if="requests.length === 0" class="p-6 text-center text-sm text-ln-gray-500">
-        Aucune demande COA enregistrée.
+        Aucune demande de congé enregistrée.
       </div>
       <div v-else class="divide-y divide-ln-gray-100">
         <article
           v-for="row in requests"
           :key="row.name"
-          class="p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between"
+          class="p-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between"
         >
           <div class="min-w-0 space-y-1">
             <div class="flex flex-wrap items-center gap-2">
-              <span class="font-medium text-ln-gray-900">{{ row.name }}</span>
+              <span class="font-medium text-ln-gray-900">Congé {{ leavePeriod(row) }}</span>
               <span
                 class="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium"
                 :class="statusClass(row.status)"
@@ -262,27 +268,17 @@ function statusClass(status) {
                 {{ row.status }}
               </span>
             </div>
-            <p class="text-sm text-ln-gray-600">
-              {{ formatDate(row.from_date) }} → {{ formatDate(row.to_date) }}
-            </p>
             <p class="text-sm text-ln-gray-500 line-clamp-2">{{ row.reason || 'Motif non renseigné' }}</p>
             <p v-if="row.decision_reason" class="text-sm text-ln-gray-500">
               Décision : {{ row.decision_reason }}
             </p>
+            <p v-if="row.creation" class="text-xs text-ln-gray-500">Déposée le {{ formatDate(row.creation) }}</p>
           </div>
 
-          <button
-            v-if="canCancel(row)"
-            type="button"
-            class="inline-flex items-center justify-center gap-2 rounded-md border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 min-h-[44px]"
-            :disabled="cancelling === row.name"
-            @click="cancelRequest(row)"
-          >
-            <XCircle class="w-4 h-4" />
-            {{ cancelling === row.name ? 'Annulation…' : 'Annuler' }}
-          </button>
+          <ActesServeur class="md:max-w-sm" :available="row.available_acts || []" :blocked="row.blocked_acts || []"
+                        :busy="acting" @act="(e) => act(row, e)" />
         </article>
       </div>
     </section>
-  </main>
+  </div>
 </template>

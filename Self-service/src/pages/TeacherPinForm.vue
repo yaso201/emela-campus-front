@@ -21,7 +21,7 @@ onMounted(() => { loadPinStatus(); });
 async function loadPinStatus() {
   try {
     const response = await fetch(
-      '/api/method/portal_app.api.teacher_pin.get_pin_status',
+      '/api/method/attendance_app.lanem_attendance.api.teacher_pin.get_pin_status',
       {
         method: 'POST',
         headers: {
@@ -65,7 +65,7 @@ async function submit() {
     formData.append('pin_confirmation', confirmPin.value);
 
     const response = await fetch(
-      '/api/method/portal_app.api.teacher_pin.create_pin',
+      '/api/method/attendance_app.lanem_attendance.api.teacher_pin.create_pin',
       {
         method: 'POST',
         headers: {

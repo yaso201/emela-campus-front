@@ -61,10 +61,13 @@
           </div>
         </template>
 
-        <div>
-          <label for="od-student" class="text-caption font-semibold text-ln-gray-700">Étudiant (matricule) <span class="text-ln-error">obligatoire</span></label>
-          <input id="od-student" v-model="student" type="text" :class="field" placeholder="ETU-2026-00001" />
-          <p class="mt-1 text-caption text-ln-gray-500">Aucune liste d'étudiants n'est lue ici : le serveur vérifie le matricule.</p>
+        <!-- MANDAT-14 (C7) : l'étudiant se cherche par le serveur (nom, matricule), au lieu d'un matricule
+             saisi à l'aveugle ; la portée (filière d'un RF) est celle du serveur. -->
+        <div class="flex flex-col gap-2">
+          <PeopleSearch id="od-student" kind="student" :initial="initialStudent" :selected="student"
+                        label="Étudiant — obligatoire" placeholder="Nom ou matricule — trois caractères au moins"
+                        @pick="student = $event.student" />
+          <p v-if="student" class="text-caption text-ln-gray-700">Retenu : <b class="font-mono font-semibold">{{ student }}</b></p>
         </div>
         <div>
           <label for="od-ground" class="text-caption font-semibold text-ln-gray-700">Catégorie du motif <span class="text-ln-error">obligatoire</span></label>
@@ -82,7 +85,7 @@
       </div>
 
       <footer class="flex items-center gap-3 border-t border-ln-gray-200 bg-ln-gray-50 px-5 py-4">
-        <p class="mr-auto text-caption text-ln-gray-500">{{ kind === 'abandon' ? 'Ouvert par l\'Education Manager.' : 'Instruit par l\'Education Manager.' }}</p>
+        <p class="mr-auto text-caption text-ln-gray-500">{{ kind === 'abandon' ? 'Ouvert par le responsable de la scolarité.' : 'Instruit par le responsable de la scolarité.' }}</p>
         <button type="button" class="ln-btn-secondary" @click="emit('cancel')">Annuler</button>
         <button type="button" class="ln-btn-primary" :disabled="!complete || busy" @click="submit">
           {{ kind === 'abandon' ? 'Ouvrir le constat' : 'Ouvrir le dossier' }}
@@ -99,6 +102,7 @@
  */
 import { computed, onMounted, ref, watch } from 'vue';
 import { listAbandonmentCandidates } from '../../api/dossiers.js';
+import PeopleSearch from '../../components/PeopleSearch.vue';
 
 const props = defineProps({
   terms: { type: Array, default: () => [] },   // [{ id, label }]
@@ -127,9 +131,12 @@ const GROUNDS = {
   ],
 };
 
-const kind = ref('abandon');
+const kind = ref(new URLSearchParams(location.search).get('nature') || 'abandon');
 const term = ref(props.termId);
-const student = ref('');
+// MANDAT-14 (C7) : un étudiant désigné depuis la recherche du bandeau (`?ouvrir=`) arrive prérempli.
+const initialStudent = new URLSearchParams(location.search).get('ouvrir')
+  || new URLSearchParams((location.hash.split('?')[1]) || '').get('ouvrir') || '';
+const student = ref(initialStudent);
 const ground = ref('');
 const details = ref('');
 const candidates = ref([]);

@@ -25,7 +25,7 @@
                  :lead="validatedLead"
                  :text="lockSentence" />
 
-    <div class="grid items-start gap-5 lg:grid-cols-[352px_1fr]">
+    <div class="grid grid-cols-1 items-start gap-5 lg:grid-cols-[352px_1fr]">
       <TreeEditor :nodes="nodes" :selected-id="selectedId" :add-actions="addActions"
                   :state="treeState === 'denied' ? 'loading' : treeState"
                   state-title="Aucune structure pour cette année"
@@ -63,7 +63,7 @@
 
           <!-- A6 : ce n'est pas la validation qui fige, c'est l'usage aval -->
           <div class="mt-3 flex gap-3 rounded-md-ln border p-3 text-caption leading-relaxed"
-               :class="usageLocked ? 'border-[#F3D9A6] bg-ln-warning-bg text-[#6B4415]' : 'border-ln-blue-200 bg-ln-blue-50 text-ln-gray-700'">
+               :class="usageLocked ? 'border-[#F3D9A6] bg-ln-warning-bg text-[var(--ln-warning-ink)]' : 'border-ln-blue-200 bg-ln-blue-50 text-ln-gray-700'">
             <svg class="mt-0.5 h-4 w-4 flex-shrink-0" :class="usageLocked ? 'text-ln-warning' : 'text-ln-blue-700'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 7.6v.2" /></svg>
             <p v-if="usageState === 'loading'">Vérification de l'usage aval de cette unité…</p>
             <p v-else-if="usageState === 'error'">
@@ -115,7 +115,7 @@
             </ul>
           </div>
           <!-- C4 : la confirmation du retrait vit HORS du tableau, pour ne jamais l'élargir. -->
-          <div v-if="detachTarget" class="mb-3 rounded-md-ln border border-ln-warning bg-ln-warning-bg p-3 text-caption leading-relaxed text-[#6B4415]"
+          <div v-if="detachTarget" class="mb-3 rounded-md-ln border border-ln-warning bg-ln-warning-bg p-3 text-caption leading-relaxed text-[var(--ln-warning-ink)]"
                role="alertdialog">
             <b class="font-semibold">Retirer {{ detachTarget.code }} de l'unité ?</b> Le module reste rattaché, sans être
             composé : la maquette repasse en brouillon et se repropose à la validation.

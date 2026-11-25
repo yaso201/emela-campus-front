@@ -51,13 +51,13 @@ export const emitDocument = (p) =>
   call('portal_app.api.academic.document_requests.fulfill_document_request', p);
 
 /**
- * 🔴 V (RF-G-01, VOCABULAIRES §1 — EN ATTENTE MOA) : le serveur expose
- * `refuse_document_request(name, refusal_reason)` en TEXTE LIBRE ; les deux
- * catégories de la conception n'ont aucune source serveur. Tant que la MOA n'a
- * pas tranché, l'acte reste non branché avec son bandeau — aucune valeur posée.
+ * 🟢 MANDAT-14 (G-M4, Q10) — `refuse_document_request(name, *, refusal_category, refusal_reason)` : la catégorie
+ * vient du vocabulaire du SERVEUR (`refusal_categories` de la liste : clé, libellé, reformulable, exemples) ;
+ * le motif est obligatoire (« Un refus SE MOTIVE »).
  *
- * ⚠️ DEUX CATÉGORIES, et la distinction se voyage jusqu'au serveur : « prématurée »
- * dit à l'étudiant qu'il pourra reformuler, « irrecevable » dit que non. Les
- * confondre laisse quelqu'un attendre indéfiniment, ou renoncer à tort.
+ * ⚠️ La distinction voyage jusqu'au serveur : « prématurée » dit à l'étudiant qu'il pourra reformuler,
+ * « irrecevable » dit que non. Les confondre laisse quelqu'un attendre indéfiniment, ou renoncer à tort.
  */
-export const refuseDocumentRequest = (p) => call('refuse_document_request', p);
+export const refuseDocumentRequest = (p) =>
+  call('portal_app.api.academic.document_requests.refuse_document_request',
+    { name: p && p.name, refusal_category: p && p.refusal_category, refusal_reason: p && p.refusal_reason });

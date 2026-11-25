@@ -12,8 +12,17 @@ import BlockSkeleton from '@/components/ui/BlockSkeleton.vue';
 import BlockError from '@/components/ui/BlockError.vue';
 import StatusBadge from '@/components/ui/StatusBadge.vue';
 import EmptyState from '@/components/ui/EmptyState.vue';
+// MANDAT-14 (E-M7) : l'onglet « Mes demandes » — demander un relevé, suivre ses demandes.
+import { useRoute, useRouter } from 'vue-router';
+import MesDemandesDocuments from '@/components/documents/MesDemandesDocuments.vue';
 
 const profile = useProfileStore();
+const route = useRoute();
+const router = useRouter();
+const onglet = computed(() => (route.query.onglet === 'demandes' ? 'demandes' : 'documents'));
+function choisirOnglet(o) {
+  router.replace({ query: { ...route.query, onglet: o === 'documents' ? undefined : o } });
+}
 
 // ── API principale ───────────────────────────────────────────────────
 const libraryResource = useFrappeCall(
@@ -25,7 +34,9 @@ const libraryResource = useFrappeCall(
 watch(
   () => [profile.status, profile.profile],
   ([status, currentProfile]) => {
-    if (status === 'loaded' && currentProfile === 'student') {
+    // DEC-366 (revues du lot 7, C-1/D-1) : l'étudiant à accès réduit (`dossier`) a Documents — sa bibliothèque et
+    // ses demandes ; le serveur dit ce qu'il lui ouvre (un refus s'affiche par sa phrase, pas par une garde du front).
+    if (status === 'loaded' && ['student', 'dossier'].includes(currentProfile)) {
       libraryResource.reload();
     }
   },
@@ -78,7 +89,13 @@ const hasRootWarnings = computed(() => {
   return Array.isArray(w) && w.length > 0;
 });
 
-const rootWarnings = computed(() => libraryResource.data?.warnings || []);
+// Le serveur rend certains avertissements par une clé : la page les dit en français (une clé inconnue reste dite, par
+// une phrase générique, jamais par la clé brute — conception du lot 7).
+const AVERTISSEMENTS = {
+  financial_receipts_unavailable: 'Les reçus de paiement ne sont pas disponibles pour l’instant.',
+};
+const rootWarnings = computed(() => (libraryResource.data?.warnings || []).map((w) => (
+  /^[a-z_]+$/.test(w) ? (AVERTISSEMENTS[w] || 'Une partie de vos documents n’a pas pu être lue.') : w)));
 
 // ── Preview / Actions ────────────────────────────────────────────────
 const previewOpen = ref(false);
@@ -249,7 +266,7 @@ function formatAmount(amount, currency) {
   return fmt.format(amount);
 }
 
-const isStudent = computed(() => profile.profile === 'student');
+const isStudent = computed(() => ['student', 'dossier'].includes(profile.profile));
 const showProfileGuard = computed(() => !profile.isLoading && !profile.isGuest && !isStudent.value);
 </script>
 
@@ -261,6 +278,18 @@ const showProfileGuard = computed(() => !profile.isLoading && !profile.isGuest &
         Retrouvez vos documents à valider, vos documents validés, vos documents officiels et vos archives.
       </p>
     </header>
+
+    <div v-if="isStudent" class="flex gap-1 border-b border-ln-gray-200" role="tablist">
+      <button v-for="o in [{ k: 'documents', l: 'Mes documents' }, { k: 'demandes', l: 'Mes demandes' }]" :key="o.k"
+              type="button" role="tab" :aria-selected="onglet === o.k" @click="choisirOnglet(o.k)"
+              class="px-4 py-2 text-sm font-semibold min-h-[44px] -mb-px border-b-2"
+              :class="onglet === o.k ? 'border-ln-blue-800 text-ln-blue-800' : 'border-transparent text-ln-gray-600 hover:text-ln-gray-900'">
+        {{ o.l }}
+      </button>
+    </div>
+
+    <MesDemandesDocuments v-if="isStudent && onglet === 'demandes'" />
+    <template v-else>
 
     <!-- Guard : profil non étudiant -->
     <div
@@ -310,12 +339,12 @@ const showProfileGuard = computed(() => !profile.isLoading && !profile.isGuest &
           <!-- Warnings racine -->
           <div
             v-if="hasRootWarnings"
-            class="bg-amber-50 border border-amber-200 rounded-lg p-4"
+            class="bg-ln-warning-bg border border-ln-warning/40 rounded-lg p-4"
           >
             <p
               v-for="(w, idx) in rootWarnings"
               :key="`rw-${idx}`"
-              class="text-sm text-amber-800 font-medium"
+              class="text-sm text-ln-warning font-medium"
             >
               {{ w }}
             </p>
@@ -507,6 +536,7 @@ const showProfileGuard = computed(() => !profile.isLoading && !profile.isGuest &
         </template>
       </div>
     </div>
+    </template>
 
     <!-- Modale de prévisualisation HTML -->
     <Teleport to="body">

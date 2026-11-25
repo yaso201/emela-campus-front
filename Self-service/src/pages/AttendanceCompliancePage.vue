@@ -6,6 +6,8 @@ import BlockError from '@/components/ui/BlockError.vue';
 import BlockSkeleton from '@/components/ui/BlockSkeleton.vue';
 import EmptyState from '@/components/ui/EmptyState.vue';
 import StatusBadge from '@/components/ui/StatusBadge.vue';
+// P16 (MANDAT-14) : une période s'écrit au format français, jamais « 2026-01-01 ».
+import { formatDate as jour } from '@/composables/useDemarche';
 
 const today = new Date();
 const form = reactive({
@@ -70,7 +72,7 @@ async function loadLogs() {
   loadingLogs.value = true;
   error.value = '';
   try {
-    logs.value = await callApi('portal_app.api.attendance_compliance.get_attendance_compliance_export_logs', {
+    logs.value = await callApi('attendance_app.lanem_attendance.api.attendance_compliance.get_attendance_compliance_export_logs', {
       limit: 50,
     });
   } catch (err) {
@@ -82,11 +84,11 @@ async function loadLogs() {
 }
 
 async function exportAudit() {
-  await runExport('audit', 'portal_app.api.attendance_compliance.export_attendance_audit_package');
+  await runExport('audit', 'attendance_app.lanem_attendance.api.attendance_compliance.export_attendance_audit_package');
 }
 
 async function exportAnonymized() {
-  await runExport('anonymized', 'portal_app.api.attendance_compliance.export_anonymized_attendance_reporting');
+  await runExport('anonymized', 'attendance_app.lanem_attendance.api.attendance_compliance.export_anonymized_attendance_reporting');
 }
 
 async function runExport(kind, method) {
@@ -104,7 +106,7 @@ async function runExport(kind, method) {
       limit: form.limit,
     });
     downloadTextFile(payload.filename || `attendance-${kind}.${form.format}`, payload.content || '', payload.format);
-    success.value = `${payload.export_id} généré et journalisé (${payload.row_count || 0} ligne(s), SHA-256 ${shortHash(payload.content_sha256)}).`;
+    success.value = `${payload.export_id} généré et journalisé (${payload.row_count || 0} ${(payload.row_count || 0) >= 2 ? 'lignes' : 'ligne'}, SHA-256 ${shortHash(payload.content_sha256)}).`;
     await loadLogs();
   } catch (err) {
     error.value = err.message;
@@ -149,7 +151,7 @@ function formatCount(value) {
 }
 
 function formatDate(value) {
-  if (!value) return 'N/A';
+  if (!value) return '—';
   return new Intl.DateTimeFormat('fr-FR', {
     dateStyle: 'short',
     timeStyle: 'short',
@@ -165,9 +167,9 @@ function exportStatus(row) {
   <div class="space-y-6">
     <header class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-ln-gray-900">Conformité attendance</h1>
+        <h1 class="text-2xl font-bold text-ln-gray-900">Conformité des présences</h1>
         <p class="mt-1 text-sm text-ln-gray-600">
-          Exports auditeur tracés et reporting institutionnel anonymisé.
+          Exports tracés pour l’auditeur et rapports institutionnels anonymisés.
         </p>
       </div>
       <button
@@ -335,7 +337,7 @@ function exportStatus(row) {
                 </div>
               </td>
               <td class="px-4 py-3 text-sm text-ln-gray-700">
-                <div>{{ row.start_date }} → {{ row.end_date }}</div>
+                <div>{{ jour(row.start_date) }} → {{ jour(row.end_date) }}</div>
                 <div class="text-xs text-ln-gray-500">{{ row.student_group || 'Tous groupes autorisés' }}</div>
               </td>
               <td class="px-4 py-3">
@@ -353,7 +355,7 @@ function exportStatus(row) {
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
               <h3 class="truncate text-sm font-semibold text-ln-gray-900">{{ row.export_id }}</h3>
-              <p class="text-xs text-ln-gray-500">{{ row.start_date }} → {{ row.end_date }}</p>
+              <p class="text-xs text-ln-gray-500">{{ jour(row.start_date) }} → {{ jour(row.end_date) }}</p>
             </div>
             <StatusBadge :status="exportStatus(row)" :label="row.export_type" size="sm" />
           </div>

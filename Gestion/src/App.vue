@@ -20,6 +20,37 @@
                   :missing-channel="denialChannel" />
 
     <router-view v-else />
+
+    <!-- MANDAT-14 (C7) : la recherche du bandeau est BRANCHÉE — étudiants et personnel, par le serveur.
+         Un étudiant trouvé ouvre ses actes de gestion ; aucun écran n'invente un « dossier étudiant ». -->
+    <div v-if="searchOpen" class="fixed inset-0 z-40 flex items-start justify-center bg-ln-gray-900/40 p-4 pt-20"
+         @click.self="searchOpen = false">
+      <section role="dialog" aria-modal="true" aria-label="Chercher une personne"
+               class="w-full max-w-xl overflow-hidden rounded-md-ln border border-ln-gray-200 bg-white shadow-lg">
+        <header class="flex items-center gap-3 border-b border-ln-gray-200 bg-ln-gray-50 px-4 py-3">
+          <h2 class="text-h2 text-ln-gray-900">Chercher une personne</h2>
+          <button type="button" class="ml-auto text-caption font-semibold text-ln-gray-600" @click="searchOpen = false">Fermer</button>
+        </header>
+        <div class="flex flex-col gap-3 px-4 py-3">
+          <PeopleSearch id="bandeau-recherche" :initial="searchInitial" :selected="searchPicked?.student || searchPicked?.user || ''"
+                        label="Nom, matricule ou courriel" @pick="searchPicked = $event" />
+          <div v-if="searchPicked" class="rounded-sm-ln border border-ln-blue-200 bg-ln-blue-50 px-3 py-2 text-body-sm">
+            <template v-if="searchPicked.type === 'student'">
+              <b class="font-semibold text-ln-gray-900">{{ searchPicked.student_name }}</b> — {{ searchPicked.student }}
+              <div class="mt-2 flex flex-wrap gap-2">
+                <button v-if="can('instruct:dossiers')" type="button" class="ln-btn-primary"
+                        @click="openDossierFor(searchPicked.student)">Ouvrir un dossier pour cet étudiant…</button>
+                <router-link :to="{ name: 'dossiers' }" class="ln-btn-secondary" @click="searchOpen = false">Voir les dossiers</router-link>
+              </div>
+            </template>
+            <template v-else>
+              <b class="font-semibold text-ln-gray-900">{{ searchPicked.full_name }}</b> — {{ (searchPicked.role_labels || searchPicked.roles).join(', ') }}
+              <p class="mt-1 text-caption text-ln-gray-600">Un membre du personnel se désigne depuis l’acte qui l’appelle (siège de commission, de conseil).</p>
+            </template>
+          </div>
+        </div>
+      </section>
+    </div>
   </AppShell>
 </template>
 
@@ -31,6 +62,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { AppShell, ContextBar, AccessDenied, StateBanner } from './components/index.js';
+import PeopleSearch from './components/PeopleSearch.vue';
 import { NAV, BOTTOM_KEYS } from './nav.js';
 import { useSession } from './composables/useSession.js';
 import { closeSession } from './api/session.js';
@@ -138,19 +170,25 @@ function pick(which) {
   }
 }
 /**
- * ⚠️ LA RECHERCHE N'EST PAS BRANCHÉE, ET LE BOUTON LE DIT.
+ * MANDAT-14 (C7, D-RECHERCHE-PERSONNE-01) : LA RECHERCHE EST BRANCHÉE sur `search_people`.
  *
- * `noop()` était un corps vide derrière le bouton de recherche de `AppShell` — rendu
- * sur TOUS les écrans, le plus visible du produit. Un utilisateur cliquait
- * « Rechercher un étudiant, une UE, un groupe… » et rien ne se produisait.
- *
- * C'était le dernier corps vide du dépôt, et il a fallu élargir le contrôle d'audit
- * aux ÉVÉNEMENTS DE COMPOSANT pour le voir : `AppShell` ne signale pas par `@click`
- * mais par `emit('search')`. Un contrôle borné à `@click` ne voyait ni celui-ci, ni
- * trois des cinq gestionnaires de l'écran de structure.
+ * Avant, le bouton de recherche de `AppShell` (rendu sur tous les écrans) disait qu'il n'était pas branché. Il
+ * ouvre maintenant la recherche d'une personne — étudiants et personnel, par le serveur ; un lecteur sans
+ * `read:people` reçoit la phrase qui le dit. `?chercher=` l'ouvre directement (preuves du lot 6).
  */
+const searchOpen = ref(Boolean(new URLSearchParams(location.search).get('chercher')));
+const searchInitial = new URLSearchParams(location.search).get('chercher') || '';
+const searchPicked = ref(null);
 function search() {
-  pending.value = "La recherche transversale n'est pas encore branchée — aucun point d'entrée ne la sert.";
+  if (!can('read:people')) {
+    pending.value = 'La recherche d’une personne est réservée au personnel de gestion.';
+    return;
+  }
+  searchOpen.value = true;
+}
+function openDossierFor(student) {
+  searchOpen.value = false;
+  router.push({ name: 'dossiers', query: { ouvrir: student } });
 }
 
 /**
